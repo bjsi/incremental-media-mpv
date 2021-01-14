@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "AUDIO ASSISTANT"
+mpv --no-video  --scripts="scripts/audioassistant.lua"
