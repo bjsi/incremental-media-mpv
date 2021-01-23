@@ -1,8 +1,0 @@
-#!/bin/sh
-
-if [[ $# -ne 2 ]]; then
-    echo "$0 requires 2 args: 1) subtitle language(s) and 2) youtube id/url"
-    exit 1
-fi
-
-youtube-dl -x -f 'worstaudio/worst' --write-sub --write-auto-sub --sub-lang "$1" "$2" -o "$HOME/Projects/Lua/audio-assistant-mpv/audio/topics/%(id)s.%(ext)s"

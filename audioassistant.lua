@@ -13,7 +13,8 @@ local mpopt = require('mp.options')
 
 mpopt.read_options(config, "audioassistant")
 
-local basedir = "/home/james/Projects/Lua/audioassistant-mpv/"
+local basedir = mp.get_script_directory()
+msg.info(basedir)
 local mediadir = utils.join_path(basedir, "media")
 local datadir = utils.join_path(basedir, "data")
 local extractsdb = utils.join_path(datadir, "extracts.csv")
@@ -22,7 +23,7 @@ local topicsdb = utils.join_path(datadir, "topics.csv")
 local topicsheader = utils.join_path(datadir, "topics_header.csv")
 local extractsheader = utils.join_path(datadir, "extracts_header.csv")
 local itemsheader = utils.join_path(datadir, "items_header.csv")
-local soundsdir = "/home/james/Projects/Lua/audioassistant-mpv/sounds"
+local soundsdir = utils.join_path(basedir, "sounds")
 
 -- namespaces
 local subs
@@ -1589,7 +1590,6 @@ function ItemQueue:postpone_stop()
     self:adjust_cloze(adjustment_fn)
 end
 
-    
 
 local function verify_dependencies()
     local deps = { "youtube-dl", "ffmpeg" }
