@@ -1,2 +1,5 @@
 *.opus
 *.vtt
+./data/topics.csv
+./data/extracts.csv
+./data/items.csv
