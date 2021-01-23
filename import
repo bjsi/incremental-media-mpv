@@ -1,0 +1,37 @@
+#!/bin/sh
+
+if [[ $# -ne 2 ]]; then
+    echo "$0 requires 2 args: idOrUrl priority"
+    exit 1
+fi
+
+URL_PREFIX="https://youtube.com/watch?v=" 
+TOPICS_CSV="./data/topics.csv"
+HEADER_CSV="./data/topics_header.csv"
+
+# validate
+# TODO: jq dependency
+youtubeId=$(youtube-dl --no-playlist -j --playlist-items 0 "$1" | jq '.["id"]' | sed 's/"//g')
+
+if [[ -f "$TOPICS_CSV" ]]; then
+    id=$(awk 'NR>1' "$TOPICS_CSV" | cut -d',' -f 1 | sort -n | tail -n 1)
+fi
+id=$(( id + 1 ))
+typ="youtube"
+url=${URL_PREFIX}${youtubeId}
+start_time=0
+end_time=-1
+curtime=0
+curtime_updated=0
+priority=30
+speed=1
+
+if [[ ! -f "$TOPICS_CSV" ]]; then
+    touch "$TOPICS_CSV"
+fi
+
+if [[ ! -s "$TOPICS_CSV" ]]; then 
+    cp $HEADER_CSV "$TOPICS_CSV"
+fi
+
+echo "${id},${typ},${url},${start_time},${end_time},${curtime},${curtime_updated},${priority},${speed}" >> "$TOPICS_CSV"

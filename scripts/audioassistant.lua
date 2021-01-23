@@ -13,23 +13,32 @@ local mpopt = require('mp.options')
 
 mpopt.read_options(config, "audioassistant")
 
-local basedir = "/home/james/Projects/Lua/audio-assistant-mpv/"
-local datadir = "/home/james/Projects/Lua/audio-assistant-mpv/data"
-local audiodir = "/home/james/Projects/Lua/audio-assistant-mpv/audio"
+local basedir = "/home/james/Projects/Lua/audioassistant-mpv/"
+local mediadir = utils.join_path(basedir, "media")
+local datadir = utils.join_path(basedir, "data")
+local extractsdb = utils.join_path(datadir, "extracts.csv")
+local itemsdb = utils.join_path(datadir, "items.csv")
+local topicsdb = utils.join_path(datadir, "topics.csv")
+local topicsheader = utils.join_path(datadir, "topics_header.csv")
+local extractsheader = utils.join_path(datadir, "extracts_header.csv")
+local itemsheader = utils.join_path(datadir, "items_header.csv")
+local soundsdir = "/home/james/Projects/Lua/audioassistant-mpv/sounds"
 
 -- namespaces
 local subs
 local encoder
-local topics
-local extracts
-local items
-local gtq
-local leq
-local liq
-local current
+local active_queue
 
 -- classes
 local Subtitle
+local ExtractQueue
+local GlobalTopicQueue
+local Queue
+local LocalExtractQueue
+local GlobalExtractQueue
+local ItemQueue
+local GlobalItemQueue
+local LocalItemQueue
 
 
 ------------------------------------------------------------
@@ -234,167 +243,1362 @@ do
     end
 end
 
+------------------------------------------------------------
+-- utility classes
+
+local function new_timings()
+    local self = { ['start'] = -1, ['end'] = -1, }
+    local is_set = function(position)
+        return self[position] >= 0
+    end
+    local set = function(position)
+        self[position] = mp.get_property_number('time-pos')
+    end
+    local get = function(position)
+        return self[position]
+    end
+    return {
+        is_set = is_set,
+        set = set,
+        get = get,
+    }
+end
+
+local function new_sub_list()
+    local subs_list = {}
+    local _is_empty = function()
+        return next(subs_list) == nil
+    end
+    local find_i = function(sub)
+        for i, v in ipairs(subs_list) do
+            if sub < v then
+                return i
+            end
+        end
+        return #subs_list + 1
+    end
+    local get_time = function(position)
+        local i = position == 'start' and 1 or #subs_list
+        return subs_list[i][position]
+    end
+    local get_text = function()
+        local speech = {}
+        for _, sub in ipairs(subs_list) do
+            table.insert(speech, sub['text'])
+        end
+        return table.concat(speech, ' ')
+    end
+    local insert = function(sub)
+        if sub ~= nil and not table.contains(subs_list, sub) then
+            table.insert(subs_list, find_i(sub), sub)
+            return true
+        end
+        return false
+    end
+    return {
+        get_time = get_time,
+        get_text = get_text,
+        is_empty = _is_empty,
+        insert = insert
+    }
+end
+
+local function make_switch(states)
+    local self = {
+        states = states,
+        current_state = 1
+    }
+    local bump = function()
+        self.current_state = self.current_state + 1
+        if self.current_state > #self.states then
+            self.current_state = 1
+        end
+    end
+    local get = function()
+        return self.states[self.current_state]
+    end
+    return {
+        bump = bump,
+        get = get
+    }
+end
 
 ------------------------------------------------------------
--- Database
+-- subtitles and timings
 
-db = {}
+subs = {
+    dialogs = new_sub_list(),
+    user_timings = new_timings(),
+    observed = false
+}
 
-db.read_csv = function(fpath, table_func)
+subs.get_current = function()
+    local sub_text = mp.get_property("sub-text")
+    if not is_empty(sub_text) then
+        local sub_delay = mp.get_property_native("sub-delay")
+        return Subtitle:new {
+            ['text'] = sub_text,
+            ['start'] = mp.get_property_number("sub-start") + sub_delay,
+            ['end'] = mp.get_property_number("sub-end") + sub_delay
+        }
+    end
+    return nil
+end
+
+subs.get_timing = function(position)
+    if subs.user_timings.is_set(position) then
+        return subs.user_timings.get(position)
+    elseif not subs.dialogs.is_empty() then
+        return subs.dialogs.get_time(position)
+    end
+    return -1
+end
+
+subs.get = function()
+    if subs.dialogs.is_empty() then
+        subs.dialogs.insert(subs.get_current())
+    end
+    local sub = Subtitle:new {
+        ['text'] = subs.dialogs.get_text(),
+        ['start'] = subs.get_timing('start'),
+        ['end'] = subs.get_timing('end'),
+    }
+    if sub['start'] < 0 or sub['end'] < 0 then
+        return nil
+    end
+    if sub['start'] == sub['end'] then
+        return nil
+    end
+    if sub['start'] > sub['end'] then
+        sub['start'], sub['end'] = sub['end'], sub['start']
+    end
+    if not is_empty(sub['text']) then
+        sub['text'] = trim(sub['text'])
+        sub['text'] = escape_special_characters(sub['text'])
+    end
+    return sub
+end
+
+subs.append = function()
+    if subs.dialogs.insert(subs.get_current()) then
+        menu.update()
+    end
+end
+
+subs.observe = function()
+    mp.observe_property("sub-text", "string", subs.append)
+    subs.observed = true
+end
+
+subs.unobserve = function()
+    mp.unobserve_property(subs.append)
+    subs.observed = false
+end
+
+subs.set_timing = function(position)
+    subs.user_timings.set(position)
+    menu.update()
+    notify(capitalize_first_letter(position) .. " time has been set.")
+    if not subs.observed then
+        subs.observe()
+    end
+end
+
+subs.set_starting_line = function()
+    subs.clear()
+    if not is_empty(mp.get_property("sub-text")) then
+        subs.observe()
+        notify("Timings have been set to the current sub.", "info", 2)
+    else
+        notify("There's no visible subtitle.", "info", 2)
+    end
+end
+
+subs.clear = function()
+    subs.unobserve()
+    subs.dialogs = new_sub_list()
+    subs.user_timings = new_timings()
+    menu.update()
+end
+
+subs.clear_and_notify = function()
+    subs.clear()
+    notify("Timings have been reset.", "info", 2)
+end
+
+---------------
+-- Random utils
+
+local function dump(o)
+    if type(o) == "table" then
+        local s = '{'
+        for k, v in pairs(o) do
+            if type(k) ~= 'number' then k = '"' .. k .. '"' end
+            s = s .. '[' .. k .. ']' .. dump (v) .. ','
+        end
+        return s .. '}'
+    else
+        return tostring(o)
+    end
+end
+
+------------------------------------------------------------
+-- seeking: sub replay, sub seek, sub rewind
+
+local function _(params)
+    local unpack = unpack and unpack or table.unpack
+    return function() return pcall(unpack(params)) end
+end
+
+local pause_timer = (function()
+    local stop_time = -1
+    local check_stop
+    local set_stop_time = function(time)
+        stop_time = time
+    end
+    local stop = function()
+        mp.unobserve_property(check_stop)
+        stop_time = -1
+    end
+    check_stop = function(_, time)
+        if time >= stop_time then
+            stop()
+            mp.set_property("pause", "yes")
+        else
+            -- notify('Timer: ' .. human_readable_time(stop_time - time))
+        end
+    end
+    return {
+        set_stop_time = set_stop_time,
+        check_stop = check_stop,
+        stop = stop,
+    }
+end)()
+
+local function sub_replay()
+    local sub = subs.get_current()
+    pause_timer.set_stop_time(sub['end'] - 0.050)
+    mp.commandv('seek', sub['start'], 'absolute')
+    mp.set_property("pause", "no")
+    mp.observe_property("time-pos", "number", pause_timer.check_stop)
+end
+
+local function sub_seek(direction, pause)
+    mp.commandv("sub_seek", direction == 'backward' and '-1' or '1')
+    mp.commandv("seek", "0.015", "relative+exact")
+    if pause then
+        mp.set_property("pause", "yes")
+    end
+    pause_timer.stop()
+end
+
+local function sub_rewind()
+    mp.commandv('seek', subs.get_current()['start'] + 0.015, 'absolute')
+    pause_timer.stop()
+end
+
+------------------------------------------------------------
+-- platform specific
+
+local function init_platform_windows()
+    local self = {}
+    local curl_tmpfile_path = utils.join_path(os.getenv('TEMP'), 'curl_tmp.txt')
+    mp.register_event('shutdown', function() os.remove(curl_tmpfile_path) end)
+
+    self.tmp_dir = function()
+        return os.getenv('TEMP')
+    end
+
+    self.copy_to_clipboard = function(text)
+        mp.commandv("run", "cmd.exe", "/d", "/c", string.format("@echo off & chcp 65001 & echo %s|clip", text))
+    end
+
+    self.curl_telnet = function(request_json, completion_fn)
+        local handle = io.open(curl_tmpfile_path, "w")
+        handle:write(request_json)
+        handle:close()
+        local args = {
+            './curl_telnet_win.bat',
+            config["amp_host"],
+            config["amp_port"],
+            curl_tmpfile_path
+        }
+        return subprocess(args, completion_fn)
+    end
+
+    self.file2base64 = function(filepath, completion_fn)
+        local args = {
+            "./file2base64_win.bat",
+            filepath
+        }
+        return subprocess(args, completion_fn)
+    end
+
+    -- TODO: Check
+    self.check_dependency = function(program)
+        local args = {
+            "which",
+            "/q",
+            program
+        }
+        local ret = subprocess(args)
+        return ret.status == 0
+    end
+
+
+    self.curl_request = function(request_json, completion_fn)
+        local handle = io.open(curl_tmpfile_path, "w")
+        handle:write(request_json)
+        handle:close()
+        local args = {
+            'curl',
+            '-s',
+            'localhost:8765',
+            '-H',
+            'Content-Type: application/json; charset=UTF-8',
+            '-X',
+            'POST',
+            '--data-binary',
+            table.concat { '@', curl_tmpfile_path }
+        }
+        return subprocess(args, completion_fn)
+    end
+
+    self.windows = true
+
+    return self
+end
+
+local function init_platform_nix()
+    local self = {}
+    local clip = is_running_macOS() and 'LANG=en_US.UTF-8 pbcopy' or 'xclip -i -selection clipboard'
+
+    self.tmp_dir = function()
+        return '/tmp'
+    end
+
+    self.copy_to_clipboard = function(text)
+        local handle = io.popen(clip, 'w')
+        handle:write(text)
+        handle:close()
+    end
+
+    local curl_tmpfile_path = utils.join_path('/tmp', 'curl_tmp.txt')
+    mp.register_event('shutdown', function() os.remove(curl_tmpfile_path) end)
+
+    self.curl_telnet = function(request_json, completion_fn)
+        local handle = io.open(curl_tmpfile_path, "w")
+        handle:write(request_json .. "\n")
+        handle:close()
+        local args = {
+            "./curl_telnet_nix",
+            config['amp_host'],
+            config['amp_port'],
+            curl_tmpfile_path
+        }
+        return subprocess(args, completion_fn)
+    end
+
+    self.file2base64 = function(filepath)
+        local args = {
+            "./file2base64_nix",
+            filepath
+        }
+        return subprocess(args)
+    end
+
+    self.check_dependency = function(program)
+        local args = {
+            "which",
+            program
+        }
+        local ret = subprocess(args)
+        return ret.status == 0
+    end
+
+    self.curl_request = function(request_json, completion_fn)
+        local args = { 'curl', '-s', 'localhost:8765', '-X', 'POST', '-d', request_json }
+        return subprocess(args, completion_fn)
+    end
+
+    return self
+end
+
+platform = is_running_windows() and init_platform_windows() or init_platform_nix()
+
+----------------
+-- Sound Effects
+
+local sounds = {
+    files = {
+        negative = "negative.wav",
+        click1 = "click.wav",
+        click2 = "click_2.wav",
+        load = "load.wav",
+        positive = "positive.wav",
+        echo = "sharp_echo.wav",
+        global_topic_queue = "global_topic_queue.wav",
+        global_extract_queue = "global_extract_queue.wav",
+        local_extract_queue = "local_extract_queue.wav",
+        global_item_queue = "global_item_queue.wav",
+        local_item_queue = "local_item_queue.wav",
+    }
+}
+
+sounds.play = function(sound)
+    local fp = utils.join_path(soundsdir, sounds.files[sound])
+    local args = {
+        "mpv",
+        "--no-video",
+        "--really-quiet",
+        fp
+    }
+    subprocess(args, function() end)
+end
+
+local loop_timer = (function()
+    local start_time = 0
+    local stop_time = -1
+    local check_loop
+    local set_stop_time = function(time)
+        stop_time = time
+    end
+    local set_start_time = function(time)
+        start_time = time
+    end
+
+
+    local stop = function()
+        mp.unobserve_property(check_loop)
+        start_time = 0
+        stop_time = -1
+    end
+
+    check_loop = function(_, time)
+        if time == nil then return end
+        local overrun = stop_time > 0 and time >= stop_time
+        local underrun = start_time > 0 and time < start_time
+        if overrun or underrun then
+            mp.commandv("seek", start_time, "absolute")
+        end
+    end
+
+    local on_el_changed = function(_, start_t, stop_t)
+        msg.info("Received element changed event")
+        if start_t == nil then return end
+        if stop_t == nil then return end
+        set_start_time(tonumber(start_t))
+        set_stop_time(tonumber(stop_t))
+    end
+
+    mp.register_script_message("element_changed", on_el_changed)
+
+    return {
+        set_start_time = set_start_time,
+        set_stop_time = set_stop_time,
+        check_loop = check_loop,
+        stop = stop,
+    }
+end)()
+
+------------
+-- Element Queue Filters
+
+
+-- sorts in place
+local function sort_by_priority(tb)
+    local priority = function(a, b)
+        local ap = tonumber(a["priority"])
+        local bp = tonumber(b["priority"])
+        return ap > bp
+    end
+    table.sort(tb, priority)
+end
+
+local function is_done(r)
+    local curtime = r["curtime"]
+    local stop = r["stop"]
+    if curtime == nil or stop == "nil" then return false end
+    return (tonumber(curtime) / tonumber(stop)) >= 0.95
+end
+
+local function is_outstanding(r)
+    return not is_done(r)
+end
+
+local function is_child(a, b)
+    return a["parent"] == b["id"]
+end
+
+local function is_parent(a, b)
+    return a["id"] == b["parent"]
+end
+
+local function curry2(f)
+  return function(a)
+    return function(b)
+      return f(a, b)
+    end
+  end
+end
+
+-------------
+-- Databases
+
+
+CSV = {}
+CSV.__index = CSV
+
+
+function CSV.new()
+    local self = setmetatable({}, CSV)
+    self.csv_table = {}
+    self.header = {}
+    self.loaded_file = nil
+    return self
+end
+
+-- Load CSV file.
+function CSV:load(fp)
+    local fobj = io.open(fp, "r")
+    if fobj == nil then
+        print("Failed to open csv file for reading: " .. fp)
+        return false
+    end
+
+    self.loaded_file = fp
+
+    -- header
+    local data = fobj:read()
+    for v in string.gmatch(data, "[^,]*") do
+        if v ~= "" then
+            self.header[#self.header+1] = v
+        end
+    end
+
+    -- rows
+    for line in fobj:lines() do
+        local row = {}
+        local ct = 1
+        for v in string.gmatch(line, "[^,]*") do
+            if v ~= "" then
+                row[self.header[ct]] = v
+                ct = ct + 1
+            end
+        end
+
+        self.csv_table[#self.csv_table+1] = row
+    end
+    fobj:close()
+    msg.info("Successfully read csv file: " .. fp)
+    return true
+end
+
+-- Write CSV file.
+function CSV:write(fp)
+    if fp == nil then fp = self.loaded_file end
+    if next(self.csv_table) == nil then
+        print("Did not write to " .. fp .. " because the table was empty.")
+        return false
+    end
+
+    local fobj = io.open(fp, "w")
+    if fobj == nil then
+        print("Failed to write to csv file: " .. fp)
+        return false
+    end
+
+    -- header
+    for i, v in ipairs(self.header) do
+        if i ~= #self.header then
+            fobj:write(v .. ',')
+        else
+            fobj:write(v .. '\n')
+        end
+    end
+
+    -- rows
+    for _, row in ipairs(self.csv_table) do
+        for i, h in ipairs(self.header) do
+            if i ~= #self.header then
+                fobj:write(row[h]..',')
+            else
+                fobj:write(row[h]..'\n')
+            end
+        end
+    end
+    fobj:close()
+    msg.info("Successfully wrote to csv file: " .. fp)
+    return true
+end
+
+-- Print out the csv
+function CSV:show()
+    if next(self.csv_table) == nil then
+        msg.info("Failed to show csv because the table is empty.")
+        return
+    end
+    for _, v in ipairs(self.csv_table) do
+        msg.info(dump(v))
+    end
+end
+
+function CSV:get_all()
+    if next(self.csv_table) == nil then
+        return nil
+    end
     local ret = {}
-    for line in io.lines(fpath) do
-        ret[#ret + 1] = table_func(line)
+    for _, v in ipairs(self.csv_table) do
+        ret[#ret + 1] = v
     end
     return ret
 end
 
-db.create_element = function(line)
-    local fname, stime, etime, curtime, priority = line:match("%s*(.-),%s*(.-),%s*(.-),%s*(.-),%s*(.-)")
-    return {
-        fname = fname,
-        stime = stime,
-        etime = etime,
-        curtime = curtime,
-        priority = priority
-    }
-end
-
-db.sort_priority = function(fst, snd)
-    return fst.priority >= snd
-end
-
-db.get_topics = function()
-    local data = db.read_csv(utils.join_path(datadir, "topics.csv"), db.create_element)
-    table.sort(data, db.sort_priority)
-    return data
-end
-
-db.get_extracts = function()
-    local data = db.read_csv(utils.join_path(datadir, "extracts.csv"), db.create_element)
-    table.sort(data, db.sort_priority)
-end
-
-------------------------------------------------------------
--- Global Topic Queue
-
-gtq = {
-    queue = db.get_topics(),
-    cur_idx = 1
-}
-
-gtq.bindings = {
-    child = function() leq.init(gtq.queue[gtq.cur_idx]["fname"]) end,
-    -- seek_right = function() sub_seek("forward", true) end,
-}
-
-gtq.init = function()
-    local topic = gtq.queue[gtq.cur_idx]
-    if topic ~= nil then
-        mp.commandv("loadfile", topic["fname"], "replace")
-    else
-        print("GTQ: No files!")
+function CSV:get_outstanding()
+    if next(self.csv_table) == nil then
+        return nil
     end
+    local ret = {}
+    for _, v in ipairs(self.csv_table) do
+        if not is_done(v) then
+            ret[#ret + 1] = v
+        end
+    end
+    sort_by_priority(ret)
+    return ret
 end
 
-gtq.extract = function()
-    local topic = gtq.queue[gtq.cur_idx]
-    local fname = topic["fname"]
-    local a = mp.get_property("ab-loop-a")
-    local b = mp.get_property("ab-loop-b")
-    local stime = a < b and a or b
-    local etime = a > b and a or b
-    local priority = topic["priority"]
-    local row = table.concat(
-    {
-        fname,
-        stime,
-        etime,
-        stime,
-        priority
-    }, ",")
-    local f = io.open(utils.join_path(datadir, "extracts.csv"), "a")
-    f:write(row .. "\n")
-    f:close()
+-- Get all rows matching some predicate
+function CSV:where(predicate)
+    if next(self.csv_table) == nil then
+        return nil
+    end
+    local ret = {}
+    for i, v in ipairs(self.csv_table) do
+        if predicate(v) then
+            ret[#ret+1] = v
+        end
+    end
+    return ret
 end
 
-------------------------------------------------------------
--- Global Extract Queue
-geq = {
-    queue = nil
-}
-
-geq.bindings = {
-    child = function() liq.init() end,
-}
-
-geq.can_init()
-
-geq.init = function()
-    geq.queue = db.get_extracts()
-    if geq.queue == nil then return end
-    
-end
-
-------------------------------------------------------------
--- Local Extract Queue
-
-leq = {
-    queue = nil,
-    cur_idx = 1
-}
-
-leq.bindings = {
-    child = function() liq.init() end,
-    parent = function() gtq.init() end,
-}
-
-leq.can_init = function(fname)
-    local data = db.get_extracts()
-    leq.queue = table.filter(data, function(v) return v["fname"] == fname end)
-    return leq.queue == nil
-end
-
-leq.init = function(fname)
-    if not leq.can_init(fname) then return end
-    print("LOCAL EXTRACT QUEUE")
-    mp.commandv("loadfile", leq.queue[leq.cur_idx]["fname"], "replace")
-    current.queue = leq
-end
-
-------------------------------------------------------------
--- Local Item Queue
-
-liq = {}
-liq.bindings = {
-    parent = function() leq.init() end,
-    -- seek_right = function() frame_seek("forward", true) end,
-}
-
-liq.init = function() end
-------------------------------------------------------------
--- Current Queue
-
-current = {
-    queue = gtq
-}
-
-current.init = function() current.queue.init() end
-
-current.next_file = function()
-    local next_file = current.queue[current.queue.cur_idx]
-    if next_file == nil then
-        print("No next file")
-    else
-        mp.commandv("loadfile", next_file.fname, "replace")
-        if next_file.stime > 0 then
-            mp.commandv('seek', next_file.stime, 'absolute')
+function CSV:get_by_id(id)
+    if next(self.csv_table) == nil then
+        return nil
+    end
+    for _, v in ipairs(self.csv_table) do
+        if v["id"] == id then
+            return v
         end
     end
 end
 
-current.handle_input = function(msg)
-    local func = current.queue.bindings[msg]
-    if func ~= nil then func() end
+function CSV:set_by_id(id, row)
+    if next(self.csv_table) == nil then
+        msg.info("Failed to set by id because the table is empty.")
+        return
+    end
+    for i, v in ipairs(self.csv_table) do
+        if v["id"] == id then
+            self.csv_table[i] = row
+            return
+        end
+    end
+end
+
+
+function CSV:add(row)
+    self.csv_table[#self.csv_table+1] = row
+    msg.info("Added row to table: " .. dump(row))
+end
+
+db = {
+    topics = CSV.new(),
+    extracts = CSV.new(),
+    items = CSV.new()
+}
+
+db.init = function()
+    db.topics:load(topicsdb)
+    db.extracts:load(extractsdb)
+    db.items:load(itemsdb)
+end
+
+db.on_shutdown = function()
+    db.topics:write()
+    db.extracts:write()
+    db.items:write()
+end
+
+local function file_exists(name)
+	local f=io.open(name,"r")
+	if f~=nil then io.close(f) return true else return false end
+end
+
+local function create_db(db_fp, header_fp)
+    if not file_exists(db_fp) then
+        local header = io.open(header_fp, "r")
+        local content = header:read("*all")
+        local db = io.open(db_fp, "w")
+        db:write(content)
+        header:close()
+        db:close()
+    end
+end
+
+local function create_essential_files()
+    create_db(topicsdb, topicsheader)
+    create_db(extractsdb, extractsheader)
+    create_db(itemsdb, itemsheader)
+end
+
+local function unset_abloop()
+    mp.set_property("ab-loop-a", "no")
+    mp.set_property("ab-loop-b", "no")
+end
+
+local function move_to_first_where(predicate, elements)
+    local idx = nil
+    for i, v in ipairs(elements) do
+        if predicate(v) then
+            idx = i
+            break
+        end
+    end
+    if idx ~= nil then
+        local target = table.remove(elements, idx)
+        table.insert(elements, 1, target)
+    end
+end
+
+---------------
+-- EDL Files
+
+EDL = {}
+EDL.__index = EDL
+
+
+function EDL.new(fp)
+    local self = setmetatable({}, EDL)
+    self.fp = fp
+    self.header = "# mpv EDL v0\n"
+    self.data = {}
+    return self
+end
+
+function EDL:write()
+    local handle = io.open(self.fp, "w")
+    if handle == nil then
+        print("Failed to open EDL file for writing: " .. fp)
+        return false
+    end
+
+    handle:write(self.header)
+    handle:write(edl["beg"]["fp"] .. "," .. edl["beg"]["start"] .. "," .. edl["beg"]["stop"] .. "\n")
+    handle:write(edl["cloze"]["fp"] .. "," .. edl["cloze"]["start"] .. "," .. edl["cloze"]["stop"] .. "\n")
+    handle:write(edl["ending"]["fp"] .. "," .. edl["ending"]["start"] .. "," .. edl["ending"]["stop"] .. "\n")
+    handle:close()
+
+    msg.info("Successfully wrote to EDL file")
+    return true
+end
+
+-- Load EDL file.
+function EDL:load()
+    local handle = io.open(self.fp, "r")
+    if handle == nil then
+        print("Failed to open EDL file for reading: " .. fp)
+        return false
+    end
+
+    local content = handle:read("*all")
+    local match = content:gmatch("([^\n]*)\n?")
+    match()
+    local beg = self:parse_line(match())
+    local cloze = self:parse_line(match())
+    local ending = self:parse_line(match())
+    handle:close()
+
+    self.data =  {
+        beg = beg,
+        cloze = cloze,
+        ending = ending,
+    }
+
+    msg.info("Successfully parsed EDL file")
+    return true
+end
+
+-- parses a single line in an EDL file
+function EDL:parse_line(line)
+    local ret = {}
+    local ct = 1
+    for v in string.gmatch(line, "[^,]*") do
+        if v ~= "" then
+            if ct == 1 then ret["fp"] = v end
+            if ct == 2 then ret["start"] = v end
+            if ct == 3 then ret ["stop"] = v end
+            ct = ct + 1
+        end
+    end
+    return ret
+end
+
+-------------
+-- Base Queue
+-- http://lua-users.org/wiki/ObjectOrientationTutorial
+
+Queue = {cur_idx = 1}
+Queue.__index = Queue
+
+setmetatable(Queue, {
+    __call = function (cls, ...)
+        local self = setmetatable({}, cls)
+        self:_init(...)
+        return self
+    end,
+})
+
+function Queue:advance_start()
+    -- noop
+end
+
+function Queue:advance_stop()
+    -- noop
+end
+
+function Queue:postpone_start()
+    -- noop
+end
+
+function Queue:postpone_stop()
+    -- noop
+end
+
+function Queue:_init(items, name)
+    self.items = items
+    self.name = name
+    msg.info("Loading new ".. name)
+end
+
+function Queue:change_queue(db, db_predicate, creator_fn)
+    local elements = db:where(db_predicate)
+    if elements == nil or #elements == 0 then
+        sounds.play("negative")
+        msg.info("No elements to create queue.")
+        return false
+    end
+    sort_by_priority(elements)
+    active_queue = creator_fn(elements)
+    return true
+end
+
+function Queue:extract()
+    local a = mp.get_property("ab-loop-a")
+    local b = mp.get_property("ab-loop-b")
+    if a == "no" or b == "no" then return end
+    a = tonumber(a)
+    b = tonumber(b)
+    local start = a < b and a or b
+    local stop = a > b and a or b
+    local cur = self:get_current()
+    self:handle_extract(start, stop, cur)
+end
+
+-- TODO: Does this work consistently across platforms
+function Queue:stutter_forward()
+    mp.set_property("pause", "yes")
+    mp.commandv("seek", "-0.055")
+    local cur = mp.get_property("time-pos")
+    pause_timer.set_stop_time(tonumber(cur) + 0.04)
+    mp.observe_property("time-pos", "number", pause_timer.check_stop)
+    mp.set_property("pause", "no")
+end
+
+-- TODO: Does this work consistently across platforms
+function Queue:stutter_backward()
+    mp.set_property("pause", "yes")
+    local cur = mp.get_property("time-pos")
+    mp.commandv("seek", "-0.2")
+    pause_timer.set_stop_time(tonumber(cur) - 0.08)
+    mp.observe_property("time-pos", "number", pause_timer.check_stop)
+    mp.set_property("pause", "no")
+end
+
+function Queue:prev()
+    if self.cur_idx - 1 < 1 then
+        sounds.play("negative")
+        msg.info("No previous element in the current queue.")
+        return false
+    end
+    local old = self.items[self.cur_idx]
+    self.cur_idx = self.cur_idx - 1
+    local new = self.items[self.cur_idx]
+    self:load(old, new)
+    sounds.play("click1")
+end
+
+function Queue:next()
+    if self.cur_idx + 1 > #self.items then
+        sounds.play("negative")
+        msg.info("No next element in the current queue.")
+        return false
+    end
+    local old = self.items[self.cur_idx]
+    self.cur_idx = self.cur_idx + 1
+    local new = self.items[self.cur_idx]
+    self:load(old, new)
+    sounds.play("click1")
+end
+
+-- old can be nil
+function Queue:load(old, new)
+
+    -- set start, stop
+    local start = new["curtime"] ~= nil and new["curtime"] or new["start"]
+    if start == nil then start = 0 end
+    local stop = new["stop"] ~= nil and new["stop"] or -1
+    start = tonumber(start)
+    stop = tonumber(stop)
+
+    -- seek if old and new have the same url
+    if old ~= nil and old["url"] == new["url"] then
+        msg.info("New element has the same url: seeking")
+        mp.commandv("seek", tostring(start), "absolute")
+
+    -- load file if old and new have different urls
+    else
+        msg.info("New element has a different url: loading new file")
+        mp.commandv("loadfile", new["url"], "replace", "start=" .. tostring(start))
+    end
+
+    if new["speed"] ~= nil then
+        mp.set_property("speed", new["speed"])
+    else
+        mp.set_property("speed", "1")
+    end
+
+    -- reset loops and timers
+    unset_abloop()
+    pause_timer.stop()
+
+    mp.commandv("script-message", "element_changed", self.name, tostring(start), tostring(stop))
+end
+
+function Queue:forward()
+    mp.commandv("seek", "+5")
+end
+
+function Queue:backward()
+    mp.commandv("seek", "-5")
+end
+
+function Queue:child()
+    sounds.play("negative")
+    msg.info("No child element available.")
+end
+
+function Queue:get_current()
+    return self.items[self.cur_idx]
+end
+
+function Queue:parent()
+    sounds.play("negative")
+    msg.info("No parent element available.")
+end
+
+function Queue:handle(m)
+    self.bindings[m]()
+end
+
+---------------------
+-- Global Topic Queue
+
+GlobalTopicQueue = {}
+GlobalTopicQueue.__index = GlobalTopicQueue
+
+setmetatable(GlobalTopicQueue, {
+    __index = Queue, -- this is what makes the inheritance work
+    __call = function (cls, ...)
+        local self = setmetatable({}, cls)
+        self:_init(...)
+        return self
+    end,
+})
+
+function GlobalTopicQueue:_init(old, topics)
+    Queue._init(self, topics, "Global Topic Queue")
+    self:load(old, self.items[self.cur_idx])
+    self:subscribe_to_events()
+    sounds.play("global_topic_queue")
+end
+
+function GlobalTopicQueue:update_curtime(time)
+    if time == nil then return end
+    local cur = self:get_current()
+    if cur == nil then return end
+    if cur["curtime"] == nil then return end
+    cur["curtime"] = tostring(time)
+    cur["curtime_updated"] = tostring(os.time()) -- TODO: is this UTC?
+    db.topics:set_by_id(cur["id"], cur)
+end
+
+function GlobalTopicQueue:subscribe_to_events()
+    msg.info("Subscribing to events.")
+    mp.observe_property("speed", "number", function(_, speed) self:update_speed(speed) end)
+    mp.observe_property("time-pos", "number", function(_, time) self:update_curtime(time) end)
+end
+
+function GlobalTopicQueue:update_speed(speed)
+    if speed == nil then return end
+    local cur = self.items[self.cur_idx]
+    cur["speed"] = speed
+    db.topics:set_by_id(cur["id"], cur)
+end
+
+function GlobalTopicQueue:clean_up_events()
+    msg.info("Unsubscribing from events.")
+    mp.unobserve_property(self.update_curtime)
+    mp.unobserve_property(self.update_speed)
+end
+
+function GlobalTopicQueue:handle_forward()
+    if mp.get_property("pause") == "yes" then
+        self:stutter_forward()
+    else
+        self:forward()
+    end
+end
+
+function GlobalTopicQueue:handle_backward()
+    if mp.get_property("pause") == "yes" then
+        self:stutter_backward()
+    else
+        self:backward()
+    end
+end
+
+function GlobalTopicQueue:handle_extract(start, stop, cur)
+    local id = tostring(#db.extracts.csv_table + 1)
+    local extract = {
+        id = id,
+        parent = cur["id"],
+        type = cur["type"],
+        url = cur["url"],
+        start = tostring(start),
+        stop = tostring(stop),
+        priority = cur["priority"]
+    }
+    db.extracts:add(extract)
+    sounds.play("echo")
+    mp.commandv("script-message", "extracted", self.name)
+    unset_abloop()
+end
+
+function GlobalTopicQueue:child()
+    local cur = self:get_current()
+    local is_child_of_cur = curry2(is_parent)(cur)
+    if self:change_queue(db.extracts,
+                         is_child_of_cur,
+                         function(x) return ExtractQueue(cur, x)end)
+    then
+        self:clean_up_events()
+    end
+end
+
+----------------
+-- Base Extract Queue
+
+ExtractQueue = {}
+ExtractQueue.__index = ExtractQueue
+
+setmetatable(ExtractQueue, {
+    __index = Queue, -- this is what makes the inheritance work
+    __call = function (cls, ...)
+        local self = setmetatable({}, cls)
+        self:_init(...)
+        return self
+    end,
+})
+
+function ExtractQueue:_init(old, extracts)
+    Queue._init(self, extracts, "Extract Queue")
+    self:load(old, self.items[self.cur_idx])
+    sounds.play("local_extract_queue")
+end
+
+function ExtractQueue:handle_backward()
+    self:stutter_backward()
+end
+
+function ExtractQueue:handle_forward()
+    self:stutter_forward()
+end
+
+function ExtractQueue:child()
+    local cur = self:get_current()
+    local is_child_of_cur = curry2(is_parent)(cur)
+    self:change_queue(db.items, is_child_of_cur, function(x) return ItemQueue(x) end)
+end
+
+function ExtractQueue:parent()
+    local cur = self:get_current()
+    local creator_fn = function(topics)
+        local is_parent_of_cur = curry2(is_child)(cur)
+        move_to_first_where(is_parent_of_cur, topics)
+        return GlobalTopicQueue(cur, topics)
+    end
+    self:change_queue(db.topics, is_outstanding, creator_fn)
+end
+
+function ExtractQueue:adjust_extract(start, stop)
+    local cur = self:get_current()
+    local duration = tonumber(mp.get_property("duration"))
+    if start < 0 or start > duration or stop < 0 or stop > duration
+        then return end
+    cur["start"] = tostring(start)
+    cur["stop"] = tostring(stop)
+end
+
+function ExtractQueue:advance_start()
+    local adj = 0.1
+    local cur = self:get_current()
+    local start = tonumber(cur["start"]) - adj
+    local stop = tonumber(cur["stop"])
+    self:adjust_extract(start, stop)
+end
+
+function ExtractQueue:advance_stop()
+    local adj = 0.1
+    local cur = self:get_current()
+    local start = tonumber(cur["start"])
+    local stop = tonumber(cur["stop"]) - adj
+    self:adjust_extract(start, stop)
+end
+
+function ExtractQueue:postpone_start()
+    local adj = 0.1
+    local cur = self:get_current()
+    local start = tonumber(cur["start"]) + adj
+    local stop = tonumber(cur["stop"])
+    self:adjust_extract(start, stop)
+end
+
+function ExtractQueue:postpone_stop()
+    local adj = 0.1
+    local cur = self:get_current()
+    local start = tonumber(cur["start"])
+    local stop = tonumber(cur["stop"]) + adj
+    self:adjust_extract(start, stop)
+end
+
+function ExtractQueue:handle_extract(start, stop, cur)
+    local url = cur["url"]
+    if cur["type"] == "youtube" then
+        local args = {
+            "youtube-dl",
+            "-f", "worstaudio",
+            "--youtube-skip-dash-manifest",
+            "-g", url
+        }
+        local ret = subprocess(args)
+        if ret.status == 0 then
+            local lines = ret.stdout
+            local matches = lines:gmatch("([^\n]*)\n?")
+            url = matches()
+            msg.info("Found audio stream: " .. url)
+        else
+            msg.info("Failed to get audio stream.")
+            return false
+        end
+    end
+
+    start = start - tonumber(cur["start"])
+    stop = stop - tonumber(cur["start"])
+
+    local fname = tostring(os.date()) .. "-aa"
+    local extract = utils.join_path(mediadir, fname .. ".wav")
+
+    local args = {
+        "ffmpeg",
+        -- "-hide_banner",
+        "-nostats",
+        -- "-loglevel", "fatal",
+        "-ss", tostring(cur["start"]),
+        "-to", tostring(cur["stop"]),
+        "-i", url, -- extract audio stream
+        extract
+    }
+
+    local completion_fn = function()
+
+        local cloze = utils.join_path(soundsdir, "sine.opus")
+        local edl = utils.join_path(mediadir, fname .. ".edl")
+        local id = tostring(#db.items.csv_table + 1)
+
+        -- Create virtual file using EDL
+        local handle = io.open(edl, "w")
+        handle:write("# mpv EDL v0\n")
+        handle:write(extract .. ",0," .. tostring(start) .. "\n")
+        handle:write(cloze .. ",0," .. tostring(stop - start) .. "\n")
+        handle:write(extract .. "," .. tostring(stop) .. "," .. tostring(tonumber(cur["stop"]) - tonumber(cur["start"]) - stop) .. "\n")
+        handle:close()
+
+        local item = {
+            id = id,
+            parent = cur["id"],
+            url = edl,
+            cloze_start = start,
+            cloze_stop = stop,
+            priority = cur["priority"]
+        }
+
+        db.items:add(item)
+        sounds.play("echo")
+        mp.commandv("script-message", "extracted", self.name)
+        mp.set_property("ab-loop-a", "no")
+        mp.set_property("ab-loop-b", "no")
+    end
+
+    subprocess(args, completion_fn)
+
+end
+
+----------------------
+-- Item Queue
+
+ItemQueue = {}
+ItemQueue.__index = ItemQueue
+
+setmetatable(ItemQueue, {
+ __index = Queue, -- this is what makes the inheritance work
+ __call = function (cls, ...)
+     local self = setmetatable({}, cls)
+     self:_init(...)
+     return self
+ end,
+})
+
+function ItemQueue:_init(items)
+    Queue._init(self, items, "Item Queue")
+    self:load(nil, self:get_current())
+    sounds.play("local_item_queue")
+end
+
+function ItemQueue:parent()
+
+    local all = function(_) return true end
+    local cur = self:get_current()
+    local creator_fn = function(extracts)
+        local is_parent_of_cur = curry2(is_child)(cur)
+        move_to_first_where(is_parent_of_cur, extracts)
+        return ExtractQueue(nil, extracts)
+    end
+
+    self:change_queue(db.extracts, all, creator_fn)
+end
+
+function ItemQueue:adjust_cloze(adjustment_fn)
+    mp.set_property("pause", "yes")
+    local curtime = mp.get_property("time-pos")
+    local cur = self:get_current()
+    local edl = EDL.new(cur["url"])
+    edl:load()
+
+    adjustment_fn(edl)
+
+    edl:write()
+
+    -- reload
+    mp.commandv("loadfile", cur["url"], "replace", "start=" .. curtime)
+    sounds.play("click1")
+end
+
+function ItemQueue:advance_start()
+    local adj = 0.02
+    local duration = tonumber(mp.get_property("duration"))
+
+    local function adjustment_fn(edl)
+        local beg_stop = tonumber(edl.data["beg"]["stop"]) - adj
+        local cloze_stop = tonumber(edl.data["cloze"]["stop"]) + adj
+        local beg_valid = beg_stop > 0 and beg_stop < duration
+        local cloze_valid = cloze_stop > 0 and cloze_stop < duration
+        if cloze_valid and beg_valid then
+            edl.data["beg"]["stop"] = tostring(beg_stop)
+            edl.data["cloze"]["stop"] = tostring(cloze_stop)
+        end
+    end
+
+    self:adjust_cloze(adjustment_fn)
+end
+
+function ItemQueue:postpone_start()
+    local adj = 0.02
+    local duration = tonumber(mp.get_property("duration"))
+
+    local function adjustment_fn(edl)
+        local beg_stop = tonumber(edl.data["beg"]["stop"]) + adj
+        local cloze_start = tonumber(edl.data["cloze"]["start"]) + adj
+        local beg_valid = beg_stop > 0 and beg_stop < duration
+        local cloze_valid = cloze_start > 0 and cloze_start < duration
+
+        if cloze_valid and beg_valid then
+            edl.data["beg"]["stop"] = tostring(beg_stop)
+            edl.data["cloze"]["start"] = tostring(cloze_start)
+        end
+    end
+    self:adjust_cloze(adjustment_fn)
+end
+
+function ItemQueue:advance_stop()
+    local adj = 0.02
+    local duration = tonumber(mp.get_property("duration"))
+
+    local function adjustment_fn(edl)
+        local cloze_stop = tonumber(edl.data["beg"]["stop"]) - adj
+        local ending_start = tonumber(edl.data["ending"]["start"]) - adj
+
+        local cloze_valid = cloze_stop > 0 and cloze_stop < duration
+        local ending_valid = ending_start > 0 and ending_start < duration
+
+        if cloze_valid and ending_valid then
+            edl.data["cloze"]["stop"] = tostring(cloze_stop)
+            edl.data["ending"]["start"] = tostring(ending_start)
+        end
+    end
+    self:adjust_cloze(adjustment_fn)
+end
+
+function ItemQueue:postpone_stop()
+    local adj = 0.02
+    local duration = tonumber(mp.get_property("duration"))
+
+    local function adjustment_fn(edl)
+        local cloze_stop = tonumber(edl.data["cloze"]["stop"]) + adj
+        local ending_start = tonumber(edl.data["ending"]["start"]) + adj
+
+        local cloze_valid = cloze_stop > 0 and cloze_stop < duration
+        local ending_valid = ending_start > 0 and ending_start < duration
+
+        if cloze_valid and ending_valid then
+            edl.data["cloze"]["stop"] = tostring(cloze_stop)
+            edl.data["ending"]["start"] = tostring(ending_start)
+        end
+    end
+
+    self:adjust_cloze(adjustment_fn)
+end
+
+    
+
+local function verify_dependencies()
+    local deps = { "youtube-dl", "ffmpeg" }
+    for _, dep in pairs(deps) do
+        if not platform.check_dependency(dep) then
+            msg.info("Could not find dependency: " .. dep)
+            mp.commmandv("exit")
+        end
+    end
 end
 
 ------------------------------------------------------------
@@ -405,35 +1609,39 @@ do
     local main_executed = false
     main = function()
         if main_executed then return end
+
         validate_config()
+        verify_dependencies()
+
+        mp.observe_property("time-pos", "number", loop_timer.check_loop)
+        mp.set_property("loop", "inf")
+
+        create_essential_files()
+
+        db.init()
+        local topics = db.topics:get_outstanding()
+        active_queue = GlobalTopicQueue(nil, topics)
+
+        mp.register_event("shutdown", db.on_shutdown)
 
         -- Key bindings
-        mp.add_key_binding("UP", "aa-parent", function () current.handle_input("parent") end )
-        mp.add_key_binding("DOWN", "aa-child", function() current.handle_input("child") end )
+        mp.add_key_binding("UP", "aa-parent", function() active_queue:parent() end )
+        mp.add_key_binding("DOWN", "aa-child", function() active_queue:child() end )
+        mp.add_key_binding("LEFT", "aa-backward", function() active_queue:handle_backward() end )
+        mp.add_key_binding("RIGHT", "aa-forward", function() active_queue:handle_forward() end )
+        mp.add_key_binding("alt+x", "aa-extract", function() active_queue:extract() end )
+        mp.add_key_binding("shift+left", "aa-prev", function() active_queue:prev() end )
+        mp.add_key_binding("shift+right", "aa-next", function() active_queue:next() end )
 
-        current.init()
-
-        -- Topics
-        -- mp.add_key_binding("H", "mpvacious-sub-seek-back", _ { sub_seek, 'backward' })
-        -- mp.add_key_binding("L", "mpvacious-sub-seek-forward", _ { sub_seek, 'forward' })
-
-        -- Extracts
-        
-        -- Items
-        -- -- Vim-like seeking between subtitle lines
-
-        -- mp.add_key_binding("Alt+h", "mpvacious-sub-seek-back-pause", _ { sub_seek, 'backward', true })
-        -- mp.add_key_binding("Alt+l", "mpvacious-sub-seek-forward-pause", _ { sub_seek, 'forward', true })
-
-        -- mp.add_key_binding("ctrl+h", "mpvacious-sub-rewind", _ { sub_rewind })
-        -- mp.add_key_binding("ctrl+H", "mpvacious-sub-replay", _ { sub_replay })
-
-        -- -- Unset by default
-        -- mp.add_key_binding(nil, "mpvacious-set-starting-line", subs.set_starting_line)
-        -- mp.add_key_binding(nil, "mpvacious-reset-timings", subs.clear_and_notify)
-        -- mp.add_key_binding(nil, "mpvacious-toggle-sub-autocopy", clip_autocopy.toggle)
+        mp.add_key_binding("y", "aa-advance-start", function() active_queue:advance_start() end )
+        mp.add_key_binding("u", "aa-postpone-start", function() active_queue:postpone_start() end )
+        mp.add_key_binding("o", "aa-postpone-stop", function() active_queue:postpone_stop() end )
+        mp.add_key_binding("i", "aa-advance-stop", function() active_queue:advance_stop() end )
 
         main_executed = true
     end
 end
+
+-- for when loading from idle
+mp.add_key_binding("ctrl+p", "aa-load", main)
 mp.register_event("file-loaded", main)

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+rm ./data/topics.csv
+rm ./data/extracts.csv
+rm ./data/items.csv
+rm -rf ./media/.*
