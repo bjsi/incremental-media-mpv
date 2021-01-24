@@ -638,6 +638,7 @@ local sounds = {
         load = "load.wav",
         positive = "positive.wav",
         echo = "sharp_echo.wav",
+        delete = "misc_menu_2.wav",
         global_topic_queue = "global_topic_queue.wav",
         global_extract_queue = "global_extract_queue.wav",
         local_extract_queue = "local_extract_queue.wav",
@@ -1166,6 +1167,11 @@ function Queue:next()
     sounds.play("click1")
 end
 
+function Queue:remove_current()
+    table.remove(self.items, self.cur_idx)
+    sounds.play("delete")
+end
+
 -- old can be nil
 function Queue:load(old, new)
 
@@ -1688,6 +1694,7 @@ do
         mp.add_forced_key_binding("alt+x", "aa-extract", function() active_queue:extract() end )
         mp.add_forced_key_binding("shift+left", "aa-prev", function() active_queue:prev() end )
         mp.add_forced_key_binding("shift+right", "aa-next", function() active_queue:next() end )
+        mp.add_forced_key_binding("d", "aa-remove", function() active_queue:remove_current() end )
 
         mp.add_forced_key_binding("y", "aa-advance-start", function() active_queue:advance_start() end )
         mp.add_forced_key_binding("u", "aa-postpone-start", function() active_queue:postpone_start() end )
