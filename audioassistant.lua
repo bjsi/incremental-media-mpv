@@ -661,13 +661,13 @@ local loop_timer = (function()
     local start_time = 0
     local stop_time = -1
     local check_loop
+
     local set_stop_time = function(time)
         stop_time = time
     end
     local set_start_time = function(time)
         start_time = time
     end
-
 
     local stop = function()
         mp.unobserve_property(check_loop)
@@ -995,9 +995,9 @@ function EDL:write()
     end
 
     handle:write(self.header)
-    handle:write(edl["beg"]["fp"] .. "," .. edl["beg"]["start"] .. "," .. edl["beg"]["stop"] .. "\n")
-    handle:write(edl["cloze"]["fp"] .. "," .. edl["cloze"]["start"] .. "," .. edl["cloze"]["stop"] .. "\n")
-    handle:write(edl["ending"]["fp"] .. "," .. edl["ending"]["start"] .. "," .. edl["ending"]["stop"] .. "\n")
+    handle:write(self.data["beg"]["fp"] .. "," .. self.data["beg"]["start"] .. "," .. self.data["beg"]["stop"] .. "\n")
+    handle:write(self.data["cloze"]["fp"] .. "," .. self.data["cloze"]["start"] .. "," .. self.data["cloze"]["stop"] .. "\n")
+    handle:write(self.data["ending"]["fp"] .. "," .. self.data["ending"]["start"] .. "," .. self.data["ending"]["stop"] .. "\n")
     handle:close()
 
     msg.info("Successfully wrote to EDL file")
@@ -1359,8 +1359,25 @@ function ExtractQueue:adjust_extract(start, stop)
     local duration = tonumber(mp.get_property("duration"))
     if start < 0 or start > duration or stop < 0 or stop > duration
         then return end
+
+    local start_changed = cur["start"] ~= tostring(start)
+    local stop_changed = cur["stop"] ~= tostring(stop)
+
     cur["start"] = tostring(start)
     cur["stop"] = tostring(stop)
+    db.extracts:set_by_id(cur["id"], cur)
+
+    -- update loop timer
+    loop_timer.set_start_time(tonumber(cur["start"]))
+    loop_timer.set_stop_time(tonumber(cur["stop"]))
+
+    if start_changed then
+        mp.commandv("seek", cur["start"], "absolute")
+    elseif stop_changed then
+        mp.commandv("seek", tostring(tonumber(cur["stop"]) - 1), "absolute") -- TODO: > 0
+    end
+
+    msg.info("Updated extract boundaries to " .. cur["start"] .. " -> " .. cur["stop"])
 end
 
 function ExtractQueue:advance_start()
@@ -1452,8 +1469,6 @@ function ExtractQueue:handle_extract(start, stop, cur)
             id = id,
             parent = cur["id"],
             url = edl,
-            cloze_start = start,
-            cloze_stop = stop,
             priority = cur["priority"]
         }
 
@@ -1504,17 +1519,33 @@ end
 
 function ItemQueue:adjust_cloze(adjustment_fn)
     mp.set_property("pause", "yes")
-    local curtime = mp.get_property("time-pos")
     local cur = self:get_current()
     local edl = EDL.new(cur["url"])
     edl:load()
 
+    local cloze_start = edl.data["cloze"]["start"]
+    local cloze_end = edl.data["cloze"]["stop"]
+
     adjustment_fn(edl)
+
+    local adj_cloze_start = edl.data["cloze"]["start"]
+    local adj_cloze_end = edl.data["cloze"]["stop"]
+
+    local start_changed = cloze_start ~= adj_cloze_start
+    local end_changed = cloze_end ~= adj_cloze_end
 
     edl:write()
 
     -- reload
-    mp.commandv("loadfile", cur["url"], "replace", "start=" .. curtime)
+
+    if start_changed then
+        local start = tostring(tonumber(adj_cloze_start) - 0.5) -- TODO > 0
+        mp.commandv("loadfile", cur["url"], "replace", "start=" .. start)
+    elseif end_changed then
+        local start = tostring(tonumber(adj_cloze_end)) -- TODO > 0
+        mp.commandv("loadfile", cur["url"], "replace", "start=".. start)
+    end
+    mp.set_property("pause", "no")
     sounds.play("click1")
 end
 
@@ -1598,10 +1629,12 @@ local function verify_dependencies()
     local deps = { "youtube-dl", "ffmpeg" }
     for _, dep in pairs(deps) do
         if not platform.check_dependency(dep) then
-            msg.info("Could not find dependency: " .. dep)
+            msg.info("Could not find dependency " .. dep .. " in path. Exiting...")
             mp.commmandv("exit")
+            return
         end
     end
+    msg.info("All dependencies available in path.")
 end
 
 ------------------------------------------------------------
@@ -1615,17 +1648,23 @@ do
 
         validate_config()
         verify_dependencies()
+        create_essential_files()
+
+        -- TODO: Refactor to open extracts / items instead
+        db.init()
+
+        local topics = db.topics:get_outstanding()
+        if topics == nil or #topics == 0 then
+            msg.info("No topics!")
+            mp.commandv("quit")
+            return
+        end
 
         mp.observe_property("time-pos", "number", loop_timer.check_loop)
         mp.set_property("loop", "inf")
-
-        create_essential_files()
-
-        db.init()
-        local topics = db.topics:get_outstanding()
-        active_queue = GlobalTopicQueue(nil, topics)
-
         mp.register_event("shutdown", db.on_shutdown)
+
+        active_queue = GlobalTopicQueue(nil, topics)
 
         -- Key bindings
         mp.add_key_binding("UP", "aa-parent", function() active_queue:parent() end )

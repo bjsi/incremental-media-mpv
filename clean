@@ -1,5 +1,6 @@
 #!/bin/bash
 
-rm ./data/topics.csv
-rm ./data/extracts.csv
-rm ./data/items.csv
+rm -v ./data/topics.csv
+rm -v ./data/extracts.csv
+rm -v ./data/items.csv
+rm -v ./media/*.wav
