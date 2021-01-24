@@ -1108,22 +1108,36 @@ end
 
 -- TODO: Does this work consistently across platforms
 function Queue:stutter_forward()
-    mp.set_property("pause", "yes")
-    mp.commandv("seek", "-0.055")
-    local cur = mp.get_property("time-pos")
-    pause_timer.set_stop_time(tonumber(cur) + 0.04)
-    mp.observe_property("time-pos", "number", pause_timer.check_stop)
-    mp.set_property("pause", "no")
+
+    local vid = mp.get_property("vid")
+
+    -- if video is playing then frame seek, else, stutter
+    if vid == "no" then
+        pause_timer.stop()
+        mp.set_property("pause", "yes")
+        mp.commandv("seek", "-0.055")
+        local cur = mp.get_property("time-pos")
+        pause_timer.set_stop_time(tonumber(cur) + 0.04)
+        mp.observe_property("time-pos", "number", pause_timer.check_stop)
+        mp.set_property("pause", "no")
+    else
+        mp.commandv("frame-step")
+    end
 end
 
 -- TODO: Does this work consistently across platforms
 function Queue:stutter_backward()
-    mp.set_property("pause", "yes")
-    local cur = mp.get_property("time-pos")
-    mp.commandv("seek", "-0.2")
-    pause_timer.set_stop_time(tonumber(cur) - 0.08)
-    mp.observe_property("time-pos", "number", pause_timer.check_stop)
-    mp.set_property("pause", "no")
+    if vid == "no" then
+        pause_timer.stop()
+        mp.set_property("pause", "yes")
+        local cur = mp.get_property("time-pos")
+        mp.commandv("seek", "-0.2")
+        pause_timer.set_stop_time(tonumber(cur) - 0.08)
+        mp.observe_property("time-pos", "number", pause_timer.check_stop)
+        mp.set_property("pause", "no")
+    else
+        mp.commandv("frame-back-step")
+    end
 end
 
 function Queue:prev()
@@ -1667,18 +1681,18 @@ do
         active_queue = GlobalTopicQueue(nil, topics)
 
         -- Key bindings
-        mp.add_key_binding("UP", "aa-parent", function() active_queue:parent() end )
-        mp.add_key_binding("DOWN", "aa-child", function() active_queue:child() end )
-        mp.add_key_binding("LEFT", "aa-backward", function() active_queue:handle_backward() end )
-        mp.add_key_binding("RIGHT", "aa-forward", function() active_queue:handle_forward() end )
-        mp.add_key_binding("alt+x", "aa-extract", function() active_queue:extract() end )
-        mp.add_key_binding("shift+left", "aa-prev", function() active_queue:prev() end )
-        mp.add_key_binding("shift+right", "aa-next", function() active_queue:next() end )
+        mp.add_forced_key_binding("UP", "aa-parent", function() active_queue:parent() end )
+        mp.add_forced_key_binding("DOWN", "aa-child", function() active_queue:child() end )
+        mp.add_forced_key_binding("LEFT", "aa-backward", function() active_queue:handle_backward() end )
+        mp.add_forced_key_binding("RIGHT", "aa-forward", function() active_queue:handle_forward() end )
+        mp.add_forced_key_binding("alt+x", "aa-extract", function() active_queue:extract() end )
+        mp.add_forced_key_binding("shift+left", "aa-prev", function() active_queue:prev() end )
+        mp.add_forced_key_binding("shift+right", "aa-next", function() active_queue:next() end )
 
-        mp.add_key_binding("y", "aa-advance-start", function() active_queue:advance_start() end )
-        mp.add_key_binding("u", "aa-postpone-start", function() active_queue:postpone_start() end )
-        mp.add_key_binding("o", "aa-postpone-stop", function() active_queue:postpone_stop() end )
-        mp.add_key_binding("i", "aa-advance-stop", function() active_queue:advance_stop() end )
+        mp.add_forced_key_binding("y", "aa-advance-start", function() active_queue:advance_start() end )
+        mp.add_forced_key_binding("u", "aa-postpone-start", function() active_queue:postpone_start() end )
+        mp.add_forced_key_binding("o", "aa-postpone-stop", function() active_queue:postpone_stop() end )
+        mp.add_forced_key_binding("i", "aa-advance-stop", function() active_queue:advance_stop() end )
 
         main_executed = true
     end
