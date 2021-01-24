@@ -1,5 +1,5 @@
-*.opus
-*.vtt
-./data/topics.csv
-./data/extracts.csv
-./data/items.csv
+data/topics.csv
+data/extracts.csv
+data/items.csv
+*.wav
+*.edl

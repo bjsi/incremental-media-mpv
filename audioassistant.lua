@@ -1234,33 +1234,35 @@ function GlobalTopicQueue:_init(old, topics)
     sounds.play("global_topic_queue")
 end
 
-function GlobalTopicQueue:update_curtime(time)
+-- TODO: Refactor
+local function update_curtime(_, time)
     if time == nil then return end
-    local cur = self:get_current()
+    local cur = active_queue:get_current()
     if cur == nil then return end
     if cur["curtime"] == nil then return end
     cur["curtime"] = tostring(time)
-    cur["curtime_updated"] = tostring(os.time()) -- TODO: is this UTC?
+    cur["curtime_updated"] = tostring(os.time(os.date("!*t"))) -- TODO: is this UTC?
+    db.topics:set_by_id(cur["id"], cur)
+end
+
+-- TODO: Refactor
+local function update_speed(_, speed)
+    local cur = active_queue:get_current()
+    if speed == nil then return end
+    cur["speed"] = speed
     db.topics:set_by_id(cur["id"], cur)
 end
 
 function GlobalTopicQueue:subscribe_to_events()
     msg.info("Subscribing to events.")
-    mp.observe_property("speed", "number", function(_, speed) self:update_speed(speed) end)
-    mp.observe_property("time-pos", "number", function(_, time) self:update_curtime(time) end)
-end
-
-function GlobalTopicQueue:update_speed(speed)
-    if speed == nil then return end
-    local cur = self.items[self.cur_idx]
-    cur["speed"] = speed
-    db.topics:set_by_id(cur["id"], cur)
+    mp.observe_property("speed", "number", update_speed)
+    mp.observe_property("time-pos", "number", update_curtime)
 end
 
 function GlobalTopicQueue:clean_up_events()
     msg.info("Unsubscribing from events.")
-    mp.unobserve_property(self.update_curtime)
-    mp.unobserve_property(self.update_speed)
+    mp.unobserve_property(update_curtime)
+    mp.unobserve_property(update_speed)
 end
 
 function GlobalTopicQueue:handle_forward()
@@ -1417,8 +1419,9 @@ function ExtractQueue:handle_extract(start, stop, cur)
     start = start - tonumber(cur["start"])
     stop = stop - tonumber(cur["start"])
 
-    local fname = tostring(os.date()) .. "-aa"
-    local extract = utils.join_path(mediadir, fname .. ".wav")
+    local extension = ".wav"
+    local fname = tostring(os.time(os.date("!*t"))) .. "-aa"
+    local extract = utils.join_path(mediadir, fname .. extension)
 
     local args = {
         "ffmpeg",
@@ -1433,16 +1436,16 @@ function ExtractQueue:handle_extract(start, stop, cur)
 
     local completion_fn = function()
 
-        local cloze = utils.join_path(soundsdir, "sine.opus")
-        local edl = utils.join_path(mediadir, fname .. ".edl")
+        local cloze = "sine.opus"
+        local edl = utils.join_path("media", fname .. ".edl")
         local id = tostring(#db.items.csv_table + 1)
 
         -- Create virtual file using EDL
         local handle = io.open(edl, "w")
         handle:write("# mpv EDL v0\n")
-        handle:write(extract .. ",0," .. tostring(start) .. "\n")
+        handle:write(fname .. extension .. ",0," .. tostring(start) .. "\n")
         handle:write(cloze .. ",0," .. tostring(stop - start) .. "\n")
-        handle:write(extract .. "," .. tostring(stop) .. "," .. tostring(tonumber(cur["stop"]) - tonumber(cur["start"]) - stop) .. "\n")
+        handle:write(fname .. extension .. "," .. tostring(stop) .. "," .. tostring(tonumber(cur["stop"]) - tonumber(cur["start"]) - stop) .. "\n")
         handle:close()
 
         local item = {
