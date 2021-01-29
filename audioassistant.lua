@@ -1061,6 +1061,16 @@ setmetatable(Queue, {
     end,
 })
 
+function Queue:toggle()
+    mp.commandv("cycle", "pause")
+    sounds.play("click1")
+end
+
+function Queue:loop()
+    mp.commandv("ab-loop")
+    sounds.play("click1")
+end
+
 function Queue:advance_start()
     -- noop
 end
@@ -1098,7 +1108,11 @@ end
 function Queue:extract()
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
-    if a == "no" or b == "no" then return end
+    if a == "no" or b == "no" then
+        msg.info("Extract boundaries not set!")
+        sounds.play("negative")
+        return
+    end
     a = tonumber(a)
     b = tonumber(b)
     local start = a < b and a or b
@@ -1128,6 +1142,7 @@ end
 
 -- TODO: Does this work consistently across platforms
 function Queue:stutter_backward()
+    local vid = mp.get_property("vid")
     if vid == "no" then
         pause_timer.stop()
         mp.set_property("pause", "yes")
@@ -1687,14 +1702,15 @@ do
         active_queue = GlobalTopicQueue(nil, topics)
 
         -- Key bindings
-        mp.add_forced_key_binding("UP", "aa-parent", function() active_queue:parent() end )
-        mp.add_forced_key_binding("DOWN", "aa-child", function() active_queue:child() end )
-        mp.add_forced_key_binding("LEFT", "aa-backward", function() active_queue:handle_backward() end )
-        mp.add_forced_key_binding("RIGHT", "aa-forward", function() active_queue:handle_forward() end )
-        mp.add_forced_key_binding("alt+x", "aa-extract", function() active_queue:extract() end )
-        mp.add_forced_key_binding("shift+left", "aa-prev", function() active_queue:prev() end )
-        mp.add_forced_key_binding("shift+right", "aa-next", function() active_queue:next() end )
-        mp.add_forced_key_binding("d", "aa-remove", function() active_queue:remove_current() end )
+        mp.add_forced_key_binding("w", "aa-parent", function() active_queue:parent() end )
+        mp.add_forced_key_binding("s", "aa-child", function() active_queue:child() end )
+        mp.add_forced_key_binding("a", "aa-backward", function() active_queue:handle_backward() end )
+        mp.add_forced_key_binding("d", "aa-forward", function() active_queue:handle_forward() end )
+        mp.add_forced_key_binding("2", "aa-extract", function() active_queue:extract() end )
+        mp.add_forced_key_binding("1", "aa-prev", function() active_queue:prev() end )
+        mp.add_forced_key_binding("4", "aa-next", function() active_queue:next() end )
+        mp.add_forced_key_binding("3", "aa-toggle", function() active_queue:toggle() end)
+        mp.add_forced_key_binding("5", "aa-loop", function() active_queue:loop() end)
 
         mp.add_forced_key_binding("y", "aa-advance-start", function() active_queue:advance_start() end )
         mp.add_forced_key_binding("u", "aa-postpone-start", function() active_queue:postpone_start() end )

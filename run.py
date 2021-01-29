@@ -7,13 +7,16 @@ import sys
 
 # TODO: pass in extra args
 def main(args):
-    subprocess.run([
+    default = [
         "mpv",
         "--script-opts=ytdl-format='bestvideo[height<=?1080][fps<=?30][vcodec!=?vp9]+bestaudio/best",
         "--idle=once",
         "--scripts=" + os.getcwd(),
         "--ytdl-raw-options=no-check-certificate=",
-        ])
+        ]
+    if args:
+        default += args
+    subprocess.run(default)
 
 
 if __name__ == "__main__":
