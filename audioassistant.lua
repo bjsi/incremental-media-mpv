@@ -1722,5 +1722,4 @@ do
 end
 
 -- for when loading from idle
-mp.add_key_binding("ctrl+p", "aa-load", main)
-mp.register_event("file-loaded", main)
+main()
