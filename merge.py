@@ -1,42 +1,11 @@
 #!/usr/bin/env python3
+
 from csv_diff import load_csv, compare
 import sys
 import csv
-import io
-from abc import ABC, abstractmethod
-from typing import List, Iterable, Text
+from typing import List, Dict
 import copy
-from MediaPlayerCsv import MediaPlayerRow
-from enum import Enum
-
-
-class CSVLoader(ABC):
-
-    @abstractmethod
-    def load(self, s: str) -> Iterable[Text]:
-        pass
-
-class CSVTestLoader(CSVLoader):
-
-    def load(self, s: str) -> Iterable[Text]:
-        return io.StringIO(s)
-
-
-class CSVFileLoader(CSVLoader):
-
-    def load(self, f: str) -> Iterable[Text]:
-        return open(f)
-
-class CurtimeMergeMode(Enum):
-    progress = 0
-    update_time = 1
-
-
-class Config:
-
-    curtime_merge: CurtimeMergeMode = CurtimeMergeMode.progress
-    priority_merge = False
-    added_merge_types = ["youtube"]
+import os
 
 
 def write_csv(data, output_file: str) -> bool:
@@ -47,142 +16,124 @@ def write_csv(data, output_file: str) -> bool:
                 writer.writerow(row)
         return True
     except Exception:
-            return False
+        return False
 
+# TODO: Handle only header, no header etc
+# TODO: Need multiple outputs -
+# the csv for the central repo wants all new cols
+# the csv for individual clients doesn't want all cols
 
 class CSVMerger:
 
-    fst: str
-    snd: str
-    loader: CSVLoader
-    config: Config
+    previous: Dict
+    current: Dict
 
-    def __init__(self, fst: str, snd: str, loader: CSVLoader, config: Config):
-        self.fst = fst
-        self.snd = snd
-        self.loader = loader
-        self.config = config
+    def __init__(self, previous: str, current: str):
+        self.previous = load_csv(open(previous), key="id")
+        self.current = load_csv(open(current), key="id")
 
     def diff(self):
-        return compare(
-                load_csv(self.loader.load(self.fst), key="id"),
-                load_csv(self.loader.load(self.snd), key="id")
-                )
+        return compare(self.previous, self.current)
 
-    def merge(self):
-        result = self.diff()
-        fst = list(csv.reader(self.loader.load(self.fst)))
-        snd = list(csv.reader(self.loader.load(self.snd)))
+    def merge(self) -> List[List[str]]:
+        print("Merging CSV files:\n---")
+        diff = self.diff()
 
-        header = fst[0]
+        header: List[str] = []
+        body: List[Dict[str, str]] = []
 
-        output = []
-        changed_ids = [r["key"] for r in result["changed"]]
-        output += [row for row in fst[1:] if row[0] not in changed_ids]
+        # Create merged header
+        print("Merging headers:\n---")
+        header = self.handle_columns(diff["columns_added"])
 
-        if changed := result["changed"]:
-            output += self.handle_changed(fst, snd, changed)
+        # Add unchanged rows
+        print("Adding unchanged rows:\n---")
+        body += self.handle_unchanged(diff["changed"])
 
-        if added := result["added"]:
-            output += self.handle_added(added)
+        # Rows where attribute(s) changed
+        print("Merging changed rows:\n---")
+        body += self.handle_changed(diff["changed"])
 
-        if result["columns_added"] or result["columns_removed"]:
-            raise ValueError("Columns misaligned")
+        # Rows which were added
+        print("Adding added rows:\n---")
+        body += self.handle_added(diff["added"], header)
 
-        output.sort(key=lambda x: x[0])
-        output.insert(0, header)
+        output = [header]
+        for row in body:
+            output.append([row.get(col, "null") for col in header])
+
+        print("Output:\n--")
+        print(output)
 
         return output
 
-    @staticmethod
-    def get_row(rows: List[List[str]], predicate) -> List[str]:
-        for row in rows:
-            if predicate(row):
-                return row
-        return None
+    def handle_columns(self, added: List[str]) -> List[str]:
+        prev_header = list(list(self.previous.values())[0].keys())
+        print("previous:")
+        print(prev_header)
+        print("added:")
+        print(added)
+        prev_header += [col for col in added if col not in prev_header]
+        print("merged:")
+        print(prev_header)
+        return prev_header
 
-    def handle_changed(self, fst: List[List[str]], snd: List[List[str]], data) -> List[str]:
+    def handle_unchanged(self, changed) -> List[Dict[str, str]]:
+        ids_of_changed = [r["key"] for r in changed]
+        print("changed keys:")
+        print(ids_of_changed)
+        prev_rows = list(self.previous.values())
+        unchanged = [row for row in prev_rows if row["id"] not in ids_of_changed]
+        print("unchanged rows:")
+        print(unchanged)
+        return unchanged
+
+
+    def handle_changed(self, data) -> List[Dict[str, str]]:
         output = []
         for changed in data:
-            key = changed["key"]
 
-            a = MediaPlayerRow(self.get_row(fst, lambda x: x[0] == key))
-            b = MediaPlayerRow(self.get_row(snd, lambda x: x[0] == key))
-
-            merged = MediaPlayerRow(copy.deepcopy(a.row()))
+            prev_row: Dict[str, str] = self.previous[changed["key"]]
+            cur_row: Dict[str, str] = self.current[changed["key"]]
+            merged_row: Dict[str, str] = copy.deepcopy(prev_row)
 
             # Curtime
             if changed["changes"].get("curtime"):
-                if self.config.curtime_merge == CurtimeMergeMode.progress:
-                    if a.curtime > b.curtime:
-                        merged.curtime = a.curtime
-                        merged.curtime_updated = a.curtime_updated
-                    elif b.curtime > a.curtime:
-                        merged.curtime = b.curtime
-                        merged.curtime_updated = b.curtime_updated
-                    else:
-                        # Equal - update curtime updated to latest
-                        merged.curtime = a.curtime
-                        merged.curtime_updated = a.curtime_updated \
-                                if a.curtime_updated > b.curtime_updated \
-                                else b.curtime_updated
+                if prev_row["curtime"] > cur_row["curtime"]:
+                    merged_row["curtime"] = prev_row["curtime"]
+                elif cur_row["curtime"] > prev_row["curtime"]:
+                    merged_row["curtime"] = cur_row["curtime"]
+                else:
+                    # Equal - update curtime updated to latest
+                    merged_row["curtime"] = prev_row["curtime"]
 
-
-                elif self.config.curtime_merge == CurtimeMergeMode.update_time:
-                    # Pick last updated
-                    if a.curtime_updated > b.curtime_updated:
-                        merged.curtime = a.curtime
-                        merged.curtime_updated = a.curtime_updated
-                    elif b.curtime_updated > a.curtime_updated:
-                        merged.curtime = b.curtime
-                        merged.curtime_updated = b.curtime_updated
-                    else:
-                        # Equal - update curtime to greatest
-                        merged.curtime_updated = a.curtime_updated
-                        merged.curtime = a.curtime \
-                                if a.curtime > b.curtime \
-                                else b.curtime
-
-            # Priority
-            if changed["changes"].get("priority"):
-                # TODO
-                pass
-
-            output.append(merged.row())
+            output.append(merged_row)
 
         return output
 
 
-    def handle_added(self, data) -> List[str]:
-        # TODO: Option to handle local youtube - downloaded youtube files
+    def handle_added(self, data, header) -> List[Dict[str, str]]:
         output = []
+        print("Adding YouTube type rows.")
         for added in data:
-            if added.get("type") in self.config.added_merge_types:
-                row = [
-                        added["id"],
-                        added["type"],
-                        added["url"],
-                        added["start"],
-                        added["end"],
-                        added["curtime"],
-                        added["curtime_updated"],
-                        added["priority"],
-                    ]
+            if added.get("type") in ["youtube"]:
+                row = [added.get(key, "") for key in header]
                 output.append(row)
-
         return output
-
-
 
 
 if __name__ == "__main__":
     args = sys.argv
     if (len(args) != 4):
         print(f"{args[0]} requires 3 arguments: input_csv1 input_csv2 output_csv")
+        sys.exit(1)
 
     a = args[1]
     b = args[2]
-    merger = CSVMerger(a, b, CSVFileLoader(), Config())
+    if not os.path.exists(a) or not os.path.exists(b):
+        print("One or both of the CSV files does not exist.")
+        sys.exit(1)
+    merger = CSVMerger(a, b)
     data = merger.merge()
     write_csv(data, args[3])
 

@@ -1,2 +1,2 @@
 local utils = require('mp.utils')
-dofile(utils.join_path(mp.get_script_directory(), 'audioassistant.lua'))
+dofile(utils.join_path(mp.get_script_directory(), 'incremental-media.lua'))
