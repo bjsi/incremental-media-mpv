@@ -12,7 +12,51 @@ local keys = {
     ["iv-backward"]={
         ["key"]="a",
         ["callback"]=function() active.queue:handle_backward() end,
-    }
+    },
+    ["iv-forward"]={
+        ["key"]="d",
+        ["callback"]=function() active.queue:handle_forward() end,
+    },
+    ["iv-extract"]={
+        ["key"]="2",
+        ["callback"]=function() active.queue:extract() end,
+    },
+    ["iv-prev"]={
+        ["key"]="1",
+        ["callback"]=function() active.queue:prev() end,
+    },
+    ["iv-next"]={
+        ["key"]="4",
+        ["callback"]=function() active.queue:next() end,
+    },
+    ["iv-toggle"]={
+        ["key"]="3",
+        ["callback"]=function() active.queue:toggle() end,
+    },
+    ["iv-loop"]={
+        ["key"]="5",
+        ["callback"]=function() active.queue:loop() end,
+    },
+    ["iv-advance-start"]={
+        ["key"]="y",
+        ["callback"]=function() active.queue:advance_start() end,
+    },
+    ["iv-postpone-start"]={
+        ["key"]="u",
+        ["callback"]=function() active.queue:postpone_start() end,
+    },
+    ["iv-postpone-stop"]={
+        ["key"]="o",
+        ["callback"]=function() active.queue:postpone_stop() end,
+    },
+    ["iv-advance-stop"]={
+        ["key"]="i",
+        ["callback"]=function() active.queue:advance_stop() end,
+    },
+    ["iv-toggle-video"]={
+        ["key"]="t",
+        ["callback"]=function() active.queue:toggle_video() end,
+    },
 }
 
 (function()
@@ -23,17 +67,3 @@ local keys = {
         mp.add_forced_key_binding(key, name, callback)
     end
 end)()
-
--- Key bindings
--- mp.add_forced_key_binding("d", "iv-forward", function() active_queue:handle_forward() end )
--- mp.add_forced_key_binding("2", "iv-extract", function() active_queue:extract() end )
--- mp.add_forced_key_binding("1", "iv-prev", function() active_queue:prev() end )
--- mp.add_forced_key_binding("4", "iv-next", function() active_queue:next() end )
--- mp.add_forced_key_binding("3", "iv-toggle", function() active_queue:toggle() end)
--- mp.add_forced_key_binding("5", "iv-loop", function() active_queue:loop() end)
-
--- mp.add_forced_key_binding("y", "iv-advance-start", function() active_queue:advance_start() end )
--- mp.add_forced_key_binding("u", "iv-postpone-start", function() active_queue:postpone_start() end )
--- mp.add_forced_key_binding("o", "iv-postpone-stop", function() active_queue:postpone_stop() end )
--- mp.add_forced_key_binding("i", "iv-advance-stop", function() active_queue:advance_stop() end )
--- mp.add_forced_key_binding("t", "iv-toggle-video", function() active_queue:toggle_video() end)

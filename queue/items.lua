@@ -4,8 +4,8 @@ local ExtractQueue = require("queue.extractqueue")
 local EDL = require("systems.edl")
 local log = require("utils.log")
 local ext = require("utils.ext")
+require("queue.header")
 
-local ItemQueue = {}
 ItemQueue.__index = ItemQueue
 
 setmetatable(ItemQueue, {
@@ -18,7 +18,7 @@ setmetatable(ItemQueue, {
 })
 
 function ItemQueue:_init(items)
-    Queue._init(self, items, "Item Queue")
+    Queue._init(self, "Item Queue", items)
     self:load(nil, self:get_current())
     sounds.play("local_item_queue")
 end

@@ -1,26 +1,26 @@
 local Base = require("reps.reptable.base")
 local fs = require("systems.fs")
 local log = require("utils.log")
-local TopicRep = require("reps.rep.topic")
+local ExtractRep = require("reps.rep.extracts")
 
+-- TODO: add id
+-- TODO: add parent
 local default_header = {
     [1]="title",
     [2]="type",
     [3]="url",
-    [4]="element",
-    [5]="start",
-    [6]="stop",
-    [7]="curtime",
-    [8]="priority",
-    [9]="interval",
-    [10]="nextrep",
-    [11]="speed",
+    [4]="start",
+    [5]="stop",
+    [6]="priority",
+    [7]="interval",
+    [8]="nextrep",
+    [9]="speed",
 }
 
-local TopicRepTable = {}
-TopicRepTable.__index = TopicRepTable
+local ExtractRepTable = {}
+ExtractRepTable.__index = ExtractRepTable
 
-setmetatable(TopicRepTable, {
+setmetatable(ExtractRepTable, {
     __index = Base,
     __call = function(cls, ...)
             local self = setmetatable({}, cls)
@@ -29,29 +29,29 @@ setmetatable(TopicRepTable, {
         end,
     })
 
-function TopicRepTable:_init()
+function ExtractRepTable:_init()
     Base._init(self, fs.topic_data, default_header)
     self:read_reps()
 end
 
-function TopicRepTable:sort()
+function ExtractRepTable:sort()
     self:sort_by_priority()
     self:sort_by_due()
 end
 
-function TopicRepTable:sort_by_due()
+function ExtractRepTable:sort_by_due()
     local srt = function(a, b)
         return a:is_due() and not b:is_due()
     end
     table.sort(self.reps, srt)
 end
 
-function TopicRepTable:read_reps()
+function ExtractRepTable:read_reps()
     log.debug("Reading topic reps.")
-    local header, reps = self.db:read_reps(function(row) return TopicRep(row) end)
+    local header, reps = self.db:read_reps(function(row) return ExtractRep(row) end)
     self.reps = reps and reps or {}
     self.header = header and header or default_header
     self:sort()
 end
 
-return TopicRepTable
+return ExtractRepTable

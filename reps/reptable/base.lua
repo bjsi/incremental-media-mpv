@@ -21,6 +21,10 @@ function RepTable:_init(fp, header)
     self.db = self:create_db(fp, header)
 end
 
+function RepTable:write()
+    return self.db:write(self)
+end
+
 function RepTable:create_db(fp, header)
     local extension = str.get_extension(fp)
     local db = nil
@@ -63,7 +67,7 @@ function RepTable:next_repetition()
         return
     end
 
-    local curRep = self:get_current_rep()
+    local curRep = self:current()
     local nextRep = self:get_next_rep()
 
     -- not due; don't schedule or load
@@ -88,19 +92,19 @@ function RepTable:next_repetition()
         end
     end
 
-    self.db:write(self)
+    self:write()
     return toload
 end
 
 function RepTable:dismiss_current()
-    local cur = self:get_current_rep()
+    local cur = self:current()
     if not cur:is_due() then
         log.debug("No due repetition to dismiss.")
         return
     end
     self:remove_current()
     log.debug("Dismissed repetition: " .. cur.row["title"])
-    self.db:write(self)
+    self:write()
 end
 
 function RepTable:remove_current()
@@ -128,7 +132,7 @@ function RepTable:add_rep(rep)
 end
 
 -- Returns a Rep
-function RepTable:get_current_rep()
+function RepTable:current()
     self:sort()
     return self.reps[1]
 end

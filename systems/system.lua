@@ -1,14 +1,40 @@
 local mpu = require("mp.utils")
 local log = require("utils.log")
+local fs = require("systems.fs")
 
 -- mostly from: https://github.com/Ben-Kerman/immersive/blob/master/systems/system.lua
 
-local system = {}
+local sys = {}
 
-function system.verify_dependencies()
+function sys.create_essential_files()
+    local folders = { fs.data, fs.media }
+    for _, folder in pairs(folders) do
+		if not sys.exists(folder) then
+            if not sys.create_dir(folder) then
+                log.debug("Could not create essential folder: " .. folder .. ". Exiting...")
+                mp.commmandv("exit")
+                return false
+            end
+        end
+    end
+end
+
+--- Check if a file or directory exists in this path
+function sys.exists(file)
+   local ok, err, code = os.rename(file, file)
+   if not ok then
+      if code == 13 then
+         -- Permission denied, but it exists
+         return true
+      end
+   end
+   return ok, err
+end
+
+function sys.verify_dependencies()
     local deps = { "youtube-dl", "ffmpeg" }
     for _, dep in pairs(deps) do
-        if not system.has_dependency(dep) then
+        if not sys.has_dependency(dep) then
             log.debug("Could not find dependency " .. dep .. " in path. Exiting...")
             mp.commmandv("exit")
             return
@@ -17,7 +43,7 @@ function system.verify_dependencies()
     log.debug("All dependencies available in path.")
 end
 
-system.platform = (function()
+sys.platform = (function()
 	local ostype = os.getenv("OSTYPE")
 	if ostype and ostype == "linux-gnu" then
 		return "lnx"
@@ -40,12 +66,12 @@ system.platform = (function()
 	return "lnx"
 end)()
 
-system.tmp_dir = (function()
-	if system.platform == "lnx" or system.platform == "mac" then
+sys.tmp_dir = (function()
+	if sys.platform == "lnx" or sys.platform == "mac" then
 		local tmpdir_env = os.getenv("TMPDIR")
 		if tmpdir_env then return tmpdir_env
 		else return "/tmp" end
-	elseif system.platform == "win" then
+	elseif sys.platform == "win" then
 		return os.getenv("TEMP")
 	end
 end)()
@@ -55,10 +81,15 @@ local function handle_process_result(success, res, err)
 		log.err("failed to run subprocess: '" .. err .. "'; arguments: " .. mpu.format_json(args))
 		return
 	end
-	return res.status, res.stdout, res.error_string, res.killed_by_us
+	return {
+        ["status"]=res.status,
+        ["stdout"]=res.stdout, 
+        ["error"]=res.error_string,
+        ["killed"]=res.killed_by_us
+    }
 end
 
-function system.subprocess(args)
+function sys.subprocess(args)
 	local res, err = mp.command_native{
 		name = "subprocess",
 		playback_only = false,
@@ -69,27 +100,27 @@ function system.subprocess(args)
 end
 
 -- TODO: Check
-function system.has_dependency(dependency)
+function sys.has_dependency(dependency)
     local args = {
         "which",
     }
-    if system.platform == "win" then table.insert(args, "/q") end
+    if sys.platform == "win" then table.insert(args, "/q") end
     table.insert(args, dependency)
-    local ret = system.subprocess(args)
+    local ret = sys.subprocess(args)
     return ret.status == 0
 end
 
-function system.file2base64(fp)
+function sys.file2base64(fp)
     local script = "./file2base64"
-    if system.platform == "win" then script = script .. ".bat" end
+    if sys.platform == "win" then script = script .. ".bat" end
     local args = {
         script,
         fp
     }
-    return system.subprocess(args)
+    return sys.subprocess(args)
 end
 
-function system.background_process(args, callback)
+function sys.background_process(args, callback)
 	return mp.command_native_async({
 		name = "subprocess",
 		playback_only = false,
@@ -102,33 +133,33 @@ function system.background_process(args, callback)
 	end)
 end
 
-function system.list_files(dir)
+function sys.list_files(dir)
 	return mpu.readdir(dir, "files")
 end
 
-function system.create_dir(path)
+function sys.create_dir(path)
 	local stat_res = mpu.file_info(path)
 	if stat_res then
 		return stat_res.is_dir
 	end
 
 	local args
-	if system.platform == "lnx" or system.platform == "mac" then
+	if sys.platform == "lnx" or sys.platform == "mac" then
 		args = {"mkdir", "-p", path}
-	elseif system.platform == "win" then
+	elseif sys.platform == "win" then
 		args = {"cmd", "/d", "/c", "mkdir", (path:gsub("/", "\""))}
 	end
-	return system.subprocess(args) == 0
+	return sys.subprocess(args) == 0
 end
 
-function system.move_file(src_path, tgt_path)
+function sys.move_file(src_path, tgt_path)
 	local cmd
-	if system.platform == "lnx" or system.platform == "mac" then
+	if sys.platform == "lnx" or sys.platform == "mac" then
 		cmd = "mv"
-	elseif system.platform == "win" then
+	elseif sys.platform == "win" then
 		cmd = "move"
 	end
-	return system.subprocess{cmd, src_path, tgt_path} == 0
+	return sys.subprocess{cmd, src_path, tgt_path} == 0
 end
 
 local ps_clip_write_fmt = "Set-Clipboard ([Text.Encoding]::UTF8.GetString((%s)))"
@@ -146,43 +177,43 @@ $clip = [Windows.Forms.Clipboard]::GetText()
 $utf8 = [Text.Encoding]::UTF8.GetBytes($clip)
 [Console]::OpenStandardOutput().Write($utf8, 0, $utf8.length)]]
 
-function system.clipboard_read()
-	if system.platform == "mac" then
+function sys.clipboard_read()
+	if sys.platform == "mac" then
 		local pipe = io.popen("LANG=en_US.UTF-8 pbpaste", "r")
 		local clip = pipe:read("*a")
 		pipe:close()
 		return clip
 	else
 		local args
-		if system.platform == "lnx" then
+		if sys.platform == "lnx" then
 			args = {"xclip", "-out", "-selection", "clipboard"}
-		elseif system.platform == "win" then
+		elseif sys.platform == "win" then
 			args = {"powershell", "-NoProfile", "-Command", ps_clip_read}
 		end
 
-		local status, clip, err_str = system.subprocess(args)
+		local status, clip, err_str = sys.subprocess(args)
 		if status == 0 then return clip
 		else return false, err_str end
 	end
 end
 
-function system.clipboard_write(str)
-	if system.platform == "lnx" or system.platform == "mac" then
+function sys.clipboard_write(str)
+	if sys.platform == "lnx" or sys.platform == "mac" then
 		local cmd
-		if system.platform == "lnx" then
+		if sys.platform == "lnx" then
 			cmd = "xclip -in -selection clipboard"
 		else cmd = "LANG=en_US.UTF-8 pbcopy" end
 
 		local pipe = io.popen(cmd, "w")
 		pipe:write(str)
 		pipe:close()
-	elseif system.platform == "win" then
-        system.background_process{"powershell", "-NoProfile", "-Command", ps_clip_write(str)}
+	elseif sys.platform == "win" then
+        sys.background_process{"powershell", "-NoProfile", "-Command", ps_clip_write(str)}
 	end
 end
 
-function system.set_primary_sel(str)
-	if system.platform ~= "lnx" then
+function sys.set_primary_sel(str)
+	if sys.platform ~= "lnx" then
 		log.err("Primary selection is only available in X11 environments")
 		return
 	end
@@ -192,4 +223,4 @@ function system.set_primary_sel(str)
 	pipe:close()
 end
 
-return system
+return sys

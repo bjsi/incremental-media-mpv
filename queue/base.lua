@@ -50,8 +50,8 @@ function Queue:extract()
 
     local start = a < b and a or b
     local stop = a > b and a or b
-    local cur = self:get_current()
-    self:handle_extract(start, stop, cur)
+    local curRep = self.reptable:current()
+    self:handle_extract(start, stop, curRep)
 end
 
 function Queue:toggle_video()
@@ -79,28 +79,29 @@ function Queue:dismiss()
 end
 
 -- old can be nil
-function Queue:load(old, new)
+function Queue:load(oldRep)
+    local newRep = self.reptable:current()
 
     -- set start, stop
-    local start = new["curtime"] ~= nil and new["curtime"] or new["start"]
+    local start = newRep.row["curtime"] ~= nil and newRep.row["curtime"] or newRep.row["start"]
     if start == nil then start = 0 end
-    local stop = new["stop"] ~= nil and new["stop"] or -1
+    local stop = newRep.row["stop"] ~= nil and newRep.row["stop"] or -1
     start = tonumber(start)
     stop = tonumber(stop)
 
     -- seek if old and new have the same url
-    if old ~= nil and old["url"] == new["url"] then
+    if oldRep ~= nil and oldRep.row["url"] == newRep.row["url"] then
         log.debug("New element has the same url: seeking")
         mp.commandv("seek", tostring(start), "absolute")
 
     -- load file if old and new have different urls
     else
         log.debug("New element has a different url: loading new file")
-        mp.commandv("loadfile", new["url"], "replace", "start=" .. tostring(start))
+        mp.commandv("loadfile", newRep.row["url"], "replace", "start=" .. tostring(start))
     end
 
-    if new["speed"] ~= nil then
-        mp.set_property("speed", new["speed"])
+    if newRep.row["speed"] ~= nil then
+        mp.set_property("speed", newRep.row["speed"])
     else
         mp.set_property("speed", "1")
     end

@@ -1,6 +1,6 @@
-local utils = require("mp.utils")
-local basedir = mp.get_script_directory()
-local soundsdir = utils.join_path(basedir, "sounds")
+local mpu = require("mp.utils")
+local fs = require("systems.fs")
+local sys = require("systems.system")
 
 local sounds = {
     files = {
@@ -19,13 +19,16 @@ local sounds = {
     }
 }
 
+-- TODO: Keep a background process to run sounds
 sounds.play = function(sound)
-    local fp = utils.join_path(soundsdir, sounds.files[sound])
+    local fp = mpu.join_path(fs.sounds, sounds.files[sound])
     local args = {
         "mpv",
         "--no-video",
         "--really-quiet",
         fp
     }
-    subprocess(args, function() end)
+    sys.background_process(args)
 end
+
+return sounds

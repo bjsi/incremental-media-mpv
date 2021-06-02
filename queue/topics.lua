@@ -2,13 +2,12 @@ local sounds = require("systems.sounds")
 local player = require("systems.player")
 local log = require("utils.log")
 local Queue = require("queue.base")
-local ext = require("utils.extensions")
-local ExtractQueue = require("queue.extracts")
+local ext = require("utils.ext")
+require("queue.header")
 
-local GlobalTopicQueue = {}
-GlobalTopicQueue.__index = GlobalTopicQueue
+TopicQueue.__index = TopicQueue
 
-setmetatable(GlobalTopicQueue, {
+setmetatable(TopicQueue, {
     __index = Queue,
     __call = function (cls, ...)
         local self = setmetatable({}, cls)
@@ -17,17 +16,16 @@ setmetatable(GlobalTopicQueue, {
     end,
 })
 
---- Create a new GlobalTopicQueue
+--- Create a new TopicQueue
 -- @param old: The last playing Rep object.
 -- @param topics: Topics RepTable object.
-function GlobalTopicQueue:_init(old, topics)
-    Queue._init(self, topics, "Global Topic Queue")
-    self:load(old, self.items[self.cur_idx])
-    self:subscribe_to_events()
+function TopicQueue:_init(oldRep, topicRepTable)
+    Queue._init(self, "Global Topic Queue", topicRepTable)
+    self:load(oldRep)
     sounds.play("global_topic_queue")
 end
 
-function GlobalTopicQueue:update_curtime()
+function TopicQueue:update_curtime()
     local cur = self:get_current()
     if cur == nil then return end
     local time = mp.get_property("time-pos")
@@ -35,14 +33,14 @@ function GlobalTopicQueue:update_curtime()
     cur.row["curtime"] = time
 end
 
-function GlobalTopicQueue:update_speed()
+function TopicQueue:update_speed()
     local cur = self:get_current()
     local speed = mp.get_property("speed")
     if speed == nil then return end
     cur.row["speed"] = speed
 end
 
-function GlobalTopicQueue:handle_forward()
+function TopicQueue:handle_forward()
     if player.paused() then
         self:stutter_forward()
     else
@@ -50,7 +48,7 @@ function GlobalTopicQueue:handle_forward()
     end
 end
 
-function GlobalTopicQueue:handle_backward()
+function TopicQueue:handle_backward()
     if player.paused() then
         self:stutter_backward()
     else
@@ -58,7 +56,7 @@ function GlobalTopicQueue:handle_backward()
     end
 end
 
-function GlobalTopicQueue:handle_extract(start, stop, cur)
+function TopicQueue:handle_extract(start, stop, cur)
     local extract = {
         title = cur.row["title"],
         type = cur.row["type"],
@@ -79,13 +77,14 @@ function GlobalTopicQueue:handle_extract(start, stop, cur)
     player.unset_abloop()
 end
 
-function GlobalTopicQueue:child()
+function TopicQueue:child()
     local cur = self:get_current()
     if cur == nil then
         log.debug("Failed to load child queue because current rep is nil.")
         return false
     end
 
+    -- TODO: Create a reptable
     local extracts = self.db:get_extracts()
     local children = ext.list_filter(extracts)
     if ext.list_empty(children) then
@@ -97,4 +96,4 @@ function GlobalTopicQueue:child()
     return true
 end
 
-return GlobalTopicQueue
+return TopicQueue

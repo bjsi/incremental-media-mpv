@@ -1,7 +1,7 @@
 local mpu = require("mp.utils")
 local subs = require("systems.subs")
 local log = require("utils.log")
-local sounds = require("sounds")
+local sounds = require("systems.sounds")
 
 local player = {}
 
@@ -17,7 +17,7 @@ function player.paused()
     return mp.get_property("pause") == "yes"
 end
 
-function player.loop_timer()
+player.loop_timer = (function()
     local start_time = 0
     local stop_time = -1
     local check_loop
@@ -60,10 +60,9 @@ function player.loop_timer()
         check_loop = check_loop,
         stop = stop,
     }
-end
-player.loop_timer()
+end)()
 
-player.pause_timer = function()
+player.pause_timer = (function()
     local stop_time = -1
     local check_stop
     local set_stop_time = function(time)
@@ -86,8 +85,7 @@ player.pause_timer = function()
         check_stop = check_stop,
         stop = stop,
     }
-end
-player.pause_timer() -- IIFE
+end)()
 
 player.stutter_forward = function()
     if not player.vid_playing() then

@@ -1,31 +1,28 @@
 local log = require("utils.log")
 local active = require("systems.active")
-local sys = require("system.system")
+local sys = require("systems.system")
+local TopicQueue = require("queue.topics")
+local player = require("systems.player")
+local TopicRepTable = require("reps.reptable.topics")
 
 local main
 do
     local main_executed = false
     main = function()
-
         if main_executed then return end
 
-        log.debug("Loading incremental video script.")
+        log.debug("Loading incremental media.")
 
-        if not sys.verify_dependencies() then
-            log.err("Quitting: Missing dependencies.")
-            return
-        end
+        sys.verify_dependencies()
+        sys.create_essential_files()
 
-        if not sys.create_essential_files() then
-            log.err("Quitting: Failed to create essential files.")
-            return
-        end
-
-        mp.observe_property("time-pos", "number", loop_timer.check_loop)
+        mp.observe_property("time-pos", "number", player.loop_timer.check_loop)
         mp.set_property("loop", "inf")
-        mp.register_event("shutdown", db.on_shutdown)
+        mp.register_event("shutdown", active.on_shutdown)
 
-        active.queue = GlobalTopicQueue(nil, topics)
+        require("systems.keybinds")
+
+        active.queue = TopicQueue(nil, TopicRepTable())
 
         main_executed = true
     end

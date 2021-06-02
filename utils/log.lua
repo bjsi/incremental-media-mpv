@@ -2,9 +2,7 @@ local ext = require("utils.ext")
 local msg = ext.prequire('mp.msg')
 local dt = require("utils.date")
 
-if msg == nil then
-    msg = print
-end
+msg = msg and msg.info or print
 
 local log = {}
 
