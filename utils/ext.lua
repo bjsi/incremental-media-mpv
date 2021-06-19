@@ -1,21 +1,18 @@
 local ext = {}
 
+function ext.round(n, digits)
+    local shift = 10 ^ digits
+    return math.floor(n * shift + 0.5) / shift
+end
+
 function ext.list_contains(table, element)
-    for _, value in pairs(table) do
-        if value == element then
-            return true
-        end
-    end
+    for _, value in pairs(table) do if value == element then return true end end
     return false
 end
 
 function ext.list_max_num(table)
     local max = table[1]
-    for _, value in ipairs(table) do
-        if value > max then
-            max = value
-        end
-    end
+    for _, value in ipairs(table) do if value > max then max = value end end
     return max
 end
 
@@ -28,14 +25,17 @@ function ext.list_get(table, key, default)
 end
 
 function ext.file_exists(name)
-    local f=io.open(name,"r")
-    if f~=nil then io.close(f) return true else return false end
+    local f = io.open(name, "r")
+    if f ~= nil then
+        io.close(f)
+        return true
+    else
+        return false
+    end
 end
 
 function ext.list_add_range(list1, list2)
-    for _, v in pairs(list2) do
-        table.insert(list1, v)
-    end
+    for _, v in pairs(list2) do table.insert(list1, v) end
     return list1
 end
 
@@ -44,9 +44,7 @@ function ext.list_group_by(list, grouper)
     for i, v in pairs(list) do
         local key = grouper(v, i)
         if key ~= nil then
-            if not res[key] then
-                res[key] = {}
-            end
+            if not res[key] then res[key] = {} end
             table.insert(res[key], v)
         end
     end
@@ -70,7 +68,7 @@ end
 ---Catches errors from require and returns lib or nil.
 function ext.prequire(...)
     local status, lib = pcall(require, ...)
-    if(status) then return lib end
+    if (status) then return lib end
     return nil
 end
 
@@ -81,7 +79,7 @@ function ext.dump(object)
         local s = '{'
         for k, v in pairs(object) do
             if type(k) ~= 'number' then k = '"' .. k .. '"' end
-            s = s .. '[' .. k .. ']' .. ext.dump (v) .. ','
+            s = s .. '[' .. k .. ']' .. ext.dump(v) .. ','
         end
         return s .. '}'
     else
@@ -90,29 +88,24 @@ function ext.dump(object)
 end
 
 function ext.empty(object)
-    return object == nil or object == '' or (type(object) == 'table' and next(object) == nil)
+    return object == nil or object == '' or
+               (type(object) == 'table' and next(object) == nil)
 end
 
 function ext.list_filter(list, predicate)
-	local res = {}
-	for i, val in ipairs(list) do
-		if predicate(val, i) then
-			table.insert(res, val)
-		end
-	end
-	return res
+    local res = {}
+    for i, val in ipairs(list) do
+        if predicate(val, i) then table.insert(res, val) end
+    end
+    return res
 end
 
 function ext.list_map(list, mapper)
-	if not mapper then
-		mapper = function(val) return val end
-	end
+    if not mapper then mapper = function(val) return val end end
 
-	local res = {}
-	for i, val in ipairs(list) do
-		table.insert(res, mapper(val, i))
-	end
-	return res
+    local res = {}
+    for i, val in ipairs(list) do table.insert(res, mapper(val, i)) end
+    return res
 end
 
 return ext

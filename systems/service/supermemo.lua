@@ -10,7 +10,7 @@ setmetatable(SuperMemo, {
         local self = setmetatable({}, cls)
         self:_init(...)
         return self
-    end,
+    end
 })
 
 function SuperMemo:_init()

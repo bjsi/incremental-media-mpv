@@ -10,7 +10,7 @@ setmetatable(MarkdownDB, {
         local self = setmetatable({}, cls)
         self:_init(...)
         return self
-    end,
+    end
 })
 
 function MarkdownDB:_init(fp, default_header)
@@ -44,8 +44,6 @@ function MarkdownDB:write_cell(handle, idx, total_cells, cell)
     return true
 end
 
-function MarkdownDB:preprocess_read_row(row)
-    return string.sub(row, 1, -1)
-end
+function MarkdownDB:preprocess_read_row(row) return string.sub(row, 1, -1) end
 
 return MarkdownDB

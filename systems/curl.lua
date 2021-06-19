@@ -19,12 +19,7 @@ curl.telnet = function(json, cb)
 
     local script = "./curl_telnet"
     if sys.platform == "win" then script = script .. ".bat" end
-    local args = {
-        script,
-        cfg.host,
-        cfg.port,
-        curl.tmpfile
-    }
+    local args = {script, cfg.host, cfg.port, curl.tmpfile}
 
     return sys.background_process(args, cb)
 end

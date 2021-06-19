@@ -10,9 +10,7 @@ setmetatable(Base, {
         local self = setmetatable({}, cls)
         self:_init(...)
         return self
-    end,
+    end
 })
 
-function Base:_init(name)
-    log.debug("Initialising service: " .. name)
-end
+function Base:_init(name) log.debug("Initialising service: " .. name) end

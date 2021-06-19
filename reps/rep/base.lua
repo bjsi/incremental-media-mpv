@@ -1,3 +1,5 @@
+local ext = require("utils.ext")
+
 local Rep = {}
 Rep.__index = Rep
 
@@ -6,56 +8,34 @@ setmetatable(Rep, {
         local self = setmetatable({}, cls)
         self:_init(...)
         return self
-    end,
+    end
 })
 
-function Rep:_init(row)
-    self.row = row
-end
-
-function Rep:is_yt()
-    return self.row["type"] == "youtube"
-end
-
-function Rep:is_local()
-    return self.row["type"] == "local"
-end
-
-function Rep:valid_interval(interval)
-    return interval ~= nil and interval > 0
-end
-
-function Rep:valid_speed(speed)
-    return speed == nil or speed < 0
-end
-
-function Rep:set_speed(speed)
-    if speed == nil or speed < 0 or speed > 5 then
-        print("Invalid speed.")
+function Rep:is_deleted()
+    if self:is_yt() then
         return false
+    elseif self:is_local() then
+        return ext.file_exists(self.row["url"])
     end
-    self.row["speed"] = speed
-    return true
 end
 
--- TODO: Call player.play
-function Rep:play()
-    -- Set speed
-    local speed = self.row["speed"]
-    if not self:valid_speed(speed) then speed = 1 end
+function Rep:_init(row) self.row = row end
 
-    -- set start stop boundaries
-    local start = self.row["start"]
-    if start == nil then start = 0 end
+function Rep:is_yt() return self.row["type"] == "youtube" end
 
-    local stop = self.row["stop"]
-    if stop == nil then stop = -1 end
+function Rep:is_local() return self.row["type"] == "local" end
 
-    -- TODO: loop
+function Rep:valid_speed() 
+    local speed = tonumber(self.row["speed"])
+    return speed ~= nil and speed > 0 and speed < 5
+end
 
-    -- Play
-    -- Seek
-    -- Update curtime
+function Rep:valid_stop()
+    return tonumber(self.row["stop"]) ~= nil
+end
+
+function Rep:valid_start()
+    return tonumber(self.row["start"]) ~= nil
 end
 
 return Rep

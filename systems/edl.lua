@@ -3,7 +3,6 @@ local log = require("utils.log")
 local EDL = {}
 EDL.__index = EDL
 
-
 function EDL.new(fp)
     local self = setmetatable({}, EDL)
     self.fp = fp
@@ -26,9 +25,14 @@ function EDL:write()
     if handle == nil then return end
 
     handle:write(self.header)
-    handle:write(self.data["beg"]["fp"] .. "," .. self.data["beg"]["start"] .. "," .. self.data["beg"]["stop"] .. "\n")
-    handle:write(self.data["cloze"]["fp"] .. "," .. self.data["cloze"]["start"] .. "," .. self.data["cloze"]["stop"] .. "\n")
-    handle:write(self.data["ending"]["fp"] .. "," .. self.data["ending"]["start"] .. "," .. self.data["ending"]["stop"] .. "\n")
+    handle:write(self.data["beg"]["fp"] .. "," .. self.data["beg"]["start"] ..
+                     "," .. self.data["beg"]["stop"] .. "\n")
+    handle:write(
+        self.data["cloze"]["fp"] .. "," .. self.data["cloze"]["start"] .. "," ..
+            self.data["cloze"]["stop"] .. "\n")
+    handle:write(self.data["ending"]["fp"] .. "," ..
+                     self.data["ending"]["start"] .. "," ..
+                     self.data["ending"]["stop"] .. "\n")
     handle:close()
 
     log.debug("Successfully wrote EDL file: " .. self.fp)
@@ -48,11 +52,7 @@ function EDL:load()
     local ending = self:parse_line(match())
     handle:close()
 
-    self.data =  {
-        beg = beg,
-        cloze = cloze,
-        ending = ending,
-    }
+    self.data = {beg = beg, cloze = cloze, ending = ending}
 
     log.debug("Successfully parsed EDL file: " .. self.fp)
     return true
@@ -66,7 +66,7 @@ function EDL:parse_line(line)
         if v ~= "" then
             if ct == 1 then ret["fp"] = v end
             if ct == 2 then ret["start"] = v end
-            if ct == 3 then ret ["stop"] = v end
+            if ct == 3 then ret["stop"] = v end
             ct = ct + 1
         end
     end

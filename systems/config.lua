@@ -4,10 +4,10 @@ local sys = require("systems.system")
 local config = {}
 
 config.audio = {
-    format = "mp3",   -- opus or mp3
-    bitrate = "18k",  -- from 16k to 32k
-    padding = 0.12,   -- Pad dialog timings. 0.5 = audio is padded by .5 seconds. 0 = disable.
-    tie_volumes = false,    -- if true, volume of audio output == volume of player at time of export
+    format = "mp3", -- opus or mp3
+    bitrate = "18k", -- from 16k to 32k
+    padding = 0.12, -- Pad dialog timings. 0.5 = audio is padded by .5 seconds. 0 = disable.
+    tie_volumes = false -- if true, volume of audio output == volume of player at time of export
 }
 
 config.obsidian = {}
@@ -25,7 +25,7 @@ config.set_networking = function()
 end
 
 config.opus_supported = function()
-    local ret = sys.subprocess { 'mpv', '--oac=help' }
+    local ret = sys.subprocess {'mpv', '--oac=help'}
     return ret.status == 0 and ret.stdout:match('--oac=libopus')
 end
 

@@ -10,7 +10,7 @@ setmetatable(CSVDB, {
         local self = setmetatable({}, cls)
         self:_init(...)
         return self
-    end,
+    end
 })
 
 function CSVDB:_init(fp, default_header)

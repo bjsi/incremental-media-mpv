@@ -1,41 +1,49 @@
-local Queue = require("queue.queuebase")
-local sounds = require("systems.sounds")
-local ExtractQueue = require("queue.extractqueue")
+local Base = require("queue.queueBase")
 local EDL = require("systems.edl")
+local sounds = require("systems.sounds")
+local ItemRepTable = require("reps.reptable.unscheduledItems")
 local log = require("utils.log")
-local ext = require("utils.ext")
-require("queue.header")
+local active = require("systems.active")
 
-ItemQueue.__index = ItemQueue
+local LocalExtractQueue
 
-setmetatable(ItemQueue, {
- __index = Queue, -- this is what makes the inheritance work
- __call = function (cls, ...)
-     local self = setmetatable({}, cls)
-     self:_init(...)
-     return self
- end,
+local ItemQueueBase = {}
+ItemQueueBase.__index = ItemQueueBase
+
+setmetatable(ItemQueueBase, {
+    __index = Base, -- this is what makes the inheritance work
+    __call = function(cls, ...)
+        local self = setmetatable({}, cls)
+        self:_init(...)
+        return self
+    end
 })
 
-function ItemQueue:_init(items)
-    Queue._init(self, "Item Queue", items)
-    self:load(nil, self:get_current())
-    sounds.play("local_item_queue")
+function ItemQueueBase:_init(name, oldRep, repTable)
+    Base._init(self, name, repTable, oldRep)
 end
 
-function ItemQueue:parent()
-    local all = function(_) return true end
-    local cur = self:get_current()
-    local creator_fn = function(extracts)
-        local is_parent_of_cur = curry2(is_child)(cur)
-        ext.move_to_first_where(is_parent_of_cur, extracts)
-        return ExtractQueue(nil, extracts)
+function ItemQueueBase:handle_backward() self:stutter_backward() end
+
+function ItemQueueBase:handle_forward() self:stutter_forward() end
+
+function ItemQueueBase:parent()
+    local cur = self.playing
+    if cur == nil then
+        log.debug("Failed to load parent queue because current rep is nil.")
+        return false
     end
 
-    self:change_queue(db.extracts, all, creator_fn)
+    LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
+    local queue = LocalExtractQueue(self.playing)
+    active.change_queue(queue)
 end
 
-function ItemQueue:adjust_cloze(adjustment_fn)
+function ItemQueueBase:save_data()
+    self.reptable:write(self.reptable)
+end
+
+function ItemQueueBase:adjust_cloze(adjustment_fn)
     mp.set_property("pause", "yes")
     local cur = self:get_current()
     local edl = EDL.new(cur["url"])
@@ -61,13 +69,13 @@ function ItemQueue:adjust_cloze(adjustment_fn)
         mp.commandv("loadfile", cur["url"], "replace", "start=" .. start)
     elseif end_changed then
         local start = tostring(tonumber(adj_cloze_end)) -- TODO > 0
-        mp.commandv("loadfile", cur["url"], "replace", "start=".. start)
+        mp.commandv("loadfile", cur["url"], "replace", "start=" .. start)
     end
     mp.set_property("pause", "no")
     sounds.play("click1")
 end
 
-function ItemQueue:advance_start()
+function ItemQueueBase:advance_start()
     local adj = 0.02
     local duration = tonumber(mp.get_property("duration"))
 
@@ -85,7 +93,7 @@ function ItemQueue:advance_start()
     self:adjust_cloze(adjustment_fn)
 end
 
-function ItemQueue:postpone_start()
+function ItemQueueBase:postpone_start()
     local adj = 0.02
     local duration = tonumber(mp.get_property("duration"))
 
@@ -103,7 +111,7 @@ function ItemQueue:postpone_start()
     self:adjust_cloze(adjustment_fn)
 end
 
-function ItemQueue:advance_stop()
+function ItemQueueBase:advance_stop()
     local adj = 0.02
     local duration = tonumber(mp.get_property("duration"))
 
@@ -122,7 +130,7 @@ function ItemQueue:advance_stop()
     self:adjust_cloze(adjustment_fn)
 end
 
-function ItemQueue:postpone_stop()
+function ItemQueueBase:postpone_stop()
     local adj = 0.02
     local duration = tonumber(mp.get_property("duration"))
 
@@ -142,4 +150,4 @@ function ItemQueue:postpone_stop()
     self:adjust_cloze(adjustment_fn)
 end
 
-return ItemQueue
+return ItemQueueBase

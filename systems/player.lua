@@ -2,10 +2,53 @@ local mpu = require("mp.utils")
 local subs = require("systems.subs")
 local log = require("utils.log")
 local sounds = require("systems.sounds")
+local active = require("systems.active")
 
 local player = {}
 
-player.play = function()
+local function load(newRep, oldRep, start)
+    log.debug("player.load: start = " .. tostring(start))
+    if oldRep ~= nil and oldRep.row["url"] == newRep.row["url"] then
+        mp.commandv("seek", tostring(start), "absolute")
+    else
+        mp.commandv("loadfile", newRep.row["url"], "replace",
+                    "start=" .. tostring(start))
+    end
+end
+
+function player.setSpeed(speed)
+    if speed ~= nil then
+        mp.set_property("speed", tostring(speed))
+    else
+        mp.set_property("speed", "1")
+    end
+end
+
+-- TODO: What if loadfile fails?
+function player.play(newRep, oldRep)
+    if newRep == nil then
+        log.err("Failed to play new rep because it is nil.")
+        return false
+    end
+
+    local speed = tonumber(newRep:valid_speed() and newRep.row["speed"] or 1)
+    local start = tonumber(newRep:valid_start() and newRep.row["start"] or 0)
+    local curtime = tonumber(newRep.row["curtime"])
+    if curtime ~= nil then start = curtime end
+    local stop = tonumber(newRep:valid_stop() and newRep.row["stop"] or -1)
+
+    load(newRep, oldRep, start)
+    player.setSpeed(speed)
+
+    -- reset loops and timers
+    player.unset_abloop()
+    player.pause_timer.stop()
+
+    -- TODO: Get rid of this?
+    mp.commandv("script-message", "element_changed", "", tostring(start),
+                tostring(stop))
+    
+    return true
 end
 
 function player.unset_abloop()
@@ -13,21 +56,15 @@ function player.unset_abloop()
     mp.set_property("ab-loop-b", "no")
 end
 
-function player.paused()
-    return mp.get_property("pause") == "yes"
-end
+function player.paused() return mp.get_property("pause") == "yes" end
 
 player.loop_timer = (function()
     local start_time = 0
     local stop_time = -1
     local check_loop
 
-    local set_stop_time = function(time)
-        stop_time = time
-    end
-    local set_start_time = function(time)
-        start_time = time
-    end
+    local set_stop_time = function(time) stop_time = time end
+    local set_start_time = function(time) start_time = time end
 
     local stop = function()
         mp.unobserve_property(check_loop)
@@ -58,16 +95,14 @@ player.loop_timer = (function()
         set_start_time = set_start_time,
         set_stop_time = set_stop_time,
         check_loop = check_loop,
-        stop = stop,
+        stop = stop
     }
 end)()
 
 player.pause_timer = (function()
     local stop_time = -1
     local check_stop
-    local set_stop_time = function(time)
-        stop_time = time
-    end
+    local set_stop_time = function(time) stop_time = time end
     local stop = function()
         mp.unobserve_property(check_stop)
         stop_time = -1
@@ -80,11 +115,7 @@ player.pause_timer = (function()
             -- notify('Timer: ' .. human_readable_time(stop_time - time))
         end
     end
-    return {
-        set_stop_time = set_stop_time,
-        check_stop = check_stop,
-        stop = stop,
-    }
+    return {set_stop_time = set_stop_time, check_stop = check_stop, stop = stop}
 end)()
 
 player.stutter_forward = function()
@@ -115,9 +146,7 @@ player.stutter_backward = function()
     end
 end
 
-player.vid_playing = function()
-    return mp.get_property("vid") ~= "no"
-end
+player.vid_playing = function() return mp.get_property("vid") ~= "no" end
 
 player.toggle = function()
     mp.commandv("cycle", "pause")
@@ -149,13 +178,11 @@ end
 player.sub_seek = function(direction, pause)
     mp.commandv("sub_seek", direction == 'backward' and '-1' or '1')
     mp.commandv("seek", "0.015", "relative+exact")
-    if pause then
-        mp.set_property("pause", "yes")
-    end
+    if pause then mp.set_property("pause", "yes") end
     player.pause_timer.stop()
 end
 
-local function sub_rewind()
+function player.sub_rewind()
     mp.commandv('seek', subs.get_current()['start'] + 0.015, 'absolute')
     player.pause_timer.stop()
 end

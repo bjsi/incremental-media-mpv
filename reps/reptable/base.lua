@@ -1,31 +1,40 @@
 local log = require("utils.log")
+local sounds = require("systems.sounds")
 local Scheduler = require("reps.scheduler")
 local ext = require("utils.ext")
 local str = require("utils.str")
 local CSVDB = require("db.csv")
 local MarkdownDB = require("db.md")
 
-local RepTable = {}
-RepTable.__index = RepTable
+local RepTableBase = {}
+RepTableBase.__index = RepTableBase
 
-setmetatable(RepTable, {
+setmetatable(RepTableBase, {
     __call = function(cls, ...)
         local self = setmetatable({}, cls)
         self:_init(...)
         return self
-    end,
+    end
 })
 
-function RepTable:_init(fp, header)
+function RepTableBase:_init(fp, header, subsetter)
     log.debug("Initialising new reptable.")
     self.db = self:create_db(fp, header)
+    self.defaultHeader = header
+    self.subsetter = subsetter
+    self.reps = {}
+    self.subset = {}
 end
 
-function RepTable:write()
-    return self.db:write(self)
+function RepTableBase:update_subset()
+    log.debug("Updating subset.")
+    self.subset = self.subsetter(self.reps)
+    self:sort()
 end
 
-function RepTable:create_db(fp, header)
+function RepTableBase:write() return self.db:write(self) end
+
+function RepTableBase:create_db(fp, header)
     local extension = str.get_extension(fp)
     local db = nil
     if extension == "md" then
@@ -40,64 +49,17 @@ function RepTable:create_db(fp, header)
     return db
 end
 
-function RepTable:get(predicate)
-    return ext.list_filter(self.reps, predicate)
-end
-
-function RepTable:get_next_rep()
+function RepTableBase:get_next_rep()
     self:sort()
-    return self.reps[2]
+    return self.subset[2]
 end
 
-function RepTable:remove_deleted()
-    local predicate = function(rep)
-        if rep:is_yt() then
-            return true
-        elseif rep:is_local() then
-            return ext.file_exists(rep.row["url"])
-        end
-    end
-    local existing = self:get(predicate)
-    self.reps = existing
+function RepTableBase:next_repetition()
+    error("override me!")
 end
 
-function RepTable:next_repetition()
-    if ext.empty(self.reps) then
-        log.debug("No more repetitions!")
-        return
-    end
-
-    local curRep = self:current()
-    local nextRep = self:get_next_rep()
-
-    -- not due; don't schedule or load
-    if curRep ~= nil and not curRep:is_due() then
-        log.debug("No more repetitions!")
-        return
-    end
-
-    self:remove_current()
-    local sched = Scheduler()
-    sched:schedule(self, curRep)
-    local toload = nil
-
-    if curRep ~= nil and nextRep == nil then
-        toload = curRep
-        log.debug("No more repetitions!")
-    elseif curRep ~= nil and nextRep ~= nil then
-        if nextRep:is_due() then
-            toload = nextRep
-        else
-            toload = curRep
-        end
-    end
-
-    self:write()
-    return toload
-end
-
-function RepTable:dismiss_current()
-    local cur = self:current()
+function RepTableBase:dismiss_current()
+    local cur = self:current_scheduled()
     if not cur:is_due() then
         log.debug("No due repetition to dismiss.")
         return
@@ -107,47 +69,54 @@ function RepTable:dismiss_current()
     self:write()
 end
 
-function RepTable:remove_current()
+function RepTableBase:remove_current()
     self:sort()
-    local removed = nil
-    if #self.reps == 1 then
-        removed = table.remove(self.reps, #self.reps)
-    elseif #self.reps > 1 then
-        removed = self.reps[1]
-        table.remove(self.reps, 1)
-    end
+    local removed = self.subset[1]
+    table.remove(self.subset, 1)
     return removed
 end
 
-function RepTable:add_rep(rep)
-    for _, v in ipairs(self.header) do
-        if rep.row[v] == nil then
-            log.debug("Invalid row data.")
-            return false
-        end
-    end
-
-    self.reps[#self.reps+1] = rep
+--- Add a Rep to the current subset.
+--- @param rep Rep
+---@return boolean
+function RepTableBase:add_to_subset(rep)
+    self.subset[#self.subset+1] = rep
+    self:update_subset()
     return true
 end
 
--- Returns a Rep
-function RepTable:current()
+--- Add rep to reps table.
+---@param rep Rep
+---@return boolean
+function RepTableBase:add_to_reps(rep)
+    self.reps[#self.reps + 1] = rep
+    self:update_subset()
+    return true
+end
+
+function RepTableBase:current_scheduled()
     self:sort()
-    return self.reps[1]
+    return self.subset[1]
 end
 
-function RepTable:sort()
-    self:sort_by_priority()
-end
+function RepTableBase:sort() self:sort_by_priority() end
 
-function RepTable:sort_by_priority()
-    local srt = function(a, b)
+function RepTableBase:sort_by_priority()
+    local sort_func = function(a, b)
         local ap = tonumber(a.row["priority"])
         local bp = tonumber(b.row["priority"])
         return ap < bp
     end
-    table.sort(self.reps, srt)
+    table.sort(self.subset, sort_func)
 end
 
-return RepTable
+function RepTableBase:read_reps()
+    local repFunc =  function(row) return self:as_rep(row) end
+    local header, reps = self.db:read_reps(repFunc)
+    self.reps = reps and reps or {}
+    self.header = header and header or self.defaultHeader
+    self:update_subset()
+    self:sort()
+end
+
+return RepTableBase

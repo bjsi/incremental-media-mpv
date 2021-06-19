@@ -8,7 +8,7 @@ setmetatable(DB, {
         local self = setmetatable({}, cls)
         self:_init(...)
         return self
-    end,
+    end
 })
 
 function DB:_init(fp, sep, default_header)
@@ -19,12 +19,10 @@ function DB:_init(fp, sep, default_header)
 end
 
 --- Open the database file for IO with mode and return the file handle.
--- @param mode IO mode.
+--- @param mode string
 function DB:open(mode)
     local handle = io.open(self.fp, mode)
-    if handle == nil then
-        log.err("Failed to open database: " .. self.fp)
-    end
+    if handle == nil then log.err("Failed to open database: " .. self.fp) end
     return handle
 end
 
@@ -45,7 +43,7 @@ function DB:read_reps(rep_func)
     log.debug("Successfully read header from: " .. self.fp)
 
     local reps = self:read_rows(handle, header, rep_func)
-    if reps == nil  then
+    if reps == nil then
         log.debug("Failed to read reps from: " .. self.fp)
         handle:close()
         return nil
@@ -58,7 +56,7 @@ function DB:read_reps(rep_func)
 end
 
 --- Write a RepTable to the database file.
--- @param repTable RepTable object
+--- @param repTable RepTable
 function DB:write(repTable)
     if repTable == nil or repTable.header == nil then
         log.err("Failed to write invalid data to: " .. self.fp)
@@ -91,13 +89,9 @@ function DB:write(repTable)
     return true
 end
 
-function DB:preprocess_read_row(row)
-    return row
-end
+function DB:preprocess_read_row(row) return row end
 
-function DB:parse_row(row)
-    return string.gmatch(row, "[^" .. self.sep .. "]*")
-end
+function DB:parse_row(row) return string.gmatch(row, "[^" .. self.sep .. "]*") end
 
 function DB:read_header(handle)
     local ret = {}
@@ -108,11 +102,7 @@ function DB:read_header(handle)
     end
 
     data = self:preprocess_read_row(data)
-    for v in self:parse_row(data) do
-        if v ~= "" then
-            ret[#ret + 1] = v
-        end
-    end
+    for v in self:parse_row(data) do if v ~= "" then ret[#ret + 1] = v end end
     return ret
 end
 
@@ -129,15 +119,20 @@ function DB:read_rows(handle, header, rep_func)
                 ct = ct + 1
             end
         end
-        ret[#ret+1] = rep_func(row)
+
+        -- Ignore deleted
+        local rep = rep_func(row)
+        if rep:is_deleted() then
+            log.debug("Ignoring deleted rep: " .. rep.row["url"])
+        else
+            ret[#ret + 1] = rep
+        end
     end
     return ret
 end
 
 function DB:write_header(handle, header)
-    for i, v in ipairs(header) do
-        self:write_cell(handle, i, #header, v)
-    end
+    for i, v in ipairs(header) do self:write_cell(handle, i, #header, v) end
     return true
 end
 

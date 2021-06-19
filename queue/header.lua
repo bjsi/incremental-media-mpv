@@ -1,3 +1,0 @@
-TopicQueue = {}
-ExtractQueue = {}
-ItemQueue = {}
