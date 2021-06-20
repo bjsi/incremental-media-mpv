@@ -1,6 +1,4 @@
-data/topics.csv
-data/extracts.csv
-data/items.csv
+data/
 *.wav
 *.edl
 env

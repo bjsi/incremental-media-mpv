@@ -1,4 +1,5 @@
 local mpu = require("mp.utils")
+local ext = require("utils.ext")
 local subs = require("systems.subs")
 local log = require("utils.log")
 local sounds = require("systems.sounds")
@@ -25,7 +26,7 @@ function player.setSpeed(speed)
 end
 
 -- TODO: What if loadfile fails?
-function player.play(newRep, oldRep)
+function player.play(newRep, oldRep, createLoopBoundaries)
     if newRep == nil then
         log.err("Failed to play new rep because it is nil.")
         return false
@@ -43,11 +44,15 @@ function player.play(newRep, oldRep)
     -- reset loops and timers
     player.unset_abloop()
     player.pause_timer.stop()
+    if not createLoopBoundaries then
+        start = 0
+        stop = -1
+    end
 
-    -- TODO: Get rid of this?
-    mp.commandv("script-message", "element_changed", "", tostring(start),
-                tostring(stop))
-    
+    log.debug("Setting loop boundaries - start: " .. tostring(start) .. " stop: " .. tostring(stop))
+    player.loop_timer.set_start_time(start)
+    player.loop_timer.set_stop_time(stop)
+
     return true
 end
 
@@ -81,15 +86,15 @@ player.loop_timer = (function()
         end
     end
 
-    local on_el_changed = function(_, start_t, stop_t)
-        log.debug("Received element changed event.")
-        if start_t == nil then return end
-        if stop_t == nil then return end
-        set_start_time(tonumber(start_t))
-        set_stop_time(tonumber(stop_t))
-    end
+    -- local on_el_changed = function(_, start_t, stop_t)
+    --     log.debug("Received element changed event.")
+    --     if start_t == nil then return end
+    --     if stop_t == nil then return end
+    --     set_start_time(tonumber(start_t))
+    --     set_stop_time(tonumber(stop_t))
+    -- end
 
-    mp.register_script_message("element_changed", on_el_changed)
+    -- mp.register_script_message("element_changed", on_el_changed)
 
     return {
         set_start_time = set_start_time,

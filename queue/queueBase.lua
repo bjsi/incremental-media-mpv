@@ -23,6 +23,7 @@ function QueueBase:_init(name, reptable, oldRep)
     self.bwd_history = Stack:Create()
     self.playing = nil
     self.oldRep = oldRep
+    self.createLoopBoundaries = true
 end
 
 -- TODO: Change name to learn
@@ -92,7 +93,7 @@ function QueueBase:stutter_backward() player.stutter_backward() end
 function QueueBase:dismiss() self.reptable:dismiss_current() end
 
 function QueueBase:loadRep(newRep, oldRep)
-    player.play(newRep, oldRep)
+    player.play(newRep, oldRep, self.createLoopBoundaries)
     self.playing = newRep
 end
 

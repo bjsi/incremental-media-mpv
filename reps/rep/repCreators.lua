@@ -39,8 +39,8 @@ function repCreators.createExtract(parent, start, stop)
         return nil
     end
 
-    extractRow["start"] = tostring(ext.round(2, start))
-    extractRow["stop"] = tostring(ext.round(2, stop))
+    extractRow["start"] = tostring(ext.round(start, 2))
+    extractRow["stop"] = tostring(ext.round(stop, 2))
     extractRow["id"] = repCreators.generateId()
     extractRow["interval"] = 1
     extractRow["nextrep"] = "1970-01-01"
