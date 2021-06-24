@@ -1,9 +1,9 @@
 local Base = require("reps.rep.base")
 
-local ExtractRep = {}
-ExtractRep.__index = ExtractRep
+local ItemRep = {}
+ItemRep.__index = ItemRep
 
-setmetatable(ExtractRep, {
+setmetatable(ItemRep, {
     __index = Base,
     __call = function(cls, ...)
         local self = setmetatable({}, cls)
@@ -12,12 +12,14 @@ setmetatable(ExtractRep, {
     end
 })
 
-function ExtractRep:_init(row) Base._init(self, row) end
+function ItemRep:_init(row) Base._init(self, row) end
 
-function ExtractRep:is_child_of(topic) 
-    return (self.row["parent"] == topic.row["id"])
+function ItemRep:is_child_of(extract) 
+    return (self.row["parent"] == extract.row["id"])
 end
 
-function ExtractRep:is_parent_of(item)
-    return (self.row["id"] == item.row["parent"])
+function ItemRep:is_parent_of(_)
+    return false
 end
+
+return ItemRep

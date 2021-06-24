@@ -90,7 +90,6 @@ function TopicQueueBase:handle_extract(start, stop, curRep)
     local ert = ExtractRepTable(function(r) return r end)
     if ert:add_to_reps(extract) then
         sounds.play("echo")
-        mp.commandv("script-message", "extracted", self.name) -- TODO: Remove
         player.unset_abloop()
         ert:write()
     else

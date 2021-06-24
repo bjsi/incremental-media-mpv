@@ -4,6 +4,7 @@ local fs = {}
 
 fs.base = mp.get_script_directory()
 fs.media = mpu.join_path(fs.base, "media")
+fs.sine = mpu.join_path(fs.media, "sine.opus")
 fs.data = mpu.join_path(fs.base, "data")
 fs.bkp = mpu.join_path(fs.data, "bkp")
 fs.topics_data = mpu.join_path(fs.data, "topics.csv")

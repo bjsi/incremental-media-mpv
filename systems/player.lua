@@ -25,6 +25,20 @@ function player.setSpeed(speed)
     end
 end
 
+function player.get_stream_urls()
+    local streams = mp.get_property("stream-path")
+    local matches = streams:gmatch("https://[^;]+")
+    local s1 = matches()
+    local s2 = matches()
+    local video, audio
+    if s1:find("mime=video") then
+        video, audio = s1, s2
+    else
+        video, audio = s2, s1
+    end
+    return video, audio
+end
+
 -- TODO: What if loadfile fails?
 function player.play(newRep, oldRep, createLoopBoundaries)
     if newRep == nil then

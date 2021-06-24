@@ -17,6 +17,7 @@ function active.change_queue(newQueue)
         log.debug("Saving reptable before change queue.")
         active.queue:save_data()
     end
+
     active.queue = newQueue
     active.queue:activate()
 end

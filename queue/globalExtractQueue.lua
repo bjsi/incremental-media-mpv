@@ -29,7 +29,7 @@ function GlobalExtractQueue:activate()
     sounds.play("global_extract_queue")
 end
 
-function GlobalExtractQueue:subsetter(reps)   
+function GlobalExtractQueue:subsetter(reps)
     local subset = {}
     for i, v in ipairs(reps) do
         subset[i] = v

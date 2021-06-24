@@ -13,6 +13,7 @@ def main(args):
         "--idle=once",
         "--scripts=" + os.getcwd(),
         "--ytdl-raw-options=no-check-certificate=",
+        "--input-ipc-server=/tmp/testing-mpv.sock"
         ]
     if args:
         default += args

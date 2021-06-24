@@ -1,15 +1,16 @@
 local log = require("utils.log")
 local ffmpeg = require("systems.ffmpeg")
-local sounds = require("systems.sounds")
 local ydl = require("systems.ydl")
 local mpu = require("mp.utils")
 local dt = require("utils.date")
 local ext = require("utils.ext")
 local str = require("utils.str")
 local extractHeader = require("reps.reptable.extract_header")
+local itemHeader = require("reps.reptable.item_header")
 local ExtractRep = require("reps.rep.extract")
 local fs = require("systems.fs")
 local EDL = require("systems.edl")
+local ItemRow = require("reps.rep.item")
 
 local repCreators = {}
 
@@ -50,45 +51,63 @@ function repCreators.createExtract(parent, start, stop)
     return ExtractRep(extractRow)
 end
 
+function repCreators.createItemEdl(parent, itemFilePath, relClozeStart, relClozeStop, edlOutputPath)
+    local edl = EDL.new(
+        itemFilePath,
+        parent.row["start"],
+        parent.row["stop"],
+        relClozeStart,
+        relClozeStop,
+        edlOutputPath
+    )
+    return edl:write()
+end
+
 function repCreators.createLocalItem()
-    local cloze = "sine.opus"
-    local edl = mpu.join_path(fs.media, fname .. ".edl")
-
-    -- Create virtual file using EDL
-    local handle = io.open(edl, "w")
-    handle:write("# mpv EDL v0\n")
-    handle:write(fname .. extension .. ",0," .. tostring(start) .. "\n")
-    handle:write(cloze .. ",0," .. tostring(stop - start) .. "\n")
-    handle:write(fname .. extension .. "," .. tostring(stop) .. "," ..
-                     tostring(
-                         tonumber(curRep.row["stop"]) -
-                             tonumber(curRep.row["start"]) - stop) .. "\n")
-    handle:close()
 end
 
-function repCreators.createYouTubeItem(url, extension, extractFileName, start, stop)
-    local audioStreamUrl = ydl.get_audio_stream(url)
-    if ext.empty(audioStreamUrl) then
+function repCreators.createYouTubeItem(parent, itemFileName)
+
+    -- local audioStreamUrl = player.get_stream_urls()
+    local audioStreamUrl, format = ydl.get_audio_stream(parent.row["url"])
+    if ext.empty(audioStreamUrl) or ext.empty(format) then
+        log.err("Failed to get youtube audio stream.")
         return nil
     end
 
-    local ret = ffmpeg.audio_extract(audioStreamUrl, extractFileName, start, stop)
-                                    
-    if ret.stdout ~= 0 then
-        return nil
-    end
-
+    local itemFilePath = itemFileName .. "." .. format
+    local ret = ffmpeg.audio_extract(parent, audioStreamUrl, itemFilePath)
+    return ret.status == 0 and itemFilePath or nil
 end
 
--- TODO
 function repCreators.createItem(parent, clozeStart, clozeStop)
-    local url = parent.row["url"]
-    local relativeClozeStart = clozeStart - tonumber(parent.row["start"])
-    local relativeClozeStop = clozeStop - tonumber(parent.row["start"])
-    local extension = ".wav"
-    local fname = tostring(os.time(os.date("!*t")))
-    local itemFilePath = mpu.join_path(fs.media, fname .. extension)
-    local item = parent:is_yt() and repCreators.createYouTubeItem() or repCreators.createLocalItem()
+    local filename = tostring(os.time(os.date("!*t")))
+    local itemFileName = mpu.join_path(fs.media, filename)
+    local itemFilePath = parent:is_yt() and repCreators.createYouTubeItem(parent, itemFileName) or repCreators.createLocalItem()
+    if ext.empty(itemFilePath) then
+        log.err("Failed to create item.")
+        return nil
+    end
+
+    local relClozeStart = clozeStart - tonumber(parent.row["start"])
+    local relClozeStop = clozeStop - tonumber(parent.row["start"])
+    local edlOutputPath = mpu.join_path(fs.media, itemFileName .. ".edl")
+    if not repCreators.createItemEdl(parent, itemFilePath, relClozeStart, relClozeStop, edlOutputPath) then
+        log.err("Failed to create item EDL file.")
+        return nil
+    end
+
+    local itemRow = repCreators.copyCommon(parent.row, {}, itemHeader)
+    if not itemRow then
+        log.err("Failed to create item row")
+        return nil
+    end
+
+    itemRow["id"] = repCreators.generateId()
+    itemRow["url"] = edlOutputPath
+    itemRow["parent"] = parent.row["id"]
+
+    return ItemRow(itemRow)
 end
 
 return repCreators

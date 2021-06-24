@@ -2,6 +2,7 @@ data/
 *.wav
 *.edl
 env
+*.webm
 
 
 # Byte-compiled / optimized / =

@@ -1,44 +1,72 @@
 local log = require("utils.log")
+local fs = require("systems.fs")
 
 local EDL = {}
 EDL.__index = EDL
 
-function EDL.new(fp)
+function EDL.new(parentPath, parentStart, parentEnd, clozeStart, clozeEnd, outputPath)
     local self = setmetatable({}, EDL)
-    self.fp = fp
+    self.outputPath = outputPath
     self.header = "# mpv EDL v0\n"
-    self.data = {}
+    self.parentPath = parentPath
+    self.parentStart = parentStart
+    self.parentEnd = parentEnd
+    self.clozeStart = clozeStart
+    self.clozeEnd = clozeEnd
     return self
 end
 
 function EDL:open(mode)
-    local handle = io.open(self.fp, mode)
+    local handle = io.open(self.outputPath, mode)
     if handle == nil then
-        log.err("Failed to open EDL file: " .. self.fp)
+        log.err("Failed to open EDL file: " .. self.outputPath)
         return nil
     end
     return handle
 end
 
+function EDL:pre_cloze()
+    return table.concat(
+        {
+            self.parentPath,
+            self.parentStart,
+            self.clozeStart
+        }, ",")
+end
+
+function EDL:cloze()
+    return table.concat(
+        {
+            fs.sine,
+            self.clozeStart,
+            self.clozeEnd
+        }, ",")
+end
+
+function EDL:post_cloze()
+    return table.concat({
+        self.parentPath,
+        self.clozeEnd,
+        self.parentEnd
+    }, ",")
+end
+
 function EDL:write()
     local handle = self:open("w")
-    if handle == nil then return end
+    if handle == nil then return false end
 
     handle:write(self.header)
-    handle:write(self.data["beg"]["fp"] .. "," .. self.data["beg"]["start"] ..
-                     "," .. self.data["beg"]["stop"] .. "\n")
-    handle:write(
-        self.data["cloze"]["fp"] .. "," .. self.data["cloze"]["start"] .. "," ..
-            self.data["cloze"]["stop"] .. "\n")
-    handle:write(self.data["ending"]["fp"] .. "," ..
-                     self.data["ending"]["start"] .. "," ..
-                     self.data["ending"]["stop"] .. "\n")
+    handle:write(self:pre_cloze() .. "\n")
+    handle:write(self:cloze() .. "\n")
+    handle:write(self:post_cloze() .. "\n")
+
     handle:close()
 
-    log.debug("Successfully wrote EDL file: " .. self.fp)
+    log.debug("Successfully wrote EDL file: " .. self.outputPath)
     return true
 end
 
+-- TODO: cloze adjustments
 -- Load EDL file.
 function EDL:load()
     local handle = self:open("r")
@@ -54,10 +82,11 @@ function EDL:load()
 
     self.data = {beg = beg, cloze = cloze, ending = ending}
 
-    log.debug("Successfully parsed EDL file: " .. self.fp)
+    log.debug("Successfully parsed EDL file: " .. self.outputPath)
     return true
 end
 
+-- TODO
 -- parses a single line in an EDL file
 function EDL:parse_line(line)
     local ret = {}

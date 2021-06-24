@@ -1,13 +1,10 @@
 local Base = require("queue.queueBase")
+local ItemRepTable = require("reps.reptable.unscheduledItems")
+local repCreators = require("reps.rep.repCreators")
 local player = require("systems.player")
 local sounds = require("systems.sounds")
 local ext = require("utils.ext")
-local ItemRepTable = require("reps.reptable.unscheduledItems")
 local log = require("utils.log")
-local mpu = require("mp.utils")
-local fs = require("systems.fs")
-local ydl = require("systems.ydl")
-local ffmpeg = require("systems.ffmpeg")
 local active = require("systems.active")
 
 local LocalTopicQueue
@@ -136,22 +133,31 @@ function ExtractQueueBase:postpone_stop()
     self:adjust_extract(start, stop)
 end
 
-function ExtractQueueBase:create_item(fname, extension, start, stop, curRep)
-    ItemRepTable():add_rep(item)
-    sounds.play("echo")
-    mp.commandv("script-message", "extracted", self.name)
-    player.unset_abloop()
-end
-
--- TODO: What about local
--- TODO: refactor
 function ExtractQueueBase:handle_extract(start, stop, curRep)
     if curRep == nil then
         log.debug("Failed to extract because current rep was nil.")
-        return
+        return false
     end
 
-    self:create_item(fname, extension, start, stop, curRep)
+    if not start or not stop or (start > stop) then 
+        log.err("Invalid extract boundaries.")
+        return false
+    end
+
+    local item = repCreators.createItem(curRep, start, stop)
+    if ext.empty(item) then
+        return false
+    end
+
+    local irt = ItemRepTable(function(r) return r end)
+    if irt:add_to_reps(item) then
+        sounds.play("echo")
+        player.unset_abloop()
+        irt:write()
+    else
+        sounds.play("negative")
+        log.err("Failed to add item to the rep table.")
+    end
 end
 
 return ExtractQueueBase

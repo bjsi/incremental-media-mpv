@@ -34,9 +34,7 @@ function LocalExtractQueue:subsetter(oldRep, reps)
     for i, v in ipairs(reps) do
         subset[i] = v
     end
-    local ret = ext.list_filter(subset, function(r) return r:is_child_of(oldRep) end)
-    log.debug(ret)
-    return ret
+    return ext.list_filter(subset, function(r) return r:is_child_of(oldRep) end)
 end
 
 return LocalExtractQueue

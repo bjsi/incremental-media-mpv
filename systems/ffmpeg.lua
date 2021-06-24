@@ -1,20 +1,16 @@
-local log = require("utils.log")
 local sys = require("systems.system")
-local fs = require("systems.fs")
-local mpu = require("mp.utils")
+local log = require "utils.log"
 
 local ffmpeg = {}
 
-function ffmpeg.audio_extract(url, output, start, stop)
-    local extension = ".wav"
-    local fname = tostring(os.time(os.date("!*t"))) .. "-aa"
-    local extract = mpu.join_path(fs.media, fname .. extension)
+function ffmpeg.audio_extract(parent, audioUrl, outputPath)
+    log.debug("Extracting audio from: " .. parent.row["url"])
     local args = {
-        "ffmpeg", -- "-hide_banner",
-        "-nostats", -- "-loglevel", "fatal",
-        "-ss", tostring(curRep.row["start"]), "-to",
-        tostring(curRep.row["stop"]), "-i", url, -- extract audio stream
-        extract
+        "ffmpeg",
+        "-nostats",
+        "-ss", tostring(parent.row["start"]), "-to",
+        tostring(parent.row["stop"]), "-i", audioUrl, -- extract audio stream
+        outputPath
     }
     return sys.subprocess(args)
 end
