@@ -19,6 +19,10 @@ function Rep:is_deleted()
     end
 end
 
+function Rep:type()
+    error("override me!")
+end
+
 function Rep:_init(row) self.row = row end
 
 function Rep:is_yt() return self.row["type"] == "youtube" end

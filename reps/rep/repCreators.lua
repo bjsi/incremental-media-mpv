@@ -51,11 +51,11 @@ function repCreators.createExtract(parent, start, stop)
     return ExtractRep(extractRow)
 end
 
-function repCreators.createItemEdl(parent, itemFilePath, relClozeStart, relClozeStop, edlOutputPath)
+function repCreators.createItemEdl(startTime, stopTime, itemFilePath, relClozeStart, relClozeStop, edlOutputPath)
     local edl = EDL.new(
         itemFilePath,
-        parent.row["start"],
-        parent.row["stop"],
+        startTime,
+        stopTime,
         relClozeStart,
         relClozeStop,
         edlOutputPath
@@ -64,6 +64,7 @@ function repCreators.createItemEdl(parent, itemFilePath, relClozeStart, relCloze
 end
 
 function repCreators.createLocalItem()
+    return nil
 end
 
 function repCreators.createYouTubeItem(parent, itemFileName)
@@ -83,7 +84,18 @@ end
 function repCreators.createItem(parent, clozeStart, clozeStop)
     local filename = tostring(os.time(os.date("!*t")))
     local itemFileName = mpu.join_path(fs.media, filename)
-    local itemFilePath = parent:is_yt() and repCreators.createYouTubeItem(parent, itemFileName) or repCreators.createLocalItem()
+    local itemFilePath, startTime, stopTime
+
+    if parent:is_yt() then
+        itemFilePath = repCreators.createYouTubeItem(parent, itemFileName)
+        startTime = 0
+        stopTime = -1
+    else 
+        itemFilePath = repCreators.createLocalItem(parent, itemFileName)
+        startTime = parent.row["start"]
+        stopTime = parent.row["stop"]
+    end
+
     if ext.empty(itemFilePath) then
         log.err("Failed to create item.")
         return nil
@@ -92,7 +104,8 @@ function repCreators.createItem(parent, clozeStart, clozeStop)
     local relClozeStart = clozeStart - tonumber(parent.row["start"])
     local relClozeStop = clozeStop - tonumber(parent.row["start"])
     local edlOutputPath = mpu.join_path(fs.media, itemFileName .. ".edl")
-    if not repCreators.createItemEdl(parent, itemFilePath, relClozeStart, relClozeStop, edlOutputPath) then
+
+    if not repCreators.createItemEdl(startTime, stopTime, itemFilePath, relClozeStart, relClozeStop, edlOutputPath) then
         log.err("Failed to create item EDL file.")
         return nil
     end

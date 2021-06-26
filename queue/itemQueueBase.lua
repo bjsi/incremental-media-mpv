@@ -1,7 +1,6 @@
 local Base = require("queue.queueBase")
 local EDL = require("systems.edl")
 local sounds = require("systems.sounds")
-local ItemRepTable = require("reps.reptable.unscheduledItems")
 local log = require("utils.log")
 local active = require("systems.active")
 

@@ -14,6 +14,8 @@ setmetatable(TopicRep, {
 
 function TopicRep:_init(row) Scheduled._init(self, row) end
 
+function TopicRep:type() return "topic" end
+
 function TopicRep:is_done()
     local curtime = self.row["curtime"]
     local stop = self.row["stop"]

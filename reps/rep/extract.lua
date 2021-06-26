@@ -13,6 +13,8 @@ setmetatable(ExtractRep, {
     end
 })
 
+function ExtractRep:type() return "extract" end
+
 function ExtractRep:_init(row) Scheduled._init(self, row) end
 
 function ExtractRep:is_child_of(topic) 

@@ -12,6 +12,8 @@ setmetatable(ItemRep, {
     end
 })
 
+function ItemRep:type() return "item" end
+
 function ItemRep:_init(row) Base._init(self, row) end
 
 function ItemRep:is_child_of(extract) 

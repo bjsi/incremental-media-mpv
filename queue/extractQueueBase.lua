@@ -13,6 +13,7 @@ local LocalItemQueue
 local ExtractQueueBase = {}
 ExtractQueueBase.__index = ExtractQueueBase
 
+
 setmetatable(ExtractQueueBase, {
     __index = Base, -- this is what makes the inheritance work
     __call = function(cls, ...)

@@ -34,7 +34,17 @@ function LocalExtractQueue:subsetter(oldRep, reps)
     for i, v in ipairs(reps) do
         subset[i] = v
     end
-    return ext.list_filter(subset, function(r) return r:is_child_of(oldRep) end)
+    
+    local filter = function(r) return r end
+    if (oldRep ~= nil) and (oldRep:type() == "topic") then
+        log.debug("Type is topic", oldRep)
+        filter = function (r) return r:is_child_of(oldRep) end
+    elseif (oldRep ~= nil) and (oldRep:type() == "item") then
+        log.debug("Type is item", oldRep)
+        filter = function (r) return r:is_parent_of(oldRep) end
+    end
+
+    return ext.list_filter(subset, filter)
 end
 
 return LocalExtractQueue
