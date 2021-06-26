@@ -31,7 +31,7 @@ function TopicQueueBase:_init(name, oldRep, subsetter)
 end
 
 function TopicQueueBase:activate()
-    error("override activate()!")
+    self:subscribe_to_events()
 end
 
 local function on_time_changed(_, time) active.queue:update_curtime(time) end

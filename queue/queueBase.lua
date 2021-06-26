@@ -26,6 +26,10 @@ function QueueBase:_init(name, reptable, oldRep)
     self.createLoopBoundaries = true
 end
 
+function QueueBase:activate()
+    self:loadRep(self.fst, self.oldRep)
+end
+
 -- TODO: Change name to learn
 function QueueBase:next_repetition()
     local playing = self.playing
@@ -35,6 +39,7 @@ function QueueBase:next_repetition()
 end
 
 -- TODO
+-- TODO: keep popping until 
 function QueueBase:forward_history()
     local new = nil
     self.playing = new
@@ -92,6 +97,7 @@ function QueueBase:stutter_backward() player.stutter_backward() end
 
 function QueueBase:dismiss() self.reptable:dismiss_current() end
 
+-- TODO: add oldRep to the backward history stack
 function QueueBase:loadRep(newRep, oldRep)
     player.play(newRep, oldRep, self.createLoopBoundaries)
     self.playing = newRep

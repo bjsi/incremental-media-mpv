@@ -1,5 +1,9 @@
 local ext = {}
 
+function ext.first_or_nil(pred, list)
+    for _, value in pairs(list) do if pred(value) then return value end end
+end
+
 function ext.round(n, digits)
     local shift = 10 ^ digits
     return math.floor(n * shift + 0.5) / shift

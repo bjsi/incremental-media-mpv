@@ -24,8 +24,9 @@ function ScheduledRepTable:_init(dbPath, defaultHeader, subsetter)
 end
 
 function ScheduledRepTable:next_repetition()
+    self:sort()
     if ext.empty(self.subset) then
-        log.debug("No more repetitions!")
+        log.debug("Subset is empty. No more repetitions!")
         sounds.play("negative")
         return
     end
@@ -33,7 +34,7 @@ function ScheduledRepTable:next_repetition()
     local curRep = self:current_scheduled()
     -- not due; don't schedule or load
     if curRep ~= nil and not curRep:is_due() then
-        log.debug("No more repetitions!")
+        log.debug("CurRep is not due. No more repetitions!")
         sounds.play("negative")
         return
     end
@@ -64,6 +65,7 @@ function ScheduledRepTable:next_repetition()
         end
     end
 
+    self:sort()
     self:write()
     return toload
 end
@@ -75,7 +77,7 @@ end
 
 function ScheduledRepTable:sort_by_due()
     local srt = function(a, b) return a:is_due() and not b:is_due() end
-    table.sort(self.reps, srt)
+    table.sort(self.subset, srt)
 end
 
 --- Takes a row and returns a Rep object. Override me!

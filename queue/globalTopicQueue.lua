@@ -21,8 +21,7 @@ function GlobalTopicQueue:_init(oldRep)
 end
 
 function GlobalTopicQueue:activate()
-    self:loadRep(self.reptable:current_scheduled(), self.oldRep)
-    self:subscribe_to_events()
+    TopicQueueBase.activate(self)
     sounds.play("global_topic_queue")
 end
 
@@ -31,7 +30,7 @@ function GlobalTopicQueue:subsetter(reps)
     for i, v in ipairs(reps) do
         subset[i] = v
     end
-    return subset
+    return subset, subset[1]
 end
 
 return GlobalTopicQueue

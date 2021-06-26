@@ -22,7 +22,7 @@ function LocalTopicQueue:_init(oldRep)
 end
 
 function LocalTopicQueue:activate()
-    self:loadRep(self.reptable:current_scheduled(), self.oldRep)
+    TopicQueueBase.activate(self)
     sounds.play("global_topic_queue")
 end
 
@@ -34,10 +34,12 @@ function LocalTopicQueue:subsetter(reps, oldRep)
 
     local pred = function(topic) return oldRep:is_child_of(topic) end
 
+    local fst
     if oldRep ~= nil then
-        ext.move_to_first_where(pred, subset)
+        fst = ext.first_or_nil(pred, subset)
     end
-    return subset
+
+    return subset, fst and fst or subset[1]
 end
 
 return LocalTopicQueue

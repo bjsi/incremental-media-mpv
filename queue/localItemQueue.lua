@@ -21,7 +21,7 @@ function LocalItemQueue:_init(oldRep)
 end
 
 function LocalItemQueue:activate()
-    self:loadRep(self.reptable:current_scheduled(), self.oldRep)
+    ItemQueueBase.activate(self)
     sounds.play("local_item_queue")
 end
 
@@ -31,8 +31,7 @@ function LocalItemQueue:subsetter(oldRep, reps)
         subset[i] = v
     end
     local ret = ext.list_filter(subset, function(r) return r:is_child_of(oldRep) end)
-    log.debug(ret)
-    return ret
+    return ret, ret[1]
 end
 
 return LocalItemQueue

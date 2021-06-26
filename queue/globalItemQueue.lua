@@ -21,7 +21,7 @@ function GlobalItemQueue:_init(oldRep)
 end
 
 function GlobalItemQueue:activate()
-    self:loadRep(self.reptable:current_scheduled(), self.oldRep)
+    ItemQueueBase.activate(self)
     sounds.play("global_item_queue")
 end
 
@@ -30,7 +30,7 @@ function GlobalItemQueue:subsetter(reps)
     for i, v in ipairs(reps) do
         subset[i] = v
     end
-    return subset
+    return subset, subset[1]
 end
 
 return GlobalItemQueue

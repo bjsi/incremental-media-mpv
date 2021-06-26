@@ -25,7 +25,7 @@ function LocalExtractQueue:_init(oldRep)
 end
 
 function LocalExtractQueue:activate()
-    self:loadRep(self.reptable:current_scheduled(), self.oldRep)
+    ExtractQueueBase.activate(self)
     sounds.play("local_extract_queue")
 end
 
@@ -35,16 +35,26 @@ function LocalExtractQueue:subsetter(oldRep, reps)
         subset[i] = v
     end
     
+    local getFst = function(reps) return reps[1] end
     local filter = function(r) return r end
+
     if (oldRep ~= nil) and (oldRep:type() == "topic") then
-        log.debug("Type is topic", oldRep)
+
+        -- Get all extracts that are children of the current topic
         filter = function (r) return r:is_child_of(oldRep) end
+        
     elseif (oldRep ~= nil) and (oldRep:type() == "item") then
-        log.debug("Type is item", oldRep)
-        filter = function (r) return r:is_parent_of(oldRep) end
+
+        -- Get all extracts where the topic == the item's grandparent
+        -- TODO: what if nil
+        local parent = ext.first_or_nil(function(r) r:is_parent_of(oldRep) end, reps)
+        filter = function (r)
+            return r.row["parent"] == parent.row["parent"]
+        end
     end
 
-    return ext.list_filter(subset, filter)
+    subset = ext.list_filter(subset, filter)
+    return subset, getFst(subset) -- TODO: should be reps or subset?
 end
 
 return LocalExtractQueue

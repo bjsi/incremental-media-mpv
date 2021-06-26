@@ -22,14 +22,15 @@ function RepTableBase:_init(fp, header, subsetter)
     self.db = self:create_db(fp, header)
     self.defaultHeader = header
     self.subsetter = subsetter
+    self.fst = nil
     self.reps = {}
     self.subset = {}
 end
 
 function RepTableBase:update_subset()
-    log.debug("Updating subset.")
-    self.subset = self.subsetter(self.reps)
+    self.subset, self.fst = self.subsetter(self.reps)
     self:sort()
+    log.debug("Updated subset: ", self.subset)
 end
 
 function RepTableBase:write() return self.db:write(self) end
@@ -116,7 +117,6 @@ function RepTableBase:read_reps()
     self.reps = reps and reps or {}
     self.header = header and header or self.defaultHeader
     self:update_subset()
-    self:sort()
 end
 
 return RepTableBase

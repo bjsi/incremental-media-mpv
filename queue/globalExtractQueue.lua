@@ -25,7 +25,7 @@ function GlobalExtractQueue:_init(oldRep)
 end
 
 function GlobalExtractQueue:activate()
-    self:loadRep(self.reptable:current_scheduled(), self.oldRep)
+    ExtractQueueBase.activate(self)
     sounds.play("global_extract_queue")
 end
 
@@ -34,7 +34,7 @@ function GlobalExtractQueue:subsetter(reps)
     for i, v in ipairs(reps) do
         subset[i] = v
     end
-    return subset
+    return subset, subset[1]
 end
 
 return GlobalExtractQueue
