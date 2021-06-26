@@ -1,7 +1,4 @@
 local log = require("utils.log")
-local sounds = require("systems.sounds")
-local Scheduler = require("reps.scheduler")
-local ext = require("utils.ext")
 local str = require("utils.str")
 local CSVDB = require("db.csv")
 local MarkdownDB = require("db.md")

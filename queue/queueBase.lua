@@ -27,7 +27,7 @@ function QueueBase:_init(name, reptable, oldRep)
 end
 
 function QueueBase:activate()
-    self:loadRep(self.fst, self.oldRep)
+    self:loadRep(self.reptable.fst, self.oldRep)
 end
 
 -- TODO: Change name to learn
