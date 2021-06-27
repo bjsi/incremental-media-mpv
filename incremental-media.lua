@@ -1,4 +1,5 @@
 local log = require("utils.log")
+local sounds = require("systems.sounds")
 local active = require("systems.active")
 local sys = require("systems.system")
 local GlobalTopicQueue = require("queue.globalTopicQueue")
@@ -6,6 +7,7 @@ local GlobalExtractQueue = require("queue.globalExtractQueue")
 local GlobalItemQueue = require("queue.globalItemQueue")
 local player = require("systems.player")
 local ext = require("utils.ext")
+local sounds = require "systems.sounds"
 
 local function getInitialQueue()
     local gt = GlobalTopicQueue(nil)
@@ -27,20 +29,25 @@ do
         sys.verify_dependencies()
         sys.create_essential_files()
         sys.backup()
-
-        mp.observe_property("time-pos", "number", player.loop_timer.check_loop)
-        mp.set_property("loop", "inf")
-        mp.register_event("shutdown", active.on_shutdown)
-
-        require("systems.keybinds")
         
         local queue = getInitialQueue()
         if not queue or ext.empty(queue.reptable.subset) then
             log.debug("No repetitions available.")
+            sounds.play("negative")
             return
         end
 
-        active.change_queue(queue)
+        if active.change_queue(queue) then
+            require("systems.keybinds")
+            mp.observe_property("time-pos", "number", player.loop_timer.check_loop)
+            mp.set_property("loop", "inf")
+            mp.register_event("shutdown", active.on_shutdown)
+        else
+            log.err("Failed to load the initial queue.")
+            sounds.play("negative")
+            return
+        end
+
         main_executed = true
     end
 end
