@@ -32,7 +32,7 @@ end
 
 function TopicQueueBase:activate()
     self:subscribe_to_events()
-    Base.activate(self)
+    return Base.activate(self)
 end
 
 local function on_time_changed(_, time) active.queue:update_curtime(time) end
