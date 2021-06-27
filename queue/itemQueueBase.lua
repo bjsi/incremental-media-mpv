@@ -3,6 +3,7 @@ local EDL = require("systems.edl")
 local sounds = require("systems.sounds")
 local log = require("utils.log")
 local active = require("systems.active")
+local UnscheduledItemRepTable = require("reps.reptable.unscheduledItems")
 
 local LocalExtractQueue
 
@@ -18,8 +19,8 @@ setmetatable(ItemQueueBase, {
     end
 })
 
-function ItemQueueBase:_init(name, oldRep, repTable)
-    Base._init(self, name, repTable, oldRep)
+function ItemQueueBase:_init(name, oldRep, subsetter)
+    Base._init(self, name, UnscheduledItemRepTable(subsetter), oldRep)
 end
 
 function ItemQueueBase:handle_backward() self:stutter_backward() end
