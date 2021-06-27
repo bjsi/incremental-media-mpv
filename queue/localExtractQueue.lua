@@ -25,8 +25,11 @@ function LocalExtractQueue:_init(oldRep)
 end
 
 function LocalExtractQueue:activate()
-    ExtractQueueBase.activate(self)
-    sounds.play("local_extract_queue")
+    if ExtractQueueBase.activate(self) then
+        sounds.play("local_extract_queue")
+        return true
+    end
+    return false
 end
 
 function LocalExtractQueue:subsetter(oldRep, reps)    

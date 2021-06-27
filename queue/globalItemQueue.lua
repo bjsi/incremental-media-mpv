@@ -21,8 +21,11 @@ function GlobalItemQueue:_init(oldRep)
 end
 
 function GlobalItemQueue:activate()
-    ItemQueueBase.activate(self)
-    sounds.play("global_item_queue")
+    if ItemQueueBase.activate(self) then
+        sounds.play("global_item_queue")
+        return true
+    end
+    return false
 end
 
 function GlobalItemQueue:subsetter(reps)

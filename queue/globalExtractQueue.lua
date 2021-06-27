@@ -25,8 +25,11 @@ function GlobalExtractQueue:_init(oldRep)
 end
 
 function GlobalExtractQueue:activate()
-    ExtractQueueBase.activate(self)
-    sounds.play("global_extract_queue")
+    if ExtractQueueBase.activate(self) then
+        sounds.play("global_extract_queue")
+        return true
+    end
+    return false
 end
 
 function GlobalExtractQueue:subsetter(reps)

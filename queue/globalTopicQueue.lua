@@ -21,8 +21,11 @@ function GlobalTopicQueue:_init(oldRep)
 end
 
 function GlobalTopicQueue:activate()
-    TopicQueueBase.activate(self)
-    sounds.play("global_topic_queue")
+    if TopicQueueBase.activate(self) then
+        sounds.play("global_topic_queue")
+        return true
+    end
+    return false
 end
 
 function GlobalTopicQueue:subsetter(reps)

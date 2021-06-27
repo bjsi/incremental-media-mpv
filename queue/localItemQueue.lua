@@ -21,8 +21,11 @@ function LocalItemQueue:_init(oldRep)
 end
 
 function LocalItemQueue:activate()
-    ItemQueueBase.activate(self)
-    sounds.play("local_item_queue")
+    if ItemQueueBase.activate(self) then
+        sounds.play("local_item_queue")
+        return true
+    end
+    return false
 end
 
 function LocalItemQueue:subsetter(oldRep, reps)    

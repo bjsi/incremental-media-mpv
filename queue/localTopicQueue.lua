@@ -22,8 +22,11 @@ function LocalTopicQueue:_init(oldRep)
 end
 
 function LocalTopicQueue:activate()
-    TopicQueueBase.activate(self)
-    sounds.play("global_topic_queue")
+    if TopicQueueBase.activate(self) then
+        sounds.play("global_topic_queue")
+        return true
+    end
+    return false
 end
 
 function LocalTopicQueue:subsetter(reps, oldRep)
