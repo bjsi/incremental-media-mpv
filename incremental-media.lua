@@ -11,7 +11,7 @@ local function getInitialQueue()
     local gt = GlobalTopicQueue(nil)
     if gt and not ext.empty(gt.reptable.subset) then return gt end
     local ge = GlobalExtractQueue(nil)
-    if ge and not ext.empty(ge.reptahble.subset) then return ge end
+    if ge and not ext.empty(ge.reptable.subset) then return ge end
     local gi = GlobalItemQueue(nil)
     return gi
 end
