@@ -36,7 +36,7 @@ function QueueBase:next_repetition()
     local oldRep = self.playing
     local toLoad = self.reptable:next_repetition()
     if not toLoad then return end
-    if self:loadRep(toLoad, oldRep) then
+    if self:loadRep(toLoad, oldRep) and oldRep then
         self.bwd_history:push(oldRep)
     end
 end

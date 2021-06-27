@@ -4,10 +4,8 @@ function ext.stack_first(pred, stack)
     local ret
     while true do
         ret = stack:pop()
-        if pred(ret) then
+        if pred(ret) or ret == nil then
             return ret 
-        elseif ret == nil then
-            return nil
         end
     end
 end
