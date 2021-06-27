@@ -165,7 +165,7 @@ function sys.create_dir(path)
     elseif sys.platform == "win" then
         args = {"cmd", "/d", "/c", "mkdir", (path:gsub("/", "\""))}
     end
-    return sys.subprocess(args) == 0
+    return sys.subprocess(args).status == 0
 end
 
 function sys.move_file(src_path, tgt_path)
