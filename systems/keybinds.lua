@@ -17,6 +17,14 @@ local keys = {
         ["key"] = "d",
         ["callback"] = function() active.queue:handle_forward() end
     },
+    ["iv-fwd-history"] = {
+        ["key"] = "Alt+right",
+        ["callback"] = function() active.queue:forward_history() end
+    },
+    ["iv-bwd-history"] = {
+        ["key"] = "Alt+left",
+        ["callback"] = function() active.queue:backward_history() end
+    },
     ["iv-extract"] = {
         ["key"] = "2",
         ["callback"] = function() active.queue:extract() end

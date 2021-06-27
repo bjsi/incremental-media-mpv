@@ -2,6 +2,7 @@ local sounds = require("systems.sounds")
 local log = require("utils.log")
 local player = require("systems.player")
 local Stack = require("queue.stack")
+local ext = require "utils.ext"
 
 local QueueBase = {}
 QueueBase.__index = QueueBase
@@ -32,23 +33,53 @@ end
 
 -- TODO: Change name to learn
 function QueueBase:next_repetition()
-    local playing = self.playing
+    local oldRep = self.playing
     local toLoad = self.reptable:next_repetition()
     if not toLoad then return end
-    self:loadRep(toLoad, playing)
+    if self:loadRep(toLoad, oldRep) then
+        self.bwd_history:push(oldRep)
+    end
 end
 
--- TODO
--- TODO: keep popping until 
+function QueueBase:navigate_history(fwd)
+    local oldRep = self.playing
+
+    local exists = function(r)
+        return r and not r:is_deleted()
+    end
+
+    local toload = fwd and ext.stack_first(exists, self.fwd_history) or ext.stack_first(exists, self.bwd_history)
+    if toload == nil then
+        log.debug("No elements to navigate to.")
+        return false
+    end
+
+    if self:loadRep(toload, oldRep) then
+        if fwd then
+            self.bwd_history:push(oldRep)
+            log.debug("Updated bwd history to: ", self.bwd_history)
+        else
+            self.fwd_history:push(oldRep)
+            log.debug("Updated bwd history to: ", self.bwd_history)
+        end
+        return true
+    end
+end
+
 function QueueBase:forward_history()
-    local new = nil
-    self.playing = new
+    if not self:navigate_history(true) then
+        sounds.play("negative")
+    else
+        sounds.play("click1")
+    end
 end
 
--- TODO
 function QueueBase:backward_history()
-    local new = nil
-    self.playing = new
+    if not self:navigate_history(false) then
+        sounds.play("negative")
+    else
+        sounds.play("click1")
+    end
 end
 
 function QueueBase:reload()
@@ -99,8 +130,13 @@ function QueueBase:dismiss() self.reptable:dismiss_current() end
 
 -- TODO: add oldRep to the backward history stack
 function QueueBase:loadRep(newRep, oldRep)
-    player.play(newRep, oldRep, self.createLoopBoundaries)
-    self.playing = newRep
+    if player.play(newRep, oldRep, self.createLoopBoundaries) then
+        self.playing = newRep
+        return true
+    end
+
+    log.debug("Failed to load rep.")
+    return false
 end
 
 function QueueBase:forward() mp.commandv("seek", "+5") end

@@ -1,5 +1,17 @@
 local ext = {}
 
+function ext.stack_first(pred, stack)
+    local ret
+    while true do
+        ret = stack:pop()
+        if pred(ret) then
+            return ret 
+        elseif ret == nil then
+            return nil
+        end
+    end
+end
+
 function ext.first_or_nil(pred, list)
     for _, value in pairs(list) do if pred(value) then return value end end
 end

@@ -126,10 +126,8 @@ function sys.subprocess(args)
     return handle_process_result(res, res, err)
 end
 
--- TODO: Check
 function sys.has_dependency(dependency)
-    local args = {"which"}
-    if sys.platform == "win" then table.insert(args, "/q") end
+    local args = sys.platform == "win" and {"where", "/q"} or {"which"}
     table.insert(args, dependency)
     local ret = sys.subprocess(args)
     return ret.status == 0
