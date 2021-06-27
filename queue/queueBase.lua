@@ -55,15 +55,19 @@ function QueueBase:navigate_history(fwd)
     end
 
     if self:loadRep(toload, oldRep) then
-        if fwd then
-            self.bwd_history:push(oldRep)
-            log.debug("Updated bwd history to: ", self.bwd_history)
-        else
-            self.fwd_history:push(oldRep)
-            log.debug("Updated bwd history to: ", self.bwd_history)
+        if oldRep then
+            if fwd then
+                self.fwd_history:push(oldRep)
+                log.debug("Updated fwd history to: ", self.fwd_history)
+            else
+                self.bwd_history:push(oldRep)
+                log.debug("Updated bwd history to: ", self.bwd_history)
+            end
         end
         return true
     end
+
+    return false
 end
 
 function QueueBase:forward_history()
@@ -128,7 +132,6 @@ function QueueBase:stutter_backward() player.stutter_backward() end
 
 function QueueBase:dismiss() self.reptable:dismiss_current() end
 
--- TODO: add oldRep to the backward history stack
 function QueueBase:loadRep(newRep, oldRep)
     if player.play(newRep, oldRep, self.createLoopBoundaries) then
         self.playing = newRep
