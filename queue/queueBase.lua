@@ -57,11 +57,11 @@ function QueueBase:navigate_history(fwd)
     if self:loadRep(toload, oldRep) then
         if oldRep then
             if fwd then
-                self.fwd_history:push(oldRep)
-                log.debug("Updated fwd history to: ", self.fwd_history)
-            else
                 self.bwd_history:push(oldRep)
                 log.debug("Updated bwd history to: ", self.bwd_history)
+            else
+                self.fwd_history:push(oldRep)
+                log.debug("Updated fwd history to: ", self.fwd_history)
             end
         end
         return true
