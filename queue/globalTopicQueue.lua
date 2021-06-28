@@ -31,9 +31,11 @@ end
 function GlobalTopicQueue:subsetter(reps)
     local subset = {}
     for i, v in ipairs(reps) do
-        subset[i] = v
+        if v:is_due() then
+            subset[i] = v
+        end
     end
-    return subset, subset[1]
+    return subset, function(x) return x[1] end
 end
 
 return GlobalTopicQueue

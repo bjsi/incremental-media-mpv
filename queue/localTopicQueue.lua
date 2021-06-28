@@ -37,12 +37,15 @@ function LocalTopicQueue:subsetter(reps, oldRep)
 
     local pred = function(topic) return oldRep:is_child_of(topic) end
 
-    local fst
-    if oldRep ~= nil then
-        fst = ext.first_or_nil(pred, subset)
+    local function getFst(x)
+        local fst = x[1]
+        if oldRep ~= nil then
+            fst = ext.first_or_nil(pred, subset)
+        end
+        return fst
     end
 
-    return subset, fst and fst or subset[1]
+    return subset, getFst
 end
 
 return LocalTopicQueue

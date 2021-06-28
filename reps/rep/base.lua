@@ -15,7 +15,7 @@ function Rep:is_deleted()
     if self:is_yt() then
         return false
     elseif self:is_local() then
-        return ext.file_exists(self.row["url"])
+        return not ext.file_exists(self.row["url"])
     end
 end
 

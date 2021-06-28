@@ -38,7 +38,6 @@ function LocalExtractQueue:subsetter(oldRep, reps)
         subset[i] = v
     end
     
-    local getFst = function(reps) return reps[1] end
     local filter = function(r) return r end
 
     if (oldRep ~= nil) and (oldRep:type() == "topic") then
@@ -54,10 +53,12 @@ function LocalExtractQueue:subsetter(oldRep, reps)
         filter = function (r)
             return r.row["parent"] == parent.row["parent"]
         end
+    else
+        log.err("oldRep: ", oldRep, "type: ", oldRep:type())
     end
 
     subset = ext.list_filter(subset, filter)
-    return subset, getFst(subset) -- TODO: should be reps or subset?
+    return subset, function(x) return x[1] end
 end
 
 return LocalExtractQueue

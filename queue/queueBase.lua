@@ -36,26 +36,45 @@ function QueueBase:next_repetition()
     local oldRep = self.playing
     local toLoad = self.reptable:next_repetition()
     if not toLoad then return end
-    if self:loadRep(toLoad, oldRep) and oldRep then
+    if self:loadRep(toLoad, oldRep) and oldRep ~= nil then
         self.bwd_history:push(oldRep)
+        log.debug("Pushing oldRep onto bwd history", self.bwd_history)
     end
 end
 
 function QueueBase:navigate_history(fwd)
+    log.debug("Navigate History called:")
+
     local oldRep = self.playing
 
     local exists = function(r)
-        return r and not r:is_deleted()
+        return r ~= nil and not r:is_deleted()
     end
 
-    local toload = fwd and ext.stack_first(exists, self.fwd_history) or ext.stack_first(exists, self.bwd_history)
+    log.debug("Before toload: ")
+    log.debug("FWD: ", self.fwd_history._et)
+    log.debug("BWD: ", self.bwd_history._et)
+
+    local toload
+    
+    if fwd then 
+        toload = ext.stack_first(exists, self.fwd_history)
+    else
+        toload = ext.stack_first(exists, self.bwd_history)
+    end
+
+    log.debug("After toload: ")
+    log.debug("FWD: ", self.fwd_history._et)
+    log.debug("BWD: ", self.bwd_history._et)
+    log.debug("toload: ", toload)
+
     if toload == nil then
         log.debug("No elements to navigate to.")
         return false
     end
 
     if self:loadRep(toload, oldRep) then
-        if oldRep then
+        if oldRep ~= nil then
             if fwd then
                 self.bwd_history:push(oldRep)
                 log.debug("Updated bwd history to: ", self.bwd_history)

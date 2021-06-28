@@ -37,7 +37,7 @@ function GlobalExtractQueue:subsetter(reps)
     for i, v in ipairs(reps) do
         subset[i] = v
     end
-    return subset, subset[1]
+    return subset, function(x) return x[1] end
 end
 
 return GlobalExtractQueue

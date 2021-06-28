@@ -5,7 +5,7 @@ function ext.stack_first(pred, stack)
     while true do
         ret = stack:pop()
         if pred(ret) or ret == nil then
-            return ret 
+            return ret
         end
     end
 end
@@ -41,7 +41,7 @@ end
 function ext.file_exists(name)
     local f = io.open(name, "r")
     if f ~= nil then
-        io.close(f)
+        f:close()
         return true
     else
         return false

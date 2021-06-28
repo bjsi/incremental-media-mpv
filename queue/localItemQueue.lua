@@ -17,7 +17,7 @@ setmetatable(LocalItemQueue, {
 })
 
 function LocalItemQueue:_init(oldRep)
-    ItemQueueBase._init(self, "Local Item Queue", oldRep, UnscheduledItemRepTable(function(reps) return self:subsetter(oldRep, reps) end))
+    ItemQueueBase._init(self, "Local Item Queue", oldRep, function(reps) return self:subsetter(oldRep, reps) end)
 end
 
 function LocalItemQueue:activate()
@@ -34,7 +34,7 @@ function LocalItemQueue:subsetter(oldRep, reps)
         subset[i] = v
     end
     local ret = ext.list_filter(subset, function(r) return r:is_child_of(oldRep) end)
-    return ret, ret[1]
+    return ret, function(x) return x[1] end
 end
 
 return LocalItemQueue

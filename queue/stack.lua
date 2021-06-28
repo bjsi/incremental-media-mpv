@@ -13,12 +13,8 @@ function Stack:Create()
     t._et = {}
 
     -- push a value on to the stack
-    function t:push(...)
-        if ... then
-            local targs = {...}
-            -- add values
-            for _, v in ipairs(targs) do table.insert(self._et, v) end
-        end
+    function t:push(x)
+        table.insert(self._et, x)
     end
 
     -- pop a value from the stack

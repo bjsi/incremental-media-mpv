@@ -25,9 +25,10 @@ function RepTableBase:_init(fp, header, subsetter)
 end
 
 function RepTableBase:update_subset()
-    self.subset, self.fst = self.subsetter(self.reps)
+    local subset, getFst = self.subsetter(self.reps)
+    self.subset = subset
     self:sort()
-    log.debug("Updated subset: ", self.subset)
+    self.fst = getFst(self.subset)
 end
 
 function RepTableBase:write() return self.db:write(self) end
