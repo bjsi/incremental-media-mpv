@@ -30,7 +30,7 @@ function EDL:pre_cloze()
         {
             self.parentPath,
             self.parentStart,
-            self.clozeStart
+            self.clozeStart - self.parentStart
         }, ",")
 end
 
@@ -38,8 +38,8 @@ function EDL:cloze()
     return table.concat(
         {
             fs.sine,
-            self.clozeStart,
-            self.clozeEnd
+            0,
+            self.clozeEnd - self.clozeStart
         }, ",")
 end
 
@@ -47,7 +47,7 @@ function EDL:post_cloze()
     return table.concat({
         self.parentPath,
         self.clozeEnd,
-        self.parentEnd
+        self.parentEnd - self.clozeEnd
     }, ",")
 end
 

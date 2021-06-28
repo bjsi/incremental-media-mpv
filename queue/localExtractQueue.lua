@@ -49,7 +49,7 @@ function LocalExtractQueue:subsetter(oldRep, reps)
 
         -- Get all extracts where the topic == the item's grandparent
         -- TODO: what if nil
-        local parent = ext.first_or_nil(function(r) r:is_parent_of(oldRep) end, reps)
+        local parent = ext.first_or_nil(function(r) return r:is_parent_of(oldRep) end, reps)
         filter = function (r)
             return r.row["parent"] == parent.row["parent"]
         end

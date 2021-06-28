@@ -1,8 +1,6 @@
 local ExtractQueueBase = require("queue.extractQueueBase")
 local ScheduledExtractRepTable = require("reps.reptable.scheduledExtracts")
 local sounds = require("systems.sounds")
-local ext = require("utils.ext")
-local log = require("utils.log")
 
 local GlobalExtractQueue = {}
 GlobalExtractQueue.__index = GlobalExtractQueue

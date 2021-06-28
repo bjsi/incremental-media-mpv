@@ -6,9 +6,9 @@ local Base = require("queue.queueBase")
 local ext = require("utils.ext")
 local TopicRepTable = require("reps.reptable.topics")
 local repCreators = require("reps.rep.repCreators")
-local ExtractRepTable = require("reps.reptable.extracts")
+local ExtractRepTable = require("reps.reptable.unscheduledExtracts")
 
-local LocalExtractQueue
+local GlobalExtractQueue
 
 local TopicQueueBase = {}
 TopicQueueBase.__index = TopicQueueBase
@@ -88,11 +88,12 @@ function TopicQueueBase:handle_extract(start, stop, curRep)
         return
     end
 
-    local ert = ExtractRepTable(function(r) return r end)
-    if ert:add_to_reps(extract) then
+    GlobalExtractQueue = GlobalExtractQueue or require("queue.globalExtractQueue")
+    local geq = GlobalExtractQueue(nil)
+    if geq.reptable:add_to_reps(extract) then
         sounds.play("echo")
         player.unset_abloop()
-        ert:write()
+        geq:save_data()
     else
         sounds.play("negative")
         log.err("Failed to create extract")

@@ -3,7 +3,6 @@ local Scheduler = require("reps.scheduler")
 local ext = require("utils.ext")
 local sounds = require("systems.sounds")
 local log = require("utils.log")
-local default_header = require("reps.reptable.topic_header")
 local active = require("systems.active")
 
 local ScheduledRepTable = {}

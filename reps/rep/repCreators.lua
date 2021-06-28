@@ -63,10 +63,6 @@ function repCreators.createItemEdl(startTime, stopTime, itemFilePath, relClozeSt
     return edl:write()
 end
 
-function repCreators.createLocalItem()
-    return nil
-end
-
 function repCreators.createYouTubeItem(parent, itemFileName)
 
     -- local audioStreamUrl = player.get_stream_urls()
@@ -84,28 +80,30 @@ end
 function repCreators.createItem(parent, clozeStart, clozeStop)
     local filename = tostring(os.time(os.date("!*t")))
     local itemFileName = mpu.join_path(fs.media, filename)
-    local itemFilePath, startTime, stopTime
+    local itemUrl, startTime, stopTime
 
     if parent:is_yt() then
-        itemFilePath = repCreators.createYouTubeItem(parent, itemFileName)
+        itemUrl = repCreators.createYouTubeItem(parent, itemFileName)
         startTime = 0
         stopTime = -1
-    else 
-        itemFilePath = repCreators.createLocalItem(parent, itemFileName)
+        clozeStart = clozeStart - tonumber(parent.row["start"])
+        clozeStop = clozeStop - tonumber(parent.row["start"])
+    elseif parent:is_local() then
+        itemUrl = parent.row["url"]
         startTime = parent.row["start"]
         stopTime = parent.row["stop"]
+    else
+        error("Unrecognized extract type.")
     end
 
-    if ext.empty(itemFilePath) then
-        log.err("Failed to create item.")
+    if ext.empty(itemUrl) then
+        log.err("Failed to create item because url was nil.")
         return nil
     end
 
-    local relClozeStart = clozeStart - tonumber(parent.row["start"])
-    local relClozeStop = clozeStop - tonumber(parent.row["start"])
     local edlOutputPath = mpu.join_path(fs.media, itemFileName .. ".edl")
 
-    if not repCreators.createItemEdl(startTime, stopTime, itemFilePath, relClozeStart, relClozeStop, edlOutputPath) then
+    if not repCreators.createItemEdl(startTime, stopTime, itemUrl, clozeStart, clozeStop, edlOutputPath) then
         log.err("Failed to create item EDL file.")
         return nil
     end

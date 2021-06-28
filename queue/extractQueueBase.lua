@@ -9,6 +9,7 @@ local active = require("systems.active")
 
 local LocalTopicQueue
 local LocalItemQueue
+local GlobalItemQueue
 
 local ExtractQueueBase = {}
 ExtractQueueBase.__index = ExtractQueueBase
@@ -150,7 +151,8 @@ function ExtractQueueBase:handle_extract(start, stop, curRep)
         return false
     end
 
-    local irt = ItemRepTable(function(r) return r end)
+    GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
+    local irt = GlobalItemQueue(nil).reptable
     if irt:add_to_reps(item) then
         sounds.play("echo")
         player.unset_abloop()
