@@ -1,5 +1,4 @@
 local Base = require("queue.queueBase")
-local ItemRepTable = require("reps.reptable.unscheduledItems")
 local repCreators = require("reps.rep.repCreators")
 local player = require("systems.player")
 local sounds = require("systems.sounds")
@@ -63,7 +62,7 @@ function ExtractQueueBase:parent()
     active.change_queue(queue)
 end
 
-function ExtractQueueBase:adjust_extract(start, stop)
+function ExtractQueueBase:adjust_extract(postpone, start)
     local curRep = self.playing
     if not curRep then
         log.debug("Failed to adjust extract because currently playing is nil")
@@ -71,27 +70,33 @@ function ExtractQueueBase:adjust_extract(start, stop)
         return
     end
 
+    local adj = postpone and 0.1 or -0.1
+    local oldStart = tonumber(curRep.row["start"])
+    local oldStop = tonumber(curRep.row["stop"])
+    local newStart = start and oldStart + adj or oldStart
+    local newStop = start and oldStop or oldStop + adj
+
     local duration = tonumber(mp.get_property("duration"))
-    if start < 0 or start > duration or stop < 0 or stop > duration then
+    if newStart < 0 or newStart > duration or newStop < 0 or newStop > duration then
         log.err("Failed to adjust extract because start stop invalid")
+        sounds.play("negative")
         return
     end
 
-    local start_changed = curRep.row["start"] ~= tostring(start)
-    local stop_changed = curRep.row["stop"] ~= tostring(stop)
+    local start_changed = oldStart ~= newStart
+    local stop_changed = oldStop ~= newStop
 
-    curRep.row["start"] = tostring(start)
-    curRep.row["stop"] = tostring(stop)
+    curRep.row["start"] = newStart
+    curRep.row["stop"] = newStop
 
     -- update loop timer
-    player.loop_timer.set_start_time(tonumber(curRep.row["start"]))
-    player.loop_timer.set_stop_time(tonumber(curRep.row["stop"]))
+    player.loop_timer.set_start_time(newStart)
+    player.loop_timer.set_stop_time(newStop)
 
     if start_changed then
-        mp.commandv("seek", curRep.row["start"], "absolute")
+        mp.commandv("seek", tostring(newStart), "absolute")
     elseif stop_changed then
-        mp.commandv("seek", tostring(tonumber(curRep.row["stop"]) - 1),
-                    "absolute") -- TODO: > 0
+        mp.commandv("seek", tostring(newStop - 1), "absolute")
     end
 
     log.debug(
@@ -104,35 +109,43 @@ function ExtractQueueBase:save_data()
 end
 
 function ExtractQueueBase:advance_start()
-    local adj = 0.1
-    local curRep = self.playing
-    local start = tonumber(curRep.row["start"]) - adj
-    local stop = tonumber(curRep.row["stop"])
-    self:adjust_extract(start, stop)
+    local a = mp.get_property("ab-loop-a")
+    local b = mp.get_property("ab-loop-b")
+    if self:validate_abloop(a, b) then
+        Base.advance_start(self)
+    else
+        self:adjust_extract(false, true)
+    end
 end
 
 function ExtractQueueBase:advance_stop()
-    local adj = 0.1
-    local curRep = self.playing
-    local start = tonumber(curRep.row["start"])
-    local stop = tonumber(curRep.row["stop"]) - adj
-    self:adjust_extract(start, stop)
+    local a = mp.get_property("ab-loop-a")
+    local b = mp.get_property("ab-loop-b")
+    if self:validate_abloop(a, b) then
+        Base.advance_start(self)
+    else
+        self:adjust_extract(false, false)
+    end
 end
 
 function ExtractQueueBase:postpone_start()
-    local adj = 0.1
-    local curRep = self.playing
-    local start = tonumber(curRep.row["start"]) + adj
-    local stop = tonumber(curRep.row["stop"])
-    self:adjust_extract(start, stop)
+    local a = mp.get_property("ab-loop-a")
+    local b = mp.get_property("ab-loop-b")
+    if self:validate_abloop(a, b) then
+        Base.advance_start(self)
+    else
+        self:adjust_extract(true, true)
+    end
 end
 
 function ExtractQueueBase:postpone_stop()
-    local adj = 0.1
-    local curRep = self.playing
-    local start = tonumber(curRep.row["start"])
-    local stop = tonumber(curRep.row["stop"]) + adj
-    self:adjust_extract(start, stop)
+    local a = mp.get_property("ab-loop-a")
+    local b = mp.get_property("ab-loop-b")
+    if self:validate_abloop(a, b) then
+        Base.advance_start(self)
+    else
+        self:adjust_extract(true, false)
+    end
 end
 
 function ExtractQueueBase:handle_extract(start, stop, curRep)

@@ -6,7 +6,6 @@ local Base = require("queue.queueBase")
 local ext = require("utils.ext")
 local TopicRepTable = require("reps.reptable.topics")
 local repCreators = require("reps.rep.repCreators")
-local ExtractRepTable = require("reps.reptable.unscheduledExtracts")
 
 local GlobalExtractQueue
 

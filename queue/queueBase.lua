@@ -42,6 +42,17 @@ function QueueBase:next_repetition()
     end
 end
 
+function QueueBase:validate_abloop(a, b)
+    if a == b then return end
+    if a == "no" or b == "no" then
+        return
+    end
+    a = tonumber(a)
+    b = tonumber(b)
+    local dur = tonumber(mp.get_property("duration"))
+    return (a >=0 and b >= 0) and (a <= dur and b <= dur)
+end
+
 function QueueBase:navigate_history(fwd)
     log.debug("Navigate History called:")
 
@@ -51,10 +62,6 @@ function QueueBase:navigate_history(fwd)
         return r ~= nil and not r:is_deleted()
     end
 
-    log.debug("Before toload: ")
-    log.debug("FWD: ", self.fwd_history._et)
-    log.debug("BWD: ", self.bwd_history._et)
-
     local toload
     
     if fwd then 
@@ -62,11 +69,6 @@ function QueueBase:navigate_history(fwd)
     else
         toload = ext.stack_first(exists, self.bwd_history)
     end
-
-    log.debug("After toload: ")
-    log.debug("FWD: ", self.fwd_history._et)
-    log.debug("BWD: ", self.bwd_history._et)
-    log.debug("toload: ", toload)
 
     if toload == nil then
         log.debug("No elements to navigate to.")
@@ -87,6 +89,81 @@ function QueueBase:navigate_history(fwd)
     end
 
     return false
+end
+
+function QueueBase:advance_start()
+    self:adjust_abloop(false, true)
+end
+
+function QueueBase:postpone_start()
+    self:adjust_abloop(true, true)
+end
+
+function QueueBase:advance_stop()
+    self:adjust_abloop(false, false)
+end
+
+function QueueBase:postpone_stop()
+    self:adjust_abloop(false, true)
+end
+
+function QueueBase:adjust_abloop(postpone, start)
+
+    local adj = postpone and 0.1 or -0.1
+
+    local a = mp.get_property("ab-loop-a")
+    local b = mp.get_property("ab-loop-b")
+    if not self:validate_abloop(a, b) then
+        log.debug("AB loop boundaries are invalid!")
+        sounds.play("negative")
+        return
+    end
+
+    local oldStart = a > b and b or a
+    local oldStop = a < b and b or a
+
+    local newStart = oldStart
+    local newStop = oldStop
+
+    if start then
+        newStart = oldStart + adj
+    else
+        newStop = oldStop + adj
+    end 
+
+    local start_changed
+    local stop_changed
+
+    if a > b then
+        mp.set_property("ab-loop-a", tostring(newStop))
+        mp.set_property("ab-loop-b", tostring(newStart))
+        if a ~= newStop then
+            stop_changed = true
+        end
+
+        if b ~= newStart then
+            start_changed = true
+        end
+
+    elseif b > a then
+        mp.set_property("ab-loop-a", tostring(newStart))
+        mp.set_property("ab-loop-b", tostring(newStop))
+        if b ~= newStop then
+            stop_changed = true
+        end
+
+        if a ~= newStart then
+            start_changed = true
+        end
+    end
+
+    if start_changed then
+        log.debug("Updating ab-loop start to: " .. tostring(newStart))
+        mp.commandv("seek", tostring(newStart), "absolute")
+    elseif stop_changed then
+        log.debug("Updating ab-loop stop to: " .. tostring(newStop))
+        mp.commandv("seek", tostring(newStop - 1), "absolute")
+    end
 end
 
 function QueueBase:forward_history()
