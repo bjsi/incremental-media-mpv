@@ -43,9 +43,10 @@ function QueueBase:next_repetition()
 end
 
 function QueueBase:validate_abloop(a, b)
-    if a == b then return end
+    if not a or not b then return false end
+    if a == b then return false end
     if a == "no" or b == "no" then
-        return
+        return false
     end
     a = tonumber(a)
     b = tonumber(b)
@@ -108,11 +109,10 @@ function QueueBase:postpone_stop()
 end
 
 function QueueBase:adjust_abloop(postpone, start)
-
     local adj = postpone and 0.1 or -0.1
-
-    local a = mp.get_property("ab-loop-a")
-    local b = mp.get_property("ab-loop-b")
+    log.debug("Adj: " .. adj)
+    local a = tonumber(mp.get_property("ab-loop-a"))
+    local b = tonumber(mp.get_property("ab-loop-b"))
     if not self:validate_abloop(a, b) then
         log.debug("AB loop boundaries are invalid!")
         sounds.play("negative")

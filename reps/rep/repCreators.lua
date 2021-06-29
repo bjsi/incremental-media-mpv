@@ -2,7 +2,6 @@ local log = require("utils.log")
 local ffmpeg = require("systems.ffmpeg")
 local ydl = require("systems.ydl")
 local mpu = require("mp.utils")
-local dt = require("utils.date")
 local ext = require("utils.ext")
 local str = require("utils.str")
 local extractHeader = require("reps.reptable.extract_header")
@@ -52,15 +51,13 @@ function repCreators.createExtract(parent, start, stop)
 end
 
 function repCreators.createItemEdl(startTime, stopTime, itemFilePath, relClozeStart, relClozeStop, edlOutputPath)
-    local edl = EDL.new(
+    return EDL.new(edlOutputPath):write(
         itemFilePath,
         startTime,
         stopTime,
         relClozeStart,
-        relClozeStop,
-        edlOutputPath
+        relClozeStop
     )
-    return edl:write()
 end
 
 function repCreators.createYouTubeItem(parent, itemFileName)

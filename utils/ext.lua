@@ -1,5 +1,14 @@
 local ext = {}
 
+function ext.list_any(pred, list)
+    for _, v in pairs(list) do
+        if pred(v) then
+            return true
+        end
+    end
+    return false
+end
+
 function ext.stack_first(pred, stack)
     local ret
     while true do

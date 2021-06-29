@@ -1,6 +1,6 @@
 local Base = require("queue.queueBase")
+local player = require("systems.player")
 local EDL = require("systems.edl")
-local sounds = require("systems.sounds")
 local log = require("utils.log")
 local active = require("systems.active")
 local UnscheduledItemRepTable = require("reps.reptable.unscheduledItems")
@@ -43,111 +43,51 @@ function ItemQueueBase:save_data()
     self.reptable:write(self.reptable)
 end
 
-function ItemQueueBase:adjust_cloze(adjustment_fn)
-    mp.set_property("pause", "yes")
-    local cur = self:get_current()
-    local edl = EDL.new(cur["url"])
-    edl:load()
-
-    local cloze_start = edl.data["cloze"]["start"]
-    local cloze_end = edl.data["cloze"]["stop"]
-
-    adjustment_fn(edl)
-
-    local adj_cloze_start = edl.data["cloze"]["start"]
-    local adj_cloze_end = edl.data["cloze"]["stop"]
-
-    local start_changed = cloze_start ~= adj_cloze_start
-    local end_changed = cloze_end ~= adj_cloze_end
-
-    edl:write()
-
-    -- reload
-
-    if start_changed then
-        local start = tostring(tonumber(adj_cloze_start) - 0.5) -- TODO > 0
-        mp.commandv("loadfile", cur["url"], "replace", "start=" .. start)
-    elseif end_changed then
-        local start = tostring(tonumber(adj_cloze_end)) -- TODO > 0
-        mp.commandv("loadfile", cur["url"], "replace", "start=" .. start)
+function ItemQueueBase:adjust_cloze(postpone, start)
+    local cur = self.playing
+    if cur == nil then 
+        log.err("Failed to adjust cloze because current rep is nil.")
+        return
     end
+
+    mp.set_property("pause", "yes")
+    local newStart, newStop = EDL.new(cur.row["url"]):adjust_cloze(postpone, start)
+    if newStart == nil or newStop == nil then
+        log.err("Failed to adjust cloze.")
+        return
+    end
+
+    player.unset_abloop()
+    player.pause_timer.stop()
+
+    -- TODO: validate
+
+    if start then
+        mp.commandv("loadfile", cur.row["url"], "replace", "start=" .. tostring(newStart - 0.4))
+    else 
+        mp.commandv("loadfile", cur.row["url"], "replace", "start=" .. tostring(newStop - 0.05))
+    end
+
+    log.debug("Cloze boundaries updated to: " .. tostring(newStart) .. " -> " .. tostring(newStop))
+    player.loop_timer.set_start_time(0)
+    player.loop_timer.set_stop_time(-1)
     mp.set_property("pause", "no")
-    sounds.play("click1")
 end
 
 function ItemQueueBase:advance_start()
-    local adj = 0.02
-    local duration = tonumber(mp.get_property("duration"))
-
-    local function adjustment_fn(edl)
-        local beg_stop = tonumber(edl.data["beg"]["stop"]) - adj
-        local cloze_stop = tonumber(edl.data["cloze"]["stop"]) + adj
-        local beg_valid = beg_stop > 0 and beg_stop < duration
-        local cloze_valid = cloze_stop > 0 and cloze_stop < duration
-        if cloze_valid and beg_valid then
-            edl.data["beg"]["stop"] = tostring(beg_stop)
-            edl.data["cloze"]["stop"] = tostring(cloze_stop)
-        end
-    end
-
-    self:adjust_cloze(adjustment_fn)
+    self:adjust_cloze(false, true)
 end
 
 function ItemQueueBase:postpone_start()
-    local adj = 0.02
-    local duration = tonumber(mp.get_property("duration"))
-
-    local function adjustment_fn(edl)
-        local beg_stop = tonumber(edl.data["beg"]["stop"]) + adj
-        local cloze_start = tonumber(edl.data["cloze"]["start"]) + adj
-        local beg_valid = beg_stop > 0 and beg_stop < duration
-        local cloze_valid = cloze_start > 0 and cloze_start < duration
-
-        if cloze_valid and beg_valid then
-            edl.data["beg"]["stop"] = tostring(beg_stop)
-            edl.data["cloze"]["start"] = tostring(cloze_start)
-        end
-    end
-    self:adjust_cloze(adjustment_fn)
+    self:adjust_cloze(true, true)
 end
 
 function ItemQueueBase:advance_stop()
-    local adj = 0.02
-    local duration = tonumber(mp.get_property("duration"))
-
-    local function adjustment_fn(edl)
-        local cloze_stop = tonumber(edl.data["beg"]["stop"]) - adj
-        local ending_start = tonumber(edl.data["ending"]["start"]) - adj
-
-        local cloze_valid = cloze_stop > 0 and cloze_stop < duration
-        local ending_valid = ending_start > 0 and ending_start < duration
-
-        if cloze_valid and ending_valid then
-            edl.data["cloze"]["stop"] = tostring(cloze_stop)
-            edl.data["ending"]["start"] = tostring(ending_start)
-        end
-    end
-    self:adjust_cloze(adjustment_fn)
+    self:adjust_cloze(false, false)
 end
 
 function ItemQueueBase:postpone_stop()
-    local adj = 0.02
-    local duration = tonumber(mp.get_property("duration"))
-
-    local function adjustment_fn(edl)
-        local cloze_stop = tonumber(edl.data["cloze"]["stop"]) + adj
-        local ending_start = tonumber(edl.data["ending"]["start"]) + adj
-
-        local cloze_valid = cloze_stop > 0 and cloze_stop < duration
-        local ending_valid = ending_start > 0 and ending_start < duration
-
-        if cloze_valid and ending_valid then
-            edl.data["cloze"]["stop"] = tostring(cloze_stop)
-            edl.data["ending"]["start"] = tostring(ending_start)
-        end
-    end
-
-    self:adjust_cloze(adjustment_fn)
+    self:adjust_cloze(true, false)
 end
 
 return ItemQueueBase

@@ -122,7 +122,7 @@ function ExtractQueueBase:advance_stop()
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
-        Base.advance_start(self)
+        Base.advance_stop(self)
     else
         self:adjust_extract(false, false)
     end
@@ -132,7 +132,7 @@ function ExtractQueueBase:postpone_start()
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
-        Base.advance_start(self)
+        Base.postpone_start(self)
     else
         self:adjust_extract(true, true)
     end
@@ -142,7 +142,7 @@ function ExtractQueueBase:postpone_stop()
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
-        Base.advance_start(self)
+        Base.postpone_stop(self)
     else
         self:adjust_extract(true, false)
     end

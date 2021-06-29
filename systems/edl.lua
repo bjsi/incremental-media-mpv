@@ -1,18 +1,14 @@
 local log = require("utils.log")
+local ext = require("utils.ext")
 local fs = require("systems.fs")
 
 local EDL = {}
 EDL.__index = EDL
 
-function EDL.new(parentPath, parentStart, parentEnd, clozeStart, clozeEnd, outputPath)
+function EDL.new(outputPath)
     local self = setmetatable({}, EDL)
     self.outputPath = outputPath
     self.header = "# mpv EDL v0\n"
-    self.parentPath = parentPath
-    self.parentStart = parentStart
-    self.parentEnd = parentEnd
-    self.clozeStart = clozeStart
-    self.clozeEnd = clozeEnd
     return self
 end
 
@@ -25,40 +21,44 @@ function EDL:open(mode)
     return handle
 end
 
-function EDL:pre_cloze()
+function EDL:pre_cloze(parentPath, parentStart, clozeStart)
     return table.concat(
         {
-            self.parentPath,
-            self.parentStart,
-            self.clozeStart - self.parentStart
+            parentPath,
+            parentStart,
+            clozeStart - parentStart
         }, ",")
 end
 
-function EDL:cloze()
+function EDL:cloze(clozeEnd, clozeStart)
     return table.concat(
         {
             fs.sine,
             0,
-            self.clozeEnd - self.clozeStart
+            clozeEnd - clozeStart
         }, ",")
 end
 
-function EDL:post_cloze()
-    return table.concat({
-        self.parentPath,
-        self.clozeEnd,
-        self.parentEnd - self.clozeEnd
-    }, ",")
+function EDL:post_cloze(parentPath, clozeEnd, parentEnd)
+    return table.concat(
+        {
+            parentPath,
+            clozeEnd,
+            parentEnd - clozeEnd
+        }, ",")
 end
 
-function EDL:write()
+function EDL:write(parentPath, parentStart, parentEnd, clozeStart, clozeEnd)
     local handle = self:open("w")
-    if handle == nil then return false end
+    if handle == nil then
+        log.err("Failed to open EDL file for writing.")
+        return false
+    end
 
     handle:write(self.header)
-    handle:write(self:pre_cloze() .. "\n")
-    handle:write(self:cloze() .. "\n")
-    handle:write(self:post_cloze() .. "\n")
+    handle:write(self:pre_cloze(parentPath, parentStart, clozeStart) .. "\n")
+    handle:write(self:cloze(clozeEnd, clozeStart) .. "\n")
+    handle:write(self:post_cloze(parentPath, clozeEnd, parentEnd) .. "\n")
 
     handle:close()
 
@@ -66,37 +66,73 @@ function EDL:write()
     return true
 end
 
--- TODO: cloze adjustments
--- Load EDL file.
-function EDL:load()
+function EDL:read()
     local handle = self:open("r")
-    if handle == nil then return end
+    if handle == nil then 
+        log.err("Failed to open EDL file: " .. self.outputPath)
+        return
+    end
 
     local content = handle:read("*all")
-    local match = content:gmatch("([^\n]*)\n?")
-    match()
-    local beg = self:parse_line(match())
-    local cloze = self:parse_line(match())
-    local ending = self:parse_line(match())
     handle:close()
 
-    self.data = {beg = beg, cloze = cloze, ending = ending}
+    local match = content:gmatch("([^\n]*)\n?")
+    if not (match() == "# mpv EDL v0") then
+        log.err("Invalid EDL file header.")
+        return nil
+    end
+
+    local preCloze = self:parse_line(match())
+    local cloze = self:parse_line(match())
+    local postCloze = self:parse_line(match())
+
+    log.debug(preCloze)
+    log.debug(cloze)
+    log.debug(postCloze)
+
+    local function pred(arr) return arr == nil or #arr ~= 3 end
+    if ext.list_any(pred, {preCloze, cloze, postCloze}) then
+        log.err("Invalid EDL data.")
+        return nil
+    end
+
+    local parentPath = preCloze[1]
+    local parentStart = tonumber(preCloze[2])
+    local clozeStart = tonumber(preCloze[3]) + parentStart
+    local clozeEnd = tonumber(cloze[3]) + clozeStart
+    local parentEnd = tonumber(postCloze[3]) + clozeEnd
 
     log.debug("Successfully parsed EDL file: " .. self.outputPath)
-    return true
+    return parentPath, parentStart, parentEnd, clozeStart, clozeEnd
 end
 
--- TODO
--- parses a single line in an EDL file
+function EDL:adjust_cloze(postpone, start)
+    local adj = 0.02
+    local advance = not postpone
+    local stop = not start
+
+    local parentPath, parentStart, parentEnd, clozeStart, clozeEnd = self:read()
+    if advance and start then
+        clozeStart = clozeStart - adj
+    elseif postpone and start then
+        clozeStart = clozeStart + adj
+    elseif advance and stop then
+        clozeEnd = clozeEnd - adj
+    elseif postpone and stop then
+        clozeEnd = clozeEnd + adj
+    end
+
+    -- TODO: validate!!!
+
+    local succ = self:write(parentPath, parentStart, parentEnd, clozeStart, clozeEnd)
+    return succ and clozeStart - parentStart, clozeEnd - parentStart or nil, nil
+end
+
 function EDL:parse_line(line)
     local ret = {}
-    local ct = 1
     for v in string.gmatch(line, "[^,]*") do
-        if v ~= "" then
-            if ct == 1 then ret["fp"] = v end
-            if ct == 2 then ret["start"] = v end
-            if ct == 3 then ret["stop"] = v end
-            ct = ct + 1
+        if not ext.empty(v) then
+            ret[#ret+1] = v
         end
     end
     return ret

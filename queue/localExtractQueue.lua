@@ -32,7 +32,7 @@ function LocalExtractQueue:activate()
     return false
 end
 
-function LocalExtractQueue:subsetter(oldRep, reps)    
+function LocalExtractQueue:subsetter(oldRep, reps)
     local subset = {}
     for i, v in ipairs(reps) do
         subset[i] = v
