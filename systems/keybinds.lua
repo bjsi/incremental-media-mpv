@@ -1,9 +1,14 @@
 local active = require("systems.active")
+local importer = require("systems.importer")
 
 local keys = {
     ["iv-parent"] = {
         ["key"] = "w",
         ["callback"] = function() active.queue:parent() end
+    },
+    ["iv-import"] = {
+        ["key"] = "Ctrl+Shift+v",
+        ["callback"] = function() importer.import() end
     },
     ["iv-child"] = {
         ["key"] = "s",

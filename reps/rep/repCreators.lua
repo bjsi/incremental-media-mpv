@@ -9,12 +9,29 @@ local itemHeader = require("reps.reptable.item_header")
 local ExtractRep = require("reps.rep.extract")
 local fs = require("systems.fs")
 local EDL = require("systems.edl")
-local ItemRow = require("reps.rep.item")
+local ItemRep = require("reps.rep.item")
+local TopicRep = require("reps.rep.topic")
 
 local repCreators = {}
 
 function repCreators.generateId()
     return str.random(8)
+end
+function repCreators.createTopic(title, type, url, priority)
+    local topicRow = {
+        ["id"] = repCreators.generateId(),
+        ["title"] = title,
+        ["type"] = type,
+        ["url"] = url,
+        ["start"] = 0,
+        ["stop"] = -1,
+        ["curtime"] = 0,
+        ["priority"] = priority,
+        ["interval"] = 1,
+        ["nextrep"] = 1970-01-01,
+        ["speed"] = 1
+    }
+    return TopicRep(topicRow)
 end
 
 --- Copy common kv pairs
@@ -115,7 +132,7 @@ function repCreators.createItem(parent, clozeStart, clozeStop)
     itemRow["url"] = edlOutputPath
     itemRow["parent"] = parent.row["id"]
 
-    return ItemRow(itemRow)
+    return ItemRep(itemRow)
 end
 
 return repCreators
