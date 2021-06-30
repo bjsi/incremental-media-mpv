@@ -5,6 +5,8 @@ local ext = require "utils.ext"
 
 local ydl = {}
 
+ydl.url_prefix = "https://www.youtube.com/watch?v="
+
 function ydl.get_info(url)
     local args = {
         "youtube-dl",

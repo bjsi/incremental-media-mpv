@@ -1,5 +1,5 @@
 local log = require("utils.log")
-local sounds = require("systems.sounds")
+local mpopt = require("mp.options")
 local active = require("systems.active")
 local sys = require("systems.system")
 local GlobalTopicQueue = require("queue.globalTopicQueue")
@@ -18,22 +18,25 @@ local function getInitialQueue()
     return gi
 end
 
-local main
-do
-    local main_executed = false
-    main = function()
-        if main_executed then return end
+local settings = {
+    ["autostart"] = false,
+}
 
-        log.debug("Loading incremental media.")
+mpopt.read_options(settings, "im")
 
+local loaded = false
+
+local function run()
+    if not loaded then
         sys.verify_dependencies()
         sys.create_essential_files()
         sys.backup()
-        
+
         local queue = getInitialQueue()
         if not queue or ext.empty(queue.reptable.subset) then
             log.debug("No repetitions available.")
             sounds.play("negative")
+            loaded = true
             return
         end
 
@@ -45,12 +48,13 @@ do
         else
             log.err("Failed to load the initial queue.")
             sounds.play("negative")
-            return
         end
 
-        main_executed = true
+        loaded = true
     end
 end
 
--- for when loading from idle
-main()
+if settings.autostart then
+    run()
+end
+

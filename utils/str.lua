@@ -1,5 +1,9 @@
 local str = {}
 
+function str.only_alphanumeric(s)
+    return s:gsub('%W','')
+end
+
 function str.get_extension(s) return s:match("[^.]+$") end
 
 function str.contains_non_latin(s) return s:match("[^%c%p%s%w]") end
