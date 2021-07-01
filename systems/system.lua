@@ -224,7 +224,7 @@ function sys.uuid()
     end
     local ret = sys.subprocess(args)
     if ret.status == 0 then
-        return str.remove_newlines(ret.stdout)
+        return str.remove_leading_trailing_spaces(ret.stdout)
     else 
         error("Failed to generate uuid with error: " .. ret.error)
     end

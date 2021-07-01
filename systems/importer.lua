@@ -19,7 +19,7 @@ function importer.import()
     end
 
     local fileinfo, _ = mpu.file_info(url)
-    local topics = fileinfo and importer.create_local_topic(url) or importer.create_yt_topic(url)
+    local topics = fileinfo and importer.create_local_topics(url) or importer.create_yt_topics(url)
 
     if active.queue and active.queue.name:find("Topic") then
         importer.add_topics_to_queue(topics, active.queue)
@@ -45,7 +45,8 @@ function importer.add_topics_to_queue(topics, queue)
     end
 end
 
-function importer.create_local_topic(url)
+-- TODO: import directory
+function importer.create_local_topics(url)
     local _, fn = mpu.split_path(url)
     local title = str.only_alphanumeric(str.remove_ext(fn))
     local priority = 30
@@ -53,7 +54,7 @@ function importer.create_local_topic(url)
     return {topic}
 end
 
-function importer.create_yt_topic(url)
+function importer.create_yt_topics(url)
     local infos = ydl.get_info(url)
     log.debug("Infos: ", infos)
     if not infos then return nil end
