@@ -19,7 +19,8 @@ end
 
 function str.random(length)
     if not length or length <= 0 then return '' end
-    math.randomseed(os.clock() ^ 5)
+    -- math.randomseed(os.clock() ^ 5)
+    math.randomseed()
     return str.random(length - 1) .. charset[math.random(1, #charset)]
 end
 

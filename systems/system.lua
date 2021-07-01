@@ -201,17 +201,32 @@ function sys.clipboard_read()
     else
         local args
         if sys.platform == "lnx" then
-            args = {"xclip", "-out", "-selection", "clipboard"}
+            args = {"xclip", "-out", "-sel", "clipboard"}
         elseif sys.platform == "win" then
             args = {"powershell", "-NoProfile", "-Command", ps_clip_read}
         end
 
-        local status, clip, err_str = sys.subprocess(args)
-        if status == 0 then
-            return clip
+        local ret = sys.subprocess(args)
+        if ret.status == 0 then
+            return ret.stdout
         else
-            return false, err_str
+            return false, ret.error
         end
+    end
+end
+
+function sys.uuid()
+    local args
+    if sys.platform == "lnx" or sys.platform == "mac" then
+        args = { "sh", "-c", "cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-zA-Z0-9' | head -c 32" }
+    elseif sys.platform == "win" then
+        args = {"powershell", "-NoProfile", "-Command", "[guid]::NewGuid().ToString()"}
+    end
+    local ret = sys.subprocess(args)
+    if ret.status == 0 then
+        return str.remove_newlines(ret.stdout)
+    else 
+        error("Failed to generate uuid with error: " .. ret.error)
     end
 end
 

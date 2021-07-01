@@ -24,6 +24,15 @@ function RepTableBase:_init(fp, header, subsetter)
     self.subset = {}
 end
 
+function RepTableBase:exists(element)
+    for _, v in ipairs(self.reps) do
+        if v.row["url"] == element.row["url"] then
+            return true
+        end
+    end
+    return false
+end
+
 function RepTableBase:update_subset()
     local subset, getFst = self.subsetter(self.reps)
     self.subset = subset

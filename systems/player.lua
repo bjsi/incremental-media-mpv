@@ -4,6 +4,7 @@ local subs = require("systems.subs")
 local log = require("utils.log")
 local sounds = require("systems.sounds")
 local active = require("systems.active")
+local ydl = require "systems.ydl"
 
 local player = {}
 
@@ -12,7 +13,8 @@ local function load(newRep, oldRep, start)
     if oldRep ~= nil and oldRep.row["url"] == newRep.row["url"] then
         mp.commandv("seek", tostring(start), "absolute")
     else
-        mp.commandv("loadfile", newRep.row["url"], "replace",
+        local url = newRep:is_yt() and ydl.url_prefix .. newRep.row["url"] or newRep.row["url"]
+        mp.commandv("loadfile", url, "replace",
                     "start=" .. tostring(start))
     end
 end

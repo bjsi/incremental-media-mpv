@@ -1,7 +1,9 @@
 local log = require("utils.log")
+local str = require("utils.str")
 local mpu = require("mp.utils")
 local sys = require("systems.system")
 local ext = require "utils.ext"
+
 
 local ydl = {}
 
@@ -17,8 +19,14 @@ function ydl.get_info(url)
 
     local ret = sys.subprocess(args)
     if ret.status == 0 then
-        local matches = ret.stdout:gmatch("([^\n]*)\n?") -- TODO: windows? \r\n
-        return ext.list_map(matches, function(x) return mpu.parse_json(x) end)
+        local t = {}
+        for i in ret.stdout:gmatch("([^\n]*)\n?") do
+            if i then
+                t[#t + 1] = mpu.parse_json(str.remove_newlines(i))
+            end
+        end 
+        log.debug("t: ", t)
+        return t
     end
 
     return nil

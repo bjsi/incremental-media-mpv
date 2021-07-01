@@ -11,15 +11,13 @@ local fs = require("systems.fs")
 local EDL = require("systems.edl")
 local ItemRep = require("reps.rep.item")
 local TopicRep = require("reps.rep.topic")
+local sys = require("systems.system")
 
 local repCreators = {}
 
-function repCreators.generateId()
-    return str.random(8)
-end
 function repCreators.createTopic(title, type, url, priority)
     local topicRow = {
-        ["id"] = repCreators.generateId(),
+        ["id"] = sys.uuid(),
         ["title"] = title,
         ["type"] = type,
         ["url"] = url,
@@ -28,7 +26,7 @@ function repCreators.createTopic(title, type, url, priority)
         ["curtime"] = 0,
         ["priority"] = priority,
         ["interval"] = 1,
-        ["nextrep"] = 1970-01-01,
+        ["nextrep"] = "1970-01-01",
         ["speed"] = 1
     }
     return TopicRep(topicRow)
@@ -58,7 +56,7 @@ function repCreators.createExtract(parent, start, stop)
 
     extractRow["start"] = tostring(ext.round(start, 2))
     extractRow["stop"] = tostring(ext.round(stop, 2))
-    extractRow["id"] = repCreators.generateId()
+    extractRow["id"] = sys.uuid()
     extractRow["interval"] = 1
     extractRow["nextrep"] = "1970-01-01"
     extractRow["parent"] = parent.row["id"]
@@ -128,7 +126,7 @@ function repCreators.createItem(parent, clozeStart, clozeStop)
         return nil
     end
 
-    itemRow["id"] = repCreators.generateId()
+    itemRow["id"] = sys.uuid()
     itemRow["url"] = edlOutputPath
     itemRow["parent"] = parent.row["id"]
 
