@@ -32,7 +32,7 @@ end
 -- TODO: is there the possibility of duplication between the first element
 -- and the same element in the subset
 function LocalTopicQueue:subsetter(reps, oldRep)
-    local subset = ext.list_filter(reps, function(r) return r:is_due() end)
+    local subset = ext.list_filter(reps, function(r) return r:is_due() and not r:has_dependency() and not r:is_deleted() end)
     local pred = function(topic) return oldRep:is_child_of(topic) end
     local fst = ext.first_or_nil(pred, reps)
     return subset, fst and fst or subset[1]

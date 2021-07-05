@@ -20,6 +20,7 @@ setmetatable(LocalExtractQueue, {
 --- Create a new GlobalTopicQueue.
 --- @param oldRep Rep last playing Rep object.
 function LocalExtractQueue:_init(oldRep)
+    self.sorted = false
     ExtractQueueBase._init(self, "Local Extract Queue", oldRep,
                            UnscheduledExtractRepTable(function(reps) return self:subsetter(oldRep, reps) end)
                          )
@@ -63,17 +64,22 @@ function LocalExtractQueue:subsetter(oldRep, reps)
     subset = ext.list_filter(subset, filter)
 
     -- Sorting subset
-
-    sort.by_created(subset)
+    self:sort(subset)
 
     -- Determining first element
-
     if from_items then
         local pred = function(extract) return oldRep:is_child_of(extract) end
         ext.move_to_first_where(pred, subset)
     end
 
     return subset, subset[1]
+end
+
+function LocalExtractQueue:sort(reps)
+    if not self.sorted then
+        sort.by_created(reps)
+    end
+    self.sorted = true
 end
 
 return LocalExtractQueue

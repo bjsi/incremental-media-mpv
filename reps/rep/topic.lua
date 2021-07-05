@@ -12,7 +12,6 @@ setmetatable(TopicRep, {
         return self
     end
 })
-
 function TopicRep:has_dependency()
     return not ext.empty(self.row["dependency"])
 end

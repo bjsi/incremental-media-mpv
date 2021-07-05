@@ -27,7 +27,7 @@ end
 
 function UnscheduledRepTable:next_repetition()
     -- Base:next_repetition(self)
-    self:update_subset()
+    -- self:update_subset()
 
     if ext.empty(self.subset) then
         log.debug("Subset is empty. No more repetitions!")
@@ -50,6 +50,9 @@ function UnscheduledRepTable:next_repetition()
 
     table.remove(self.subset, 1)
     table.insert(self.subset, curRep)
+
+    log.debug("Post next repetition subset: ", self.subset)
+
     self:write()
     log.debug("Loading the next scheduled repetition...")
     return nextRep

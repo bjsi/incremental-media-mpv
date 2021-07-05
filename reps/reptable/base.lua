@@ -63,7 +63,6 @@ end
 
 function RepTableBase:update_subset()
     local updated = self:update_dependencies()
-    log.debug("Update subset subsetter: ", self.subsetter)
     self.subset, self.fst  = self.subsetter(self.reps)
     if not updated then
         self:update_dependencies()
@@ -91,16 +90,6 @@ end
 function RepTableBase:get_next_rep()
     self:sort()
     return self.subset[2]
-end
-
-function RepTableBase:next_repetition()
-    self:update_subset()
-
-    if ext.empty(self.subset) then
-        log.debug("Subset is empty. No more repetitions!")
-        sounds.play("negative")
-        return
-    end
 end
 
 function RepTableBase:dismiss_current()
