@@ -31,9 +31,16 @@ function GlobalItemQueue:activate()
 end
 
 function GlobalItemQueue:subsetter(reps)
-    local subset = ext.list_copy(reps)
-    sort.by_priority(subset)
+    local subset = ext.list_filter(reps, function(r) return r:is_outstanding(true) end)
+    self:sort(subset)
     return subset, subset[1]
+end
+
+function GlobalItemQueue:sort(reps)
+    if not self.sorted then
+        sort.by_priority(reps)
+    end
+    self.sorted = true
 end
 
 return GlobalItemQueue

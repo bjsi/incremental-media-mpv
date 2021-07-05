@@ -8,6 +8,8 @@ local TopicRepTable = require("reps.reptable.topics")
 local repCreators = require("reps.rep.repCreators")
 
 local GlobalExtractQueue
+local GlobalItemQueue
+local LocalExtractQueue
 
 local TopicQueueBase = {}
 TopicQueueBase.__index = TopicQueueBase
@@ -27,6 +29,38 @@ setmetatable(TopicQueueBase, {
 function TopicQueueBase:_init(name, oldRep, subsetter)
     Base._init(self, name, TopicRepTable(subsetter), oldRep)
     self.createLoopBoundaries = false -- allow seeking behind curtime
+end
+
+function TopicQueueBase:load_grand_queue()
+    local topicParent = self.playing
+    if not topicParent then
+        log.debug("Failed to load grandchild queue because currently playing is nil.")
+        return
+    end
+
+    LocalExtractQueue = LocalExtractQueue or require("queue.globalExtractQueue")
+    local leq = LocalExtractQueue(topicParent)
+    local extractReps = leq.reptable.reps
+    local extractParentIds = ext.list_map(extractReps, function(r) return r.row["id"] end)
+    if ext.empty(extractParentIds) then
+        log.debug("No available grandchild repetitions.")
+        return
+    end
+
+    local GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
+    local giq = GlobalItemQueue(nil)
+    local itemReps = giq.reptable.reps
+    local isGrandChild = function(r)
+        return ext.list_contains(extractParentIds, r.row["parent"])
+    end
+    local grandChildren = ext.list_filter(itemReps, isGrandChild)
+    if ext.empty(grandChildren) then
+        log.debug("No available grandchild repetitions.")
+    end
+
+    giq.reptable.subset = grandChildren
+    self:clean_up_events()
+    active.change_queue(giq)
 end
 
 function TopicQueueBase:activate()

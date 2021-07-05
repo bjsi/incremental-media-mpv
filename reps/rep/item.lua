@@ -12,9 +12,14 @@ setmetatable(ItemRep, {
     end
 })
 
-function ItemRep:type() return "item" end
 
 function ItemRep:_init(row) Base._init(self, row) end
+
+function ItemRep:is_outstanding()
+    return not self:is_deleted() and not self:is_dismissed()
+end
+
+function ItemRep:type() return "item" end
 
 function ItemRep:is_child_of(extract) 
     return (self.row["parent"] == extract.row["id"])

@@ -1,6 +1,5 @@
 local log = require("utils.log")
 local sort = require("reps.reptable.sort")
-local sounds = require("systems.sounds")
 local ext = require("utils.ext")
 local str = require("utils.str")
 local CSVDB = require("db.csv")
@@ -90,17 +89,6 @@ end
 function RepTableBase:get_next_rep()
     self:sort()
     return self.subset[2]
-end
-
-function RepTableBase:dismiss_current()
-    local cur = self:current_scheduled()
-    if not cur:is_due() then
-        log.debug("No due repetition to dismiss.")
-        return
-    end
-    self:remove_current()
-    log.debug("Dismissed repetition: " .. cur.row["title"])
-    self:write()
 end
 
 function RepTableBase:remove_current()

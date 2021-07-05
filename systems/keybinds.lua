@@ -3,6 +3,17 @@ local importer = require("systems.importer")
 
 local keys = {
 
+    ["iv-dismiss"] = {
+        ["key"] = "Ctrl+d",
+        ["callback"] = function() active.queue:dismiss() end
+    },
+
+    -- Load a grandparent / grandchild queue
+    ["iv-grand"] = {
+        ["key"] = "G",
+        ["callback"] = function() active.queue:load_grand_queue() end
+    },
+
     ["iv-global-extracts"] = {
         ["key"] = "E",
         ["callback"] = function() active.load_global_extracts() end
@@ -15,7 +26,7 @@ local keys = {
 
     --- Load the global topic queue.
     ["iv-global-topics"] = {
-        ["key"] = "G",
+        ["key"] = "T",
         ["callback"] = function() active.load_global_topics() end
     },
 

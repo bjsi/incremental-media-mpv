@@ -217,7 +217,25 @@ function QueueBase:stutter_forward() player.stutter_forward() end
 
 function QueueBase:stutter_backward() player.stutter_backward() end
 
-function QueueBase:dismiss() self.reptable:dismiss_current() end
+function QueueBase:dismiss()
+    local cur = self.playing
+    if cur == nil then
+        log.debug("Failed to dismiss because self.playing is nil.")
+        return
+    end
+
+    cur.row["dismissed"] = 1
+    log.debug("Dismissed repetition.")
+    sounds.play("delete")
+    self.reptable:update_subset()
+    self:save_data()
+end
+
+function QueueBase:load_grand_queue()
+end
+
+function QueueBase:clean_up_events()
+end
 
 function QueueBase:loadRep(newRep, oldRep)
     if player.play(newRep, oldRep, self.createLoopBoundaries) then

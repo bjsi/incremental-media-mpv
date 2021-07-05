@@ -27,13 +27,14 @@ function active.load_global_extracts()
 end
 
 function active.load_global_items()
-    GlobalItemQueue = GlobalItemQueue or require("queue.globalTopicQueue")
-    local geq = GlobalItemQueue(nil)
-    active.change_queue(geq)
+    GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
+    local giq = GlobalItemQueue(nil)
+    active.change_queue(giq)
 end
 
 function active.change_queue(newQueue)
     if active.queue then
+        active.queue:clean_up_events()
         log.debug("Saving reptable before change queue.")
         active.queue:save_data()
     end

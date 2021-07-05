@@ -4,8 +4,10 @@ local EDL = require("systems.edl")
 local log = require("utils.log")
 local active = require("systems.active")
 local UnscheduledItemRepTable = require("reps.reptable.unscheduledItems")
+local sounds = require "systems.sounds"
 
 local LocalExtractQueue
+local LocalTopicQueue
 
 local ItemQueueBase = {}
 ItemQueueBase.__index = ItemQueueBase
@@ -21,6 +23,29 @@ setmetatable(ItemQueueBase, {
 
 function ItemQueueBase:_init(name, oldRep, subsetter)
     Base._init(self, name, UnscheduledItemRepTable(subsetter), oldRep)
+end
+
+function ItemQueueBase:load_grand_queue()
+    local itemGrandChild = self.playing
+    if not itemGrandChild then
+        log.debug("Failed to load grandparent queue because current playing is nil.")
+        sounds.play("negative")
+        return
+    end
+
+    LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
+    local leq = LocalExtractQueue(itemGrandChild)
+    local extract = leq.reptable.subset[1]
+    if extract == nil then
+        log.debug("Failed to load grandparent queue.")
+        sounds.play("negative")
+        return 
+    end
+
+    LocalTopicQueue = LocalTopicQueue or require("queue.localTopicQueue")
+    local ltq = LocalTopicQueue(extract)
+    
+    active.change_queue(ltq)
 end
 
 function ItemQueueBase:handle_backward() self:stutter_backward() end

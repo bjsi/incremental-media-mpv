@@ -12,9 +12,18 @@ setmetatable(ExtractRep, {
     end
 })
 
-function ExtractRep:type() return "extract" end
-
 function ExtractRep:_init(row) Scheduled._init(self, row) end
+
+function ExtractRep:is_outstanding(checkDue)
+    local default = not self:is_deleted() and not self:is_dismissed()
+    if checkDue then
+        return (self:is_due() and default)
+    else
+        return default
+    end
+end
+
+function ExtractRep:type() return "extract" end
 
 function ExtractRep:is_child_of(topic) 
     return (self.row["parent"] == topic.row["id"])

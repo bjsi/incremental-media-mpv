@@ -12,11 +12,21 @@ setmetatable(TopicRep, {
         return self
     end
 })
+
+function TopicRep:_init(row) Scheduled._init(self, row) end
+
+function TopicRep:is_outstanding(checkDue)
+    local default = not self:is_deleted() and not self:is_done() and not self:is_dismissed() and not self:has_dependency()
+    if checkDue then
+        return self:is_due() and default
+    else
+        return default
+    end
+end
+
 function TopicRep:has_dependency()
     return not ext.empty(self.row["dependency"])
 end
-
-function TopicRep:_init(row) Scheduled._init(self, row) end
 
 function TopicRep:type() return "topic" end
 

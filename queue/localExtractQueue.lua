@@ -35,7 +35,7 @@ function LocalExtractQueue:activate()
 end
 
 function LocalExtractQueue:subsetter(oldRep, reps)
-    local subset = ext.list_copy(reps)
+    local subset = ext.list_filter(reps, function(r) return r:is_outstanding(false) end)
     local from_topics = (oldRep ~= nil) and (oldRep:type() == "topic")
     local from_items = (oldRep ~= nil) and (oldRep:type() == "item")
     local from_nil = oldRep == nil

@@ -21,6 +21,7 @@ function repCreators.createTopic(title, type, url, priority, stop, dependency)
     local topicRow = {
         ["id"] = sys.uuid(),
         ["title"] = title,
+        ["dismissed"] = 0,
         ["type"] = type,
         ["url"] = url,
         ["start"] = 0,
@@ -58,6 +59,7 @@ function repCreators.createExtract(parent, start, stop)
     end
 
     extractRow["start"] = tostring(ext.round(start, 2))
+    extractRow["dismissed"] = 0
     extractRow["created"] = tostring(os.time())
     extractRow["stop"] = tostring(ext.round(stop, 2))
     extractRow["id"] = sys.uuid()
@@ -132,6 +134,7 @@ function repCreators.createItem(parent, clozeStart, clozeStop)
 
     itemRow["id"] = sys.uuid()
     itemRow["created"] = os.time()
+    itemRow["dismissed"] = 0
     itemRow["url"] = edlOutputPath
     itemRow["parent"] = parent.row["id"]
 

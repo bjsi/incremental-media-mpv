@@ -11,6 +11,8 @@ setmetatable(Rep, {
     end
 })
 
+function Rep:_init(row) self.row = row end
+
 function Rep:is_deleted()
     if self:is_yt() then
         return false
@@ -23,7 +25,9 @@ function Rep:type()
     error("override me!")
 end
 
-function Rep:_init(row) self.row = row end
+function Rep:is_dismissed()
+    return self.row["dismissed"] == 1
+end
 
 function Rep:is_yt() return self.row["type"] == "youtube" end
 
