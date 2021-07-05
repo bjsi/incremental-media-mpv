@@ -1,6 +1,8 @@
 local ExtractQueueBase = require("queue.extractQueueBase")
+local sort = require("reps.reptable.sort")
 local ScheduledExtractRepTable = require("reps.reptable.scheduledExtracts")
 local sounds = require("systems.sounds")
+local ext = require "utils.ext"
 
 local GlobalExtractQueue = {}
 GlobalExtractQueue.__index = GlobalExtractQueue
@@ -31,11 +33,9 @@ function GlobalExtractQueue:activate()
 end
 
 function GlobalExtractQueue:subsetter(reps)
-    local subset = {}
-    for i, v in ipairs(reps) do
-        subset[i] = v
-    end
-    return subset, function(x) return x[1] end
+    local subset = ext.list_filter(reps, function(r) return r:is_due() end)
+    sort.by_priority(subset)
+    return subset, subset[1]
 end
 
 return GlobalExtractQueue

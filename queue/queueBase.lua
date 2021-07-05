@@ -7,7 +7,6 @@ local ext = require "utils.ext"
 local QueueBase = {}
 QueueBase.__index = QueueBase
 
--- TODO: Save a history of previously visited elements excluding dismissed
 setmetatable(QueueBase, {
     __call = function(cls, ...)
         local self = setmetatable({}, cls)
@@ -17,7 +16,6 @@ setmetatable(QueueBase, {
 })
 
 function QueueBase:_init(name, reptable, oldRep)
-    log.debug("Loading: " .. name)
     self.name = name
     self.reptable = reptable
     self.fwd_history = Stack:Create()
@@ -28,6 +26,7 @@ function QueueBase:_init(name, reptable, oldRep)
 end
 
 function QueueBase:activate()
+    log.debug("Activating: " .. self.name)
     return self:loadRep(self.reptable.fst, self.oldRep)
 end
 
@@ -35,7 +34,10 @@ end
 function QueueBase:next_repetition()
     local oldRep = self.playing
     local toLoad = self.reptable:next_repetition()
-    if not toLoad then return end
+    if not toLoad then
+        log.debug("No rep to load. Returning.")
+        return 
+    end
     if self:loadRep(toLoad, oldRep) and oldRep ~= nil then
         self.bwd_history:push(oldRep)
         log.debug("Pushing oldRep onto bwd history", self.bwd_history)
@@ -167,6 +169,7 @@ function QueueBase:adjust_abloop(postpone, start)
 end
 
 function QueueBase:forward_history()
+    self.reptable:update_dependencies()
     if not self:navigate_history(true) then
         sounds.play("negative")
     else
@@ -175,6 +178,7 @@ function QueueBase:forward_history()
 end
 
 function QueueBase:backward_history()
+    self.reptable:update_dependencies()
     if not self:navigate_history(false) then
         sounds.play("negative")
     else
@@ -231,6 +235,7 @@ function QueueBase:dismiss() self.reptable:dismiss_current() end
 function QueueBase:loadRep(newRep, oldRep)
     if player.play(newRep, oldRep, self.createLoopBoundaries) then
         self.playing = newRep
+        self.reptable:update_dependencies()
         return true
     end
 

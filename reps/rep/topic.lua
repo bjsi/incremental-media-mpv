@@ -17,13 +17,10 @@ function TopicRep:_init(row) Scheduled._init(self, row) end
 function TopicRep:type() return "topic" end
 
 function TopicRep:is_done()
-    local curtime = self.row["curtime"]
-    local stop = self.row["stop"]
-    if curtime == nil then return false end
-
-    if stop == nil then return false end
-
-    return (tonumber(curtime) / tonumber(stop)) >= 0.95
+    local curtime = tonumber(self.row["curtime"])
+    local stop = tonumber(self.row["stop"])
+    if curtime == nil or stop == nil then return false end
+    return curtime / stop >= 0.95
 end
 
 function TopicRep:is_child_of() return false end

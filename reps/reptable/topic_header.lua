@@ -8,7 +8,8 @@ local topic_header = {
     [7] = "curtime",
     [8] = "priority",
     [9] = "interval",
-    [10] = "nextrep",
-    [11] = "speed"
+    [10] = "dependency",
+    [11] = "nextrep",
+    [12] = "speed"
 }
 return topic_header

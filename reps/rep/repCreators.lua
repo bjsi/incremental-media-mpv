@@ -15,17 +15,20 @@ local sys = require("systems.system")
 
 local repCreators = {}
 
-function repCreators.createTopic(title, type, url, priority)
+function repCreators.createTopic(title, type, url, priority, stop, dependency)
+    stop = stop and stop or -1
+    log.debug("Creating a topic with dependency: ", dependency)
     local topicRow = {
         ["id"] = sys.uuid(),
         ["title"] = title,
         ["type"] = type,
         ["url"] = url,
         ["start"] = 0,
-        ["stop"] = -1,
+        ["stop"] = stop,
         ["curtime"] = 0,
         ["priority"] = priority,
         ["interval"] = 1,
+        ["dependency"] = dependency,
         ["nextrep"] = "1970-01-01",
         ["speed"] = 1
     }

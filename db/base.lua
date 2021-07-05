@@ -43,6 +43,7 @@ function DB:read_reps(rep_func)
     log.debug("Successfully read header from: " .. self.fp)
 
     local reps = self:read_rows(handle, header, rep_func)
+    log.debug("Reps: ", reps)
     if reps == nil then
         log.debug("Failed to read reps from: " .. self.fp)
         handle:close()
@@ -111,10 +112,13 @@ function DB:read_rows(handle, header, rep_func)
     local ret = {}
     for line in handle:lines() do
         line = self:preprocess_read_row(line)
+
         local row = {}
         local ct = 1
         for v in self:parse_row(line) do
             if v ~= "" then
+                v = v == "NULL" and "" or v
+                log.debug(header[ct] .. " == " .. v)
                 row[header[ct]] = v
                 ct = ct + 1
             end
@@ -140,6 +144,7 @@ function DB:write_rows(handle, repTable)
     for _, rep in ipairs(repTable.reps) do
         for i, h in ipairs(repTable.header) do
             local cell = rep.row[h]
+            cell = cell == "" and "NULL" or cell
             self:write_cell(handle, i, #repTable.header, cell)
         end
     end

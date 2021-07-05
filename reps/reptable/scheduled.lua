@@ -4,6 +4,7 @@ local ext = require("utils.ext")
 local sounds = require("systems.sounds")
 local log = require("utils.log")
 local active = require("systems.active")
+local sort = require "reps.reptable.sort"
 
 local ScheduledRepTable = {}
 ScheduledRepTable.__index = ScheduledRepTable
@@ -23,60 +24,66 @@ function ScheduledRepTable:_init(dbPath, defaultHeader, subsetter)
 end
 
 function ScheduledRepTable:next_repetition()
-    self:sort()
+
+    -- Base:next_repetition(self) -- Not working for some reason
+
+    self:update_subset()
+
     if ext.empty(self.subset) then
         log.debug("Subset is empty. No more repetitions!")
         sounds.play("negative")
         return
     end
 
-    local curRep = self:current_scheduled()
+    local curSchedRep = self:current_scheduled()
+    local nextSchedRep = self:get_next_rep()
+    local curPlayRep = active.queue.playing
+
     -- not due; don't schedule or load
-    if curRep ~= nil and not curRep:is_due() then
+    if curSchedRep and not curSchedRep:is_due() then
         log.debug("CurRep is not due. No more repetitions!")
         sounds.play("negative")
         return
     end
 
-    if active.queue.playing ~= curRep then
+    if curPlayRep.row["id"] ~= curSchedRep.row["id"] then
         log.debug("Currently playing is not currently scheduled. Loading currently scheduled.")
-        return curRep
+        return curSchedRep
     end
 
-    local nextRep = self:get_next_rep()
-
     self:remove_current()
-    local sched = Scheduler()
-    sched:schedule(self, curRep)
+    self:schedule(curPlayRep)
+
     local toload = nil
 
-    if curRep ~= nil and nextRep == nil then
-        toload = curRep
+    if curSchedRep and not nextSchedRep then
+        toload = nil
         log.debug("No more repetitions!")
         sounds.play("negative")
-    elseif curRep ~= nil and nextRep ~= nil then
-        if nextRep:is_due() then
-            log.debug("Next rep is due. Loading the next scheduled repetition...")
-            toload = nextRep
+    elseif curSchedRep and nextSchedRep then
+        if nextSchedRep:is_due() then
+            toload = nextSchedRep
+            log.debug("Loading the next scheduled repetition.")
         else
-            log.debug("Next rep is not due. Loading the current repetition...")
-            toload = curRep
+            log.debug("No more repetitions!")
+            toload = nil
         end
     end
 
-    self:sort()
+    self:update_subset()
     self:write()
+
     return toload
 end
 
-function ScheduledRepTable:sort()
-    self:sort_by_priority()
-    self:sort_by_due()
+function ScheduledRepTable:schedule(rep)
+    local sched = Scheduler()
+    sched:schedule(self, rep)
 end
 
-function ScheduledRepTable:sort_by_due()
-    local srt = function(a, b) return a:is_due() and not b:is_due() end
-    table.sort(self.subset, srt)
+function ScheduledRepTable:sort()
+    sort.by_priority(self.subset)
+    sort.by_due(self.subset)
 end
 
 --- Takes a row and returns a Rep object. Override me!

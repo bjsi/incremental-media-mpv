@@ -3,6 +3,12 @@ local importer = require("systems.importer")
 
 local keys = {
 
+    --- Load the global topic queue.
+    ["iv-global-topics"] = {
+        ["key"] = "G",
+        ["callback"] = function() active.load_global_topics() end
+    },
+
     --- Go to the parent of the current element.
     --- Eg. When executed on an extract, it will attempt to load a topic queue
     --- with the parent topic as the first element.

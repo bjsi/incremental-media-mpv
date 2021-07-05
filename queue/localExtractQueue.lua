@@ -1,4 +1,5 @@
 local ExtractQueueBase = require("queue.extractQueueBase")
+local sort = require("reps.reptable.sort")
 local UnscheduledExtractRepTable = require("reps.reptable.unscheduledExtracts")
 local sounds = require("systems.sounds")
 local ext = require("utils.ext")
@@ -33,10 +34,7 @@ function LocalExtractQueue:activate()
 end
 
 function LocalExtractQueue:subsetter(oldRep, reps)
-    local subset = {}
-    for i, v in ipairs(reps) do
-        subset[i] = v
-    end
+    local subset = ext.list_copy(reps)
     
     local filter = function(r) return r end
 
@@ -53,12 +51,11 @@ function LocalExtractQueue:subsetter(oldRep, reps)
         filter = function (r)
             return r.row["parent"] == parent.row["parent"]
         end
-    else
-        log.err("oldRep: ", oldRep, "type: ", oldRep:type())
     end
 
     subset = ext.list_filter(subset, filter)
-    return subset, function(x) return x[1] end
+    sort.by_priority(subset)
+    return subset, subset[1]
 end
 
 return LocalExtractQueue

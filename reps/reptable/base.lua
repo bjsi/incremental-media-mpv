@@ -1,4 +1,7 @@
 local log = require("utils.log")
+local sort = require("reps.reptable.sort")
+local sounds = require("systems.sounds")
+local ext = require("utils.ext")
 local str = require("utils.str")
 local CSVDB = require("db.csv")
 local MarkdownDB = require("db.md")
@@ -19,9 +22,34 @@ function RepTableBase:_init(fp, header, subsetter)
     self.db = self:create_db(fp, header)
     self.defaultHeader = header
     self.subsetter = subsetter
+    log.debug("Reptable Base subsetter: ", subsetter)
     self.fst = nil
     self.reps = {}
     self.subset = {}
+end
+
+function RepTableBase:get_rep_by_id(id, reps)
+    return ext.first_or_nil(function(r) return r.row["id"] == id end, reps)
+end
+
+function RepTableBase:update_dependencies()
+    local updated = false
+    if ext.empty(self.reps) then return false end
+    for _, v in ipairs(self.reps) do
+        local depId = v.row["dependency"]
+        if depId then
+            local dep = self:get_rep_by_id(depId, self.reps)
+            if not dep or dep:is_deleted() or dep:is_done() then
+                v.row["dependency"] = ""
+                updated = true
+            end
+        end
+    end
+
+    if updated then
+        self:write()
+    end
+    return true
 end
 
 function RepTableBase:exists(element)
@@ -34,10 +62,13 @@ function RepTableBase:exists(element)
 end
 
 function RepTableBase:update_subset()
-    local subset, getFst = self.subsetter(self.reps)
-    self.subset = subset
-    self:sort()
-    self.fst = getFst(self.subset)
+    local updated = self:update_dependencies()
+    log.debug("Update subset subsetter: ", self.subsetter)
+    self.subset, self.fst  = self.subsetter(self.reps)
+    if not updated then
+        self:update_dependencies()
+        self.subset, self.fst  = self.subsetter(self.reps)
+    end
 end
 
 function RepTableBase:write() return self.db:write(self) end
@@ -63,7 +94,13 @@ function RepTableBase:get_next_rep()
 end
 
 function RepTableBase:next_repetition()
-    error("override me!")
+    self:update_subset()
+
+    if ext.empty(self.subset) then
+        log.debug("Subset is empty. No more repetitions!")
+        sounds.play("negative")
+        return
+    end
 end
 
 function RepTableBase:dismiss_current()
@@ -107,16 +144,7 @@ function RepTableBase:current_scheduled()
     return self.subset[1]
 end
 
-function RepTableBase:sort() self:sort_by_priority() end
-
-function RepTableBase:sort_by_priority()
-    local sort_func = function(a, b)
-        local ap = tonumber(a.row["priority"])
-        local bp = tonumber(b.row["priority"])
-        return ap < bp
-    end
-    table.sort(self.subset, sort_func)
-end
+function RepTableBase:sort() sort.by_priority(self.subset) end
 
 function RepTableBase:read_reps()
     local repFunc =  function(row) return self:as_rep(row) end

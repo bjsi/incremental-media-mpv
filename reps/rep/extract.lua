@@ -1,5 +1,4 @@
 local Scheduled = require("reps.rep.scheduled")
-local log = require("utils.log")
 
 local ExtractRep = {}
 ExtractRep.__index = ExtractRep

@@ -49,6 +49,7 @@ end
 -- TODO: check self.playing == actual current playing file
 function TopicQueueBase:update_curtime(time)
     if not time then return end
+    if not self.playing then return end
     self.playing.row["curtime"] = tostring(ext.round(time, 2))
 end
 
@@ -56,6 +57,7 @@ end
 function TopicQueueBase:update_speed()
     local speed = mp.get_property_number("speed")
     if not speed then return end
+    if not self.playing then return end
     self.playing.row["speed"] = ext.round(speed, 2)
 end
 

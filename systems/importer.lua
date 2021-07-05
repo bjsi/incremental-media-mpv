@@ -1,4 +1,5 @@
 local sys = require("systems.system")
+local ffmpeg = require("systems.ffmpeg")
 local active = require("systems.active")
 local GlobalTopicQueue = require("queue.globalTopicQueue")
 local str = require("utils.str")
@@ -11,15 +12,22 @@ local importer = {}
 
 function importer.import()
     local url, _ = sys.clipboard_read()
-    log.debug("Importer found url: ", url)
-
     if not url then
         log.debug("Url is nil.")
         return
     end
 
     local fileinfo, _ = mpu.file_info(url)
-    local topics = fileinfo and importer.create_local_topics(url) or importer.create_yt_topics(url)
+    local topics
+    if fileinfo then
+        if fileinfo then -- if file
+            topics = importer.create_local_topics(url)
+        else -- if directory
+            topics = importer.create_local_topics(url)
+        end
+    else
+        topics = importer.create_yt_topics(url)
+    end
 
     if active.queue and active.queue.name:find("Topic") then
         importer.add_topics_to_queue(topics, active.queue)
@@ -48,9 +56,10 @@ end
 -- TODO: import directory
 function importer.create_local_topics(url)
     local _, fn = mpu.split_path(url)
-    local title = str.only_alphanumeric(str.remove_ext(fn))
+    local title = str.db_friendly(str.remove_ext(fn))
     local priority = 30
-    local topic = repCreators.createTopic(title, "local", url, priority)
+    local duration = ffmpeg.get_duration(url)
+    local topic = repCreators.createTopic(title, "local", url, priority, duration)
     return {topic}
 end
 
@@ -59,11 +68,15 @@ function importer.create_yt_topics(url)
     log.debug("Infos: ", infos)
     if not infos then return nil end
     local topics = {}
+    local prevId = ""
     for _, info in ipairs(infos) do
         if info then
-            local title = str.only_alphanumeric(info["title"])
-            local id = info["id"]
-            table.insert(topics, repCreators.createTopic(title, "youtube", id, 30))
+            local title = str.db_friendly(info["title"])
+            local ytId = info["id"]
+            local duration = info["duration"]
+            local topic = repCreators.createTopic(title, "youtube", ytId, 30, duration, prevId)
+            table.insert(topics, topic)
+            prevId = topic.row["id"]
         end
     end
     return topics

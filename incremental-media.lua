@@ -15,7 +15,7 @@ local function getInitialQueue()
     local ge = GlobalExtractQueue(nil)
     if ge and not ext.empty(ge.reptable.subset) then return ge end
     local gi = GlobalItemQueue(nil)
-    return gi
+    if gi and not ext.empty(gi.reptable.subset) then return gi end
 end
 
 local settings = {
@@ -28,24 +28,24 @@ local loaded = false
 
 local function run()
     if not loaded then
+
         sys.verify_dependencies()
         sys.create_essential_files()
         sys.backup()
 
         local queue = getInitialQueue()
         if not queue or ext.empty(queue.reptable.subset) then
-            log.debug("No repetitions available.")
-            sounds.play("negative")
-            loaded = true
-            return
+            log.debug("No repetitions available. Creating empty topic queue...")
+            queue = GlobalTopicQueue(nil)
         end
 
-        if active.change_queue(queue) then
-            require("systems.keybinds")
-            mp.observe_property("time-pos", "number", player.loop_timer.check_loop)
-            mp.set_property("loop", "inf")
-            mp.register_event("shutdown", active.on_shutdown)
-        else
+        require("systems.keybinds")
+        mp.observe_property("time-pos", "number", player.loop_timer.check_loop)
+        mp.set_property("loop", "inf")
+        mp.register_event("shutdown", active.on_shutdown)
+        mp.set_property("force-window", "yes")
+
+        if not active.change_queue(queue) then
             log.err("Failed to load the initial queue.")
             sounds.play("negative")
         end
@@ -54,7 +54,7 @@ local function run()
     end
 end
 
-if settings.autostart then
+if settings["autostart"] then
     run()
 end
 

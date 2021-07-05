@@ -1,4 +1,11 @@
 local ext = {}
+function ext.list_copy(list)
+    local ret = {}
+    for i, v in ipairs(list) do
+        ret[i] = v
+    end
+    return ret
+end
 
 function ext.list_any(pred, list)
     for _, v in pairs(list) do

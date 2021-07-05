@@ -1,5 +1,7 @@
 local sounds = require("systems.sounds")
+local sort = require("reps.reptable.sort")
 local TopicQueueBase = require("queue.topicQueueBase")
+local ext = require "utils.ext"
 
 local GlobalTopicQueue = {}
 GlobalTopicQueue.__index = GlobalTopicQueue
@@ -29,13 +31,9 @@ function GlobalTopicQueue:activate()
 end
 
 function GlobalTopicQueue:subsetter(reps)
-    local subset = {}
-    for i, v in ipairs(reps) do
-        if v:is_due() then
-            subset[i] = v
-        end
-    end
-    return subset, function(x) return x[1] end
+    local subset = ext.list_filter(reps, function(r) return r:is_due() and not r:is_done() and not r:has_dependency() end)
+    sort.by_priority(subset)
+    return subset, subset[1]
 end
 
 return GlobalTopicQueue

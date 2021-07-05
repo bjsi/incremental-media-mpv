@@ -22,15 +22,11 @@ function UnscheduledRepTable:_init(dbPath, defaultHeader, subsetter)
 end
 
 -- noop
-function UnscheduledRepTable:sort()
+function UnscheduledRepTable:sort(reps)
 end
 
 function UnscheduledRepTable:next_repetition()
-    if ext.empty(self.subset) then
-        log.debug("No more repetitions!")
-        sounds.play("negative")
-        return
-    end
+    Base:next_repetition(self)
 
     local curRep = self:current_scheduled()
     if active.queue.playing ~= curRep then
@@ -47,6 +43,7 @@ function UnscheduledRepTable:next_repetition()
 
     table.remove(self.subset, 1)
     table.insert(self.subset, curRep)
+    self:write()
     log.debug("Loading the next scheduled repetition...")
     return nextRep
 end

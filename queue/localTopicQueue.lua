@@ -30,22 +30,10 @@ function LocalTopicQueue:activate()
 end
 
 function LocalTopicQueue:subsetter(reps, oldRep)
-    local subset = {}
-    for i, v in ipairs(reps) do
-        subset[i] = v
-    end
-
+    local subset = ext.list_filter(reps, function(r) return r:is_due() end)
     local pred = function(topic) return oldRep:is_child_of(topic) end
-
-    local function getFst(x)
-        local fst = x[1]
-        if oldRep ~= nil then
-            fst = ext.first_or_nil(pred, subset)
-        end
-        return fst
-    end
-
-    return subset, getFst
+    local fst = ext.first_or_nil(pred, reps)
+    return subset, fst and fst or subset[1]
 end
 
 return LocalTopicQueue

@@ -4,6 +4,13 @@ function str.only_alphanumeric(s)
     return s:gsub('%W','')
 end
 
+function str.db_friendly(s)
+    s = s:gsub(',', '')
+    s = s:gsub('|', '')
+    s = s:gsub('%s', '')
+    return s
+end
+
 function str.get_extension(s) return s:match("[^.]+$") end
 
 function str.contains_non_latin(s) return s:match("[^%c%p%s%w]") end
