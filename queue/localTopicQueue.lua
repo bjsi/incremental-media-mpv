@@ -29,6 +29,8 @@ function LocalTopicQueue:activate()
     return false
 end
 
+-- TODO: is there the possibility of duplication between the first element
+-- and the same element in the subset
 function LocalTopicQueue:subsetter(reps, oldRep)
     local subset = ext.list_filter(reps, function(r) return r:is_due() end)
     local pred = function(topic) return oldRep:is_child_of(topic) end

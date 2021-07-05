@@ -26,7 +26,14 @@ function UnscheduledRepTable:sort(reps)
 end
 
 function UnscheduledRepTable:next_repetition()
-    Base:next_repetition(self)
+    -- Base:next_repetition(self)
+    self:update_subset()
+
+    if ext.empty(self.subset) then
+        log.debug("Subset is empty. No more repetitions!")
+        sounds.play("negative")
+        return
+    end
 
     local curRep = self:current_scheduled()
     if active.queue.playing ~= curRep then

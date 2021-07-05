@@ -41,7 +41,7 @@ function ExtractQueueBase:child()
     LocalItemQueue = LocalItemQueue or require("queue.localItemQueue")
     local queue = LocalItemQueue(self.playing)
     if ext.empty(queue.reptable.subset) then
-        log.debug("No children available for extract: " .. curRep.row["title"])
+        log.debug("No children available for extract")
         sounds.play("negative")
         return false
     end

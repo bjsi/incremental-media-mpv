@@ -107,12 +107,12 @@ function QueueBase:advance_stop()
 end
 
 function QueueBase:postpone_stop()
-    self:adjust_abloop(false, true)
+    self:adjust_abloop(true, false)
 end
 
 function QueueBase:adjust_abloop(postpone, start)
     local adj = postpone and 0.1 or -0.1
-    log.debug("Adj: " .. adj)
+
     local a = tonumber(mp.get_property("ab-loop-a"))
     local b = tonumber(mp.get_property("ab-loop-b"))
     if not self:validate_abloop(a, b) then
@@ -129,42 +129,29 @@ function QueueBase:adjust_abloop(postpone, start)
 
     if start then
         newStart = oldStart + adj
+        log.debug("Adjusting start from: ", tostring(oldStart), " to: ", tostring(newStart))
     else
         newStop = oldStop + adj
+        log.debug("Adjusting stop from: ", tostring(oldStop), " to: ", tostring(newStop))
     end 
 
-    local start_changed
-    local stop_changed
+    local start_changed = newStart ~= oldStart
+    local stop_changed = newStop ~= oldStop
 
-    if a > b then
-        mp.set_property("ab-loop-a", tostring(newStop))
-        mp.set_property("ab-loop-b", tostring(newStart))
-        if a ~= newStop then
-            stop_changed = true
-        end
-
-        if b ~= newStart then
-            start_changed = true
-        end
-
-    elseif b > a then
-        mp.set_property("ab-loop-a", tostring(newStart))
-        mp.set_property("ab-loop-b", tostring(newStop))
-        if b ~= newStop then
-            stop_changed = true
-        end
-
-        if a ~= newStart then
-            start_changed = true
-        end
+    if not self:validate_abloop(newStart, newStop) then
+        log.debug("Invalid ab-loop values.")
+        return
     end
+
+    mp.set_property("ab-loop-a", tostring(newStart))
+    mp.set_property("ab-loop-b", tostring(newStop))
 
     if start_changed then
         log.debug("Updating ab-loop start to: " .. tostring(newStart))
         mp.commandv("seek", tostring(newStart), "absolute")
     elseif stop_changed then
         log.debug("Updating ab-loop stop to: " .. tostring(newStop))
-        mp.commandv("seek", tostring(newStop - 1), "absolute")
+        mp.commandv("seek", tostring(newStop - 0.3), "absolute")
     end
 end
 

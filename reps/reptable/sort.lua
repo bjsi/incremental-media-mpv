@@ -14,4 +14,9 @@ function sort.by_due(reps)
     table.sort(reps, srt)
 end
 
+function sort.by_created(reps)
+    local srt = function(a, b) return tonumber(a.row["created"]) > tonumber(b.row["created"]) end
+    table.sort(reps, srt)
+end
+
 return sort

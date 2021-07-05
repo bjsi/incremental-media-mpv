@@ -3,6 +3,16 @@ local importer = require("systems.importer")
 
 local keys = {
 
+    ["iv-global-extracts"] = {
+        ["key"] = "E",
+        ["callback"] = function() active.load_global_extracts() end
+    },
+
+    ["iv-global-items"] = {
+        ["key"] = "I",
+        ["callback"] = function() active.load_global_items() end
+    },
+
     --- Load the global topic queue.
     ["iv-global-topics"] = {
         ["key"] = "G",

@@ -35,15 +35,19 @@ end
 
 function LocalExtractQueue:subsetter(oldRep, reps)
     local subset = ext.list_copy(reps)
+    local from_topics = (oldRep ~= nil) and (oldRep:type() == "topic")
+    local from_items = (oldRep ~= nil) and (oldRep:type() == "item")
+    local from_nil = oldRep == nil
+    local filter
     
-    local filter = function(r) return r end
+    -- Filtering subset
 
-    if (oldRep ~= nil) and (oldRep:type() == "topic") then
+    if from_topics then
 
         -- Get all extracts that are children of the current topic
         filter = function (r) return r:is_child_of(oldRep) end
         
-    elseif (oldRep ~= nil) and (oldRep:type() == "item") then
+    elseif from_items then
 
         -- Get all extracts where the topic == the item's grandparent
         -- TODO: what if nil
@@ -51,10 +55,24 @@ function LocalExtractQueue:subsetter(oldRep, reps)
         filter = function (r)
             return r.row["parent"] == parent.row["parent"]
         end
+
+    elseif from_nil then
+        filter = function(r) return r end
     end
 
     subset = ext.list_filter(subset, filter)
-    sort.by_priority(subset)
+
+    -- Sorting subset
+
+    sort.by_created(subset)
+
+    -- Determining first element
+
+    if from_items then
+        local pred = function(extract) return oldRep:is_child_of(extract) end
+        ext.move_to_first_where(pred, subset)
+    end
+
     return subset, subset[1]
 end
 

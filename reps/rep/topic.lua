@@ -1,4 +1,5 @@
 local Scheduled = require("reps.rep.scheduled")
+local ext = require('utils.ext')
 
 local TopicRep = {}
 TopicRep.__index = TopicRep
@@ -11,6 +12,10 @@ setmetatable(TopicRep, {
         return self
     end
 })
+
+function TopicRep:has_dependency()
+    return not ext.empty(self.row["dependency"])
+end
 
 function TopicRep:_init(row) Scheduled._init(self, row) end
 

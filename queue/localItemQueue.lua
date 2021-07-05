@@ -32,7 +32,7 @@ end
 function LocalItemQueue:subsetter(oldRep, reps)    
     local subset = ext.list_copy(reps)
     local ret = ext.list_filter(subset, function(r) return r:is_child_of(oldRep) end)
-    sort.by_priority(subset)
+    sort.by_created(subset)
     return ret, ret[1]
 end
 

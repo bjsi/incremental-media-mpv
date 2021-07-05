@@ -23,10 +23,6 @@ function Rep:type()
     error("override me!")
 end
 
-function Rep:has_dependency()
-    return not ext.empty(self.row["dependency"])
-end
-
 function Rep:_init(row) self.row = row end
 
 function Rep:is_yt() return self.row["type"] == "youtube" end

@@ -43,7 +43,6 @@ function DB:read_reps(rep_func)
     log.debug("Successfully read header from: " .. self.fp)
 
     local reps = self:read_rows(handle, header, rep_func)
-    log.debug("Reps: ", reps)
     if reps == nil then
         log.debug("Failed to read reps from: " .. self.fp)
         handle:close()
