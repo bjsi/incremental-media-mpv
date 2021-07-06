@@ -21,6 +21,7 @@ function ydl.download_audio(url)
     return ydl.handle_download(args, url)
 end
 
+-- TODO: Should be background_process?
 function ydl.handle_download(args, url)
     local ret = sys.subprocess(args)
     if ret.status == 0 then

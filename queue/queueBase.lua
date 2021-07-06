@@ -32,7 +32,7 @@ function QueueBase:activate()
     return self:loadRep(self.reptable.fst, self.oldRep)
 end
 
-function QueueBase:localize_video()
+function QueueBase:localize(_)
     log.debug("Cannot localize videos in " .. self.name)
     sounds.play("negative")
 end

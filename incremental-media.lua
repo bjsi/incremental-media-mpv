@@ -59,7 +59,6 @@ local function run()
         sys.create_essential_files()
         sys.backup()
 
-
         mp.register_event("shutdown", active.on_shutdown)
 
         if not ext.empty(settings["import"]) then
