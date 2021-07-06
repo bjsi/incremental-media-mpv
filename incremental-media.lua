@@ -59,6 +59,8 @@ local function run()
         local importTarget = settings["import"]
         local ret = importer.import(importTarget)
         log.debug("Exiting after import....")
+        local sound = ret and "positive" or "negative"
+        sounds.play_sync(sound)
         mp.commandv("quit", ret and 0 or 1)
     else
         require("systems.keybinds")

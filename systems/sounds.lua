@@ -26,4 +26,10 @@ sounds.play = function(sound)
     sys.background_process(args)
 end
 
+sounds.play_sync = function(sound)
+    local fp = mpu.join_path(fs.sounds, sounds.files[sound])
+    local args = {"mpv", "--no-video", "--really-quiet", fp}
+    sys.subprocess(args)
+end
+
 return sounds
