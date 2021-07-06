@@ -8,7 +8,7 @@ ffmpeg, youtube-dl, mpv
 
 ## Installation
 
-`git clone` this repository into the mpv scripts folder for your operating system.
+`git clone` this repository into the mpv scripts folder for your operating system. You may need to create the scripts folder.
 
 | OS | Location |
 | --- | --- |
