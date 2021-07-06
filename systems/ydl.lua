@@ -13,6 +13,7 @@ ydl.url_prefix = "https://www.youtube.com/watch?v="
 function ydl.download_audio(url)
     local args = {
         "youtube-dl",
+        "--no-check-certificate",
         "-x",
         "-f", "worstaudio/worst",
         mpu.join_path(fs.media, "%(id)s.%(ext)s")
@@ -37,6 +38,7 @@ function ydl.download_video(url)
     local format = mp.get_property("ytdl-format")
     local args = {
         "youtube-dl",
+        "--no-check-certificate",
         "-f", format,
         "-o", "%(id)s.%(ext)s",
         url
@@ -48,6 +50,7 @@ end
 function ydl.get_info(url)
     local args = {
         "youtube-dl",
+        "--no-check-certificate",
         "-j",
         "--flat-playlist",
         url
@@ -70,6 +73,7 @@ end
 function ydl.get_audio_stream(url)
     local args = {
         "youtube-dl",
+        "--no-check-certificate",
         "-f",
         "worstaudio",
         "--youtube-skip-dash-manifest",
