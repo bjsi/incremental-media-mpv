@@ -10,12 +10,16 @@ local log = require "utils.log"
 
 local importer = {}
 
-function importer.import()
+function importer.import_from_clipboard()
     local url, _ = sys.clipboard_read()
     if not url then
         log.debug("Url is nil.")
         return
     end
+    return importer.import(url)
+end
+
+function importer.import(url)
 
     local fileinfo, _ = mpu.file_info(url)
     local topics
@@ -30,9 +34,9 @@ function importer.import()
     end
 
     if active.queue and active.queue.name:find("Topic") then
-        importer.add_topics_to_queue(topics, active.queue)
+        return importer.add_topics_to_queue(topics, active.queue)
     else
-        importer.add_topics_to_queue(topics, GlobalTopicQueue(nil))
+        return importer.add_topics_to_queue(topics, GlobalTopicQueue(nil))
     end
 end
 
@@ -51,6 +55,8 @@ function importer.add_topics_to_queue(topics, queue)
     if imported then
         queue:save_data()
     end
+
+    return imported
 end
 
 -- TODO: import directory
@@ -65,8 +71,6 @@ end
 
 function importer.create_yt_topics(url)
     local infos = ydl.get_info(url)
-    log.debug("Infos: ", infos)
-    if not infos then return nil end
     local topics = {}
     local prevId = ""
     for _, info in ipairs(infos) do

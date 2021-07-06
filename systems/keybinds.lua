@@ -42,7 +42,7 @@ local keys = {
     --- Works with local files, youtube videos and youtube playlists.
     ["iv-import"] = {
         ["key"] = "Ctrl+Shift+v",
-        ["callback"] = function() importer.import() end
+        ["callback"] = function() importer.import_from_clipboard() end
     },
 
     --- Go to the child of the current element.

@@ -117,7 +117,6 @@ function DB:read_rows(handle, header, rep_func)
         for v in self:parse_row(line) do
             if v ~= "" then
                 v = v == "NULL" and "" or v
-                log.debug(header[ct] .. " == " .. v)
                 row[header[ct]] = v
                 ct = ct + 1
             end

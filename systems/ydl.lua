@@ -2,7 +2,6 @@ local log = require("utils.log")
 local str = require("utils.str")
 local mpu = require("mp.utils")
 local sys = require("systems.system")
-local ext = require "utils.ext"
 
 
 local ydl = {}
@@ -18,18 +17,17 @@ function ydl.get_info(url)
     }
 
     local ret = sys.subprocess(args)
+    local t = {}
     if ret.status == 0 then
-        local t = {}
         for i in ret.stdout:gmatch("([^\n]*)\n?") do
             if i then
                 t[#t + 1] = mpu.parse_json(str.remove_newlines(i))
             end
         end 
-        log.debug("t: ", t)
         return t
     end
 
-    return nil
+    return t
 end
 
 function ydl.get_audio_stream(url)
