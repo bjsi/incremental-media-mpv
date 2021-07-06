@@ -102,7 +102,27 @@ function ExtractQueueBase:adjust_extract(postpone, start)
             curRep.row["stop"])
 end
 
+function ExtractQueueBase:has_children()
+    local curRep = self.reptable:current_scheduled()
+    if curRep == nil then
+        log.debug("Failed to load child queue because current rep is nil.")
+        sounds.play("negative")
+        return
+    end
+
+    LocalItemQueue = LocalItemQueue or require("queue.localItemQueue")
+    local queue = LocalItemQueue(self.playing)
+    if ext.empty(queue.reptable.subset) then
+        log.debug("No children available for extract")
+        sounds.play("negative")
+        return
+    end
+
+    sounds.play("click2")
+end
+
 function ExtractQueueBase:save_data()
+    self:update_speed()
     self.reptable:write(self.reptable)
 end
 

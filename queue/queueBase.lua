@@ -37,6 +37,17 @@ function QueueBase:localize(_)
     sounds.play("negative")
 end
 
+function QueueBase:has_children()
+    sounds.play("negative")
+end
+
+function QueueBase:update_speed()
+    local speed = mp.get_property_number("speed")
+    if not speed then return end
+    if not self.playing then return end
+    self.playing.row["speed"] = ext.round(speed, 2)
+end
+
 -- TODO: Change name to learn
 function QueueBase:next_repetition()
     local oldRep = self.playing

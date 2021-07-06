@@ -130,12 +130,23 @@ function TopicQueueBase:update_curtime(time)
     self.playing.row["curtime"] = tostring(ext.round(time, 2))
 end
 
--- TODO: check self.playing == actual current playing file
-function TopicQueueBase:update_speed()
-    local speed = mp.get_property_number("speed")
-    if not speed then return end
-    if not self.playing then return end
-    self.playing.row["speed"] = ext.round(speed, 2)
+function TopicQueueBase:has_children()
+    local cur = self.playing
+    if cur == nil then
+        sounds.play("negative")
+        log.debug("No children because cur is nil")
+        return
+    end
+
+    LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
+    local extractQueue = LocalExtractQueue(cur)
+    if ext.empty(extractQueue.reptable.subset) then
+        log.debug("No children available for topic: " .. cur.row["title"])
+        sounds.play("negative")
+        return
+    end
+
+    sounds.play("click2")
 end
 
 function TopicQueueBase:handle_extract(start, stop, curRep)

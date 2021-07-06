@@ -19,4 +19,9 @@ function sort.by_created(reps)
     table.sort(reps, srt)
 end
 
+function sort.by_start_time(reps)
+    local srt = function(a, b) return tonumber(a.row["start"]) < tonumber(b.row["start"]) end
+    table.sort(reps, srt)
+end
+
 return sort

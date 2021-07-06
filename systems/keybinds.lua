@@ -3,6 +3,11 @@ local importer = require("systems.importer")
 
 local keys = {
 
+    ["iv-has-children"] = {
+        ["key"] = "H",
+        ["callback"] = function() active.queue:has_children() end
+    },
+
     ["iv-localize-video"] = {
         ["key"] = "V",
         ["callback"] = function() active.queue:localize_video() end
