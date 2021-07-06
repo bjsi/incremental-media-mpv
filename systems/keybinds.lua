@@ -3,6 +3,11 @@ local importer = require("systems.importer")
 
 local keys = {
 
+    ["iv-localize-video"] = {
+        ["key"] = "V",
+        ["callback"] = function() active.queue:localize_video() end
+    },
+
     ["iv-dismiss"] = {
         ["key"] = "Ctrl+d",
         ["callback"] = function() active.queue:dismiss() end
@@ -56,13 +61,23 @@ local keys = {
     --- Seek backward
     ["iv-backward"] = {
         ["key"] = "a",
-        ["callback"] = function() active.queue:handle_backward() end
+        ["callback"] = function() active.queue:handle_backward(false) end
     },
 
     --- Seek forward
     ["iv-forward"] = {
         ["key"] = "d",
-        ["callback"] = function() active.queue:handle_forward() end
+        ["callback"] = function() active.queue:handle_forward(false) end
+    },
+
+    ["iv-big-backward"] = {
+        ["key"] = "A",
+        ["callback"] = function() active.queue:handle_backward(true) end
+    },
+
+    ["iv-big-foward"] = {
+        ["key"] = "D",
+        ["callback"] = function() active.queue:handle_forward(true) end
     },
 
     --- Move forward in element history.

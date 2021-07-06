@@ -23,6 +23,8 @@ setmetatable(ItemQueueBase, {
 
 function ItemQueueBase:_init(name, oldRep, subsetter)
     Base._init(self, name, UnscheduledItemRepTable(subsetter), oldRep)
+    self.bigSeek = 2
+    self.smallSeek = 0.1
 end
 
 function ItemQueueBase:load_grand_queue()
@@ -47,10 +49,6 @@ function ItemQueueBase:load_grand_queue()
     
     active.change_queue(ltq)
 end
-
-function ItemQueueBase:handle_backward() self:stutter_backward() end
-
-function ItemQueueBase:handle_forward() self:stutter_forward() end
 
 function ItemQueueBase:parent()
     local cur = self.playing

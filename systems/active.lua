@@ -51,6 +51,7 @@ function active.change_queue(newQueue)
         return false
     end
 
+    active.queue:subscribe_to_events()
     return true
 end
 

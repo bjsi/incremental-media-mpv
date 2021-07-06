@@ -1,4 +1,5 @@
 local log = require("utils.log")
+local mpu = require("mp.utils")
 local importer = require("systems.importer")
 local mpopt = require("mp.options")
 local active = require("systems.active")
@@ -9,10 +10,12 @@ local GlobalItemQueue = require("queue.globalItemQueue")
 local player = require("systems.player")
 local ext = require("utils.ext")
 local sounds = require "systems.sounds"
+local fs = require "systems.fs"
 
 local settings = {
     ["start"] = false,
     ["import"] = "",
+    ["queue"] = "main"
 }
 
 mpopt.read_options(settings, "im")
@@ -46,29 +49,33 @@ end
 
 local function run()
     if not loaded then
+        loaded = true
 
-    loaded = true
+        log.debug("running")
 
-    sys.verify_dependencies()
-    sys.create_essential_files()
-    sys.backup()
+        log.debug("Queue: ", fs.data)
 
-    mp.register_event("shutdown", active.on_shutdown)
+        sys.verify_dependencies()
+        sys.create_essential_files()
+        sys.backup()
 
-    if not ext.empty(settings["import"]) then
-        local importTarget = settings["import"]
-        local ret = importer.import(importTarget)
-        log.debug("Exiting after import....")
-        local sound = ret and "positive" or "negative"
-        sounds.play_sync(sound)
-        mp.commandv("quit", ret and 0 or 1)
-    else
-        require("systems.keybinds")
-        loadMedia()
+
+        mp.register_event("shutdown", active.on_shutdown)
+
+        if not ext.empty(settings["import"]) then
+            local importTarget = settings["import"]
+            local ret = importer.import(importTarget)
+            log.debug("Exiting after import....")
+            local sound = ret and "positive" or "negative"
+            sounds.play_sync(sound)
+            mp.commandv("quit", ret and 0 or 1)
+        else
+            require("systems.keybinds")
+            loadMedia()
+        end
     end
 end
-end
 
-if settings["start"] == "yes" or not ext.empty(settings["import"]) then
+if settings["start"] or not ext.empty(settings["import"]) then
     run()
 end

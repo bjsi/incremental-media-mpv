@@ -6,6 +6,7 @@ local Base = require("queue.queueBase")
 local ext = require("utils.ext")
 local TopicRepTable = require("reps.reptable.topics")
 local repCreators = require("reps.rep.repCreators")
+local ydl = require "systems.ydl"
 
 local GlobalExtractQueue
 local GlobalItemQueue
@@ -29,6 +30,49 @@ setmetatable(TopicQueueBase, {
 function TopicQueueBase:_init(name, oldRep, subsetter)
     Base._init(self, name, TopicRepTable(subsetter), oldRep)
     self.createLoopBoundaries = false -- allow seeking behind curtime
+    self.bigSeek = 10
+    self.smallSeek = 2
+end
+
+function TopicQueueBase:localize(video)
+    local cur = self.playing
+    if not cur or cur:is_local() then return end
+    local url = cur.row["url"]
+    local file = video and ydl.download_video(url) or ydl.download_audio(url)
+    if not file then
+        log.debug("Failed to download locally.")
+        sounds.play("negative")
+        return
+    end
+
+    -- Update url, type for topic and for child extracts
+    cur.row["url"] = file
+    cur.row["type"] = "local"
+
+    LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
+    local leq = LocalExtractQueue(cur)
+    local saved
+    for _, extract in ipairs(leq.reptable.subset) do
+        saved = true
+        extract.row["url"] = file
+        extract.row["type"] = "local"
+    end
+    
+    self:save_data()
+    if saved then
+        leq:save_data()
+    end
+
+    -- Reload the current file
+    self:loadRep(cur, nil)
+end
+
+function TopicQueueBase:localize_video()
+    self:localize(true)
+end
+
+function TopicQueueBase:localize_audio()
+    self:localize(false)
 end
 
 function TopicQueueBase:load_grand_queue()
@@ -64,7 +108,6 @@ function TopicQueueBase:load_grand_queue()
 end
 
 function TopicQueueBase:activate()
-    self:subscribe_to_events()
     return Base.activate(self)
 end
 
@@ -93,22 +136,6 @@ function TopicQueueBase:update_speed()
     if not speed then return end
     if not self.playing then return end
     self.playing.row["speed"] = ext.round(speed, 2)
-end
-
-function TopicQueueBase:handle_forward()
-    if player.paused() then
-        self:stutter_forward()
-    else
-        self:forward()
-    end
-end
-
-function TopicQueueBase:handle_backward()
-    if player.paused() then
-        self:stutter_backward()
-    else
-        self:backward()
-    end
 end
 
 function TopicQueueBase:handle_extract(start, stop, curRep)

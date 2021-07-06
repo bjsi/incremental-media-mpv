@@ -25,11 +25,9 @@ setmetatable(ExtractQueueBase, {
 
 function ExtractQueueBase:_init(name, oldRep, repTable)
     Base._init(self, name, repTable, oldRep)
+    self.bigSeek = 2.5
+    self.smallSeek = 0.1
 end
-
-function ExtractQueueBase:handle_backward() self:stutter_backward() end
-
-function ExtractQueueBase:handle_forward() self:stutter_forward() end
 
 function ExtractQueueBase:child()
     local curRep = self.reptable:current_scheduled()

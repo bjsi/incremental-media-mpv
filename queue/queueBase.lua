@@ -23,11 +23,18 @@ function QueueBase:_init(name, reptable, oldRep)
     self.playing = nil
     self.oldRep = oldRep
     self.createLoopBoundaries = true
+    self.bigSeek = 5
+    self.smallSeek = 1
 end
 
 function QueueBase:activate()
     log.debug("Activating: " .. self.name)
     return self:loadRep(self.reptable.fst, self.oldRep)
+end
+
+function QueueBase:localize_video()
+    log.debug("Cannot localize videos in " .. self.name)
+    sounds.play("negative")
 end
 
 -- TODO: Change name to learn
@@ -213,9 +220,15 @@ function QueueBase:toggle() player.toggle() end
 
 function QueueBase:loop() player.loop() end
 
-function QueueBase:stutter_forward() player.stutter_forward() end
+function QueueBase:handle_backward(big)
+    local seek = big and self.bigSeek or self.smallSeek
+    mp.commandv("seek", "-" .. tostring(seek))
+end
 
-function QueueBase:stutter_backward() player.stutter_backward() end
+function QueueBase:handle_forward(big)
+    local seek = big and self.bigSeek or self.smallSeek
+    mp.commandv("seek", tostring(seek))
+end
 
 function QueueBase:dismiss()
     local cur = self.playing
@@ -234,6 +247,9 @@ end
 function QueueBase:load_grand_queue()
 end
 
+function QueueBase:subscribe_to_events()
+end
+
 function QueueBase:clean_up_events()
 end
 
@@ -247,10 +263,6 @@ function QueueBase:loadRep(newRep, oldRep)
     log.debug("Failed to load rep.")
     return false
 end
-
-function QueueBase:forward() mp.commandv("seek", "+5") end
-
-function QueueBase:backward() mp.commandv("seek", "-5") end
 
 function QueueBase:child()
     sounds.play("negative")
