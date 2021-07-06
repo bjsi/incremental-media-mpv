@@ -8,16 +8,22 @@ ffmpeg, youtube-dl, mpv
 
 ## Installation
 
-`git clone` this repository into the mpv scripts folder for your operating system.
+`git clone` this repository into the mpv scripts folder for your operating system. You may need to create the scripts folder.
 
 | OS | Location |
 | --- | --- |
 | GNU/Linux | `~/.config/mpv/scripts/` |
 | Windows | `C:/Users/Username/AppData/Roaming/mpv/scripts/` |
 
+### Updating
+
+To update to the latest version, navigate into the incremental-media-mpv folder in the mpv scripts folder for your operating system. Run `git pull` to update to the latest version.
+
+## Running
+
 To launch the incremental media script, run the following command:
 
-`mpv --idle=once --script-opts=im-autostart=yes`
+`mpv --idle=once --script-opts=im-start=yes`
 
 Copy youtube video or playlist urls to the clipboard and press Ctrl+Shift+V to import into the topic queue. Hit G to reload the global topic queue.
 
