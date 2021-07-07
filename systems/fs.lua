@@ -19,6 +19,7 @@ fs.topics_data = mpu.join_path(fs.data, "topics.csv")
 fs.extracts_data = mpu.join_path(fs.data, "extracts.csv")
 fs.items_data = mpu.join_path(fs.data, "items.csv")
 fs.sounds = mpu.join_path(fs.base, "sounds")
-fs.sine = mpu.join_path(fs.sounds, "sine.opus")
+fs.sine = mpu.join_path(fs.media, "sine.opus")
+fs.base_sine = mpu.join_path(fs.sounds, "sine.opus")
 
 return fs

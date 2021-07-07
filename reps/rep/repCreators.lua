@@ -3,7 +3,6 @@ local ffmpeg = require("systems.ffmpeg")
 local ydl = require("systems.ydl")
 local mpu = require("mp.utils")
 local ext = require("utils.ext")
-local str = require("utils.str")
 local extractHeader = require("reps.reptable.extract_header")
 local itemHeader = require("reps.reptable.item_header")
 local ExtractRep = require("reps.rep.extract")
@@ -17,7 +16,6 @@ local repCreators = {}
 
 function repCreators.createTopic(title, type, url, priority, stop, dependency)
     stop = stop and stop or -1
-    log.debug("Creating a topic with dependency: ", dependency)
     local topicRow = {
         ["id"] = sys.uuid(),
         ["title"] = title,
@@ -132,10 +130,11 @@ function repCreators.createItem(parent, clozeStart, clozeStop)
         return nil
     end
 
+    local _, fname = mpu.split_path(edlOutputPath)
     itemRow["id"] = sys.uuid()
     itemRow["created"] = os.time()
     itemRow["dismissed"] = 0
-    itemRow["url"] = edlOutputPath
+    itemRow["url"] = fname
     itemRow["parent"] = parent.row["id"]
 
     return ItemRep(itemRow)

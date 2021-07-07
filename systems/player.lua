@@ -5,15 +5,33 @@ local log = require("utils.log")
 local sounds = require("systems.sounds")
 local active = require("systems.active")
 local ydl = require "systems.ydl"
+local sys = require("systems.system")
+local fs = require "systems.fs"
 
 local player = {}
 
-local function load(newRep, oldRep, start)
+function player.get_full_url(rep)
+    local url = rep.row["url"]
+    if rep:is_yt() then
+        url = ydl.url_prefix .. url
+    elseif rep:is_local() or rep:type() == "item" then
+        if not sys.is_absolute_path(url) then
+            log.debug("path is not aboslute", url)
+            url = mpu.join_path(fs.media, url)
+            log.debug("joined path with " .. fs.media .. " to create " .. url)
+        else
+            log.debug("path is absolute", url)
+        end
+    end
+    return url
+end
+
+function player.load(newRep, oldRep, start)
     log.debug("player.load: start = " .. tostring(start))
+    local url = player.get_full_url(newRep)
     if oldRep ~= nil and oldRep.row["url"] == newRep.row["url"] then
         mp.commandv("seek", tostring(start), "absolute")
     else
-        local url = newRep:is_yt() and ydl.url_prefix .. newRep.row["url"] or newRep.row["url"]
         mp.commandv("loadfile", url, "replace",
                     "start=" .. tostring(start))
     end
@@ -40,7 +58,7 @@ function player.play(newRep, oldRep, createLoopBoundaries)
     if curtime ~= nil then start = curtime end
     local stop = tonumber(newRep:valid_stop() and newRep.row["stop"] or -1)
 
-    load(newRep, oldRep, start)
+    player.load(newRep, oldRep, start)
     player.setSpeed(speed)
 
     -- reset loops and timers

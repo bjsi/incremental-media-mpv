@@ -1,4 +1,5 @@
 local log = require("utils.log")
+local mpu = require("mp.utils")
 local ext = require("utils.ext")
 local fs = require("systems.fs")
 
@@ -22,27 +23,30 @@ function EDL:open(mode)
 end
 
 function EDL:pre_cloze(parentPath, parentStart, clozeStart)
+    local _, fname = mpu.split_path(parentPath)
     return table.concat(
         {
-            parentPath,
+            fname,
             parentStart,
             clozeStart - parentStart
         }, ",")
 end
 
 function EDL:cloze(clozeEnd, clozeStart)
+    local _, fname = mpu.split_path(fs.sine)
     return table.concat(
         {
-            fs.sine,
+            fname,
             0,
             clozeEnd - clozeStart
         }, ",")
 end
 
 function EDL:post_cloze(parentPath, clozeEnd, parentEnd)
+    local _, fname = mpu.split_path(parentPath)
     return table.concat(
         {
-            parentPath,
+            fname,
             clozeEnd,
             parentEnd - clozeEnd
         }, ",")

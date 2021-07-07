@@ -2,6 +2,7 @@ local mpu = require("mp.utils")
 local str = require("utils.str")
 local log = require("utils.log")
 local fs = require("systems.fs")
+local ext = require "utils.ext"
 
 -- mostly from: https://github.com/Ben-Kerman/immersive/blob/master/systems/system.lua
 
@@ -18,6 +19,10 @@ function sys.create_essential_files()
                 return false
             end
         end
+    end
+
+    if not ext.file_exists(fs.sine) then
+        sys.copy(fs.sine_base, fs.sine)
     end
 end
 
@@ -67,6 +72,26 @@ function sys.verify_dependencies()
         end
     end
     log.debug("All dependencies available in path.")
+end
+
+function sys.copy(from, to)
+    local fromFile = io.open(from, "r")
+    if fromFile == nil then 
+        log.debug("Failed to read " .. to)
+        return false
+    end
+
+    local fromData = fromFile:read("*a")
+    fromFile:close()
+    
+    local toFile = io.open(to, "w")
+    if toFile == nil then 
+        log.debug("Failed to write to " .. to)
+        return false
+     end
+
+    toFile:write(fromData)
+    toFile:close()
 end
 
 sys.platform = (function()
@@ -138,6 +163,11 @@ function sys.file2base64(fp)
     if sys.platform == "win" then script = script .. ".bat" end
     local args = {script, fp}
     return sys.subprocess(args)
+end
+
+-- TODO: test: join_path should return url if it is absolute
+function sys.is_absolute_path(url)
+    return mpu.join_path("testing", url) == url
 end
 
 function sys.background_process(args, callback)

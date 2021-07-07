@@ -25,15 +25,15 @@ def write_csv(data, output_file: str) -> bool:
 
 class CSVMerger:
 
-    previous: Dict
-    current: Dict
+    local: Dict
+    git: Dict
 
-    def __init__(self, previous: str, current: str):
-        self.previous = load_csv(open(previous), key="id")
-        self.current = load_csv(open(current), key="id")
+    def __init__(self, local: str, git: str):
+        self.local = load_csv(open(local), key="id")
+        self.git = load_csv(open(git), key="id")
 
     def diff(self):
-        return compare(self.previous, self.current)
+        return compare(self.local, self.git)
 
     def merge(self) -> List[List[str]]:
         print("Merging CSV files:\n---")
@@ -68,7 +68,7 @@ class CSVMerger:
         return output
 
     def handle_columns(self, added: List[str]) -> List[str]:
-        prev_header = list(list(self.previous.values())[0].keys())
+        prev_header = list(list(self.local.values())[0].keys())
         print("previous:")
         print(prev_header)
         print("added:")
@@ -82,7 +82,7 @@ class CSVMerger:
         ids_of_changed = [r["key"] for r in changed]
         print("changed keys:")
         print(ids_of_changed)
-        prev_rows = list(self.previous.values())
+        prev_rows = list(self.local.values())
         unchanged = [row for row in prev_rows if row["id"] not in ids_of_changed]
         print("unchanged rows:")
         print(unchanged)
@@ -93,8 +93,8 @@ class CSVMerger:
         output = []
         for changed in data:
 
-            prev_row: Dict[str, str] = self.previous[changed["key"]]
-            cur_row: Dict[str, str] = self.current[changed["key"]]
+            prev_row: Dict[str, str] = self.local[changed["key"]]
+            cur_row: Dict[str, str] = self.git[changed["key"]]
             merged_row: Dict[str, str] = copy.deepcopy(prev_row)
 
             # Curtime

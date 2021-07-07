@@ -1,4 +1,5 @@
 local sounds = require("systems.sounds")
+local sys = require("systems.system")
 local log = require("utils.log")
 local player = require("systems.player")
 local Stack = require("queue.stack")
@@ -56,6 +57,8 @@ function QueueBase:next_repetition()
         log.debug("No rep to load. Returning.")
         return 
     end
+
+    self:save_data()
     if self:loadRep(toLoad, oldRep) and oldRep ~= nil then
         self.bwd_history:push(oldRep)
         log.debug("Pushing oldRep onto bwd history", self.bwd_history)
@@ -96,6 +99,7 @@ function QueueBase:navigate_history(fwd)
         return false
     end
 
+    self:save_data()
     if self:loadRep(toload, oldRep) then
         if oldRep ~= nil then
             if fwd then
@@ -110,6 +114,33 @@ function QueueBase:navigate_history(fwd)
     end
 
     return false
+end
+
+function QueueBase:set_end_boundary_extract()
+    local cur = self.playing
+    if cur == nil then return end
+    local curTime = mp.get_property("time-pos")
+
+    local a = mp.get_property("ab-loop-a")
+    local b = mp.get_property("ab-loop-b")
+
+    if a ~= "no" and b == "no" then
+        mp.set_property("ab-loop-b", curTime)
+        if self:extract() then
+            mp.commandv("seek", curTime, "absolute")
+        end
+    end
+end
+
+function QueueBase:copy_url()
+    local cur = self.playing
+    if cur == nil then return end
+    local url = player.get_full_url(cur)
+    if ext.empty(url) then
+        log.err("Failed to get full url for current rep")
+        return
+    end
+    sys.clipboard_write(url)
 end
 
 function QueueBase:advance_start()
@@ -129,7 +160,7 @@ function QueueBase:postpone_stop()
 end
 
 function QueueBase:adjust_abloop(postpone, start)
-    local adj = postpone and 0.1 or -0.1
+    local adj = postpone and 0.05 or -0.05
 
     local a = tonumber(mp.get_property("ab-loop-a"))
     local b = tonumber(mp.get_property("ab-loop-b"))
@@ -173,6 +204,15 @@ function QueueBase:adjust_abloop(postpone, start)
     end
 end
 
+function QueueBase:clear_abloop()
+    player.unset_abloop()
+end
+
+function QueueBase:set_speed(num)
+    if num < 0 or num > 5 then return end
+    mp.set_property("speed", tostring(num))
+end
+
 function QueueBase:forward_history()
     self.reptable:update_dependencies()
     if not self:navigate_history(true) then
@@ -209,20 +249,20 @@ function QueueBase:extract()
     if a == "no" or b == "no" then
         log.debug("Extract boundaries are not set!")
         sounds.play("negative")
-        return
+        return false
     end
 
     a = tonumber(a)
     b = tonumber(b)
     if a == b then
         log.debug("Extract boundaries are equal!");
-        return
+        return false
     end
 
     local start = a < b and a or b
     local stop = a > b and a or b
     local curRep = self.playing
-    self:handle_extract(start, stop, curRep)
+    return self:handle_extract(start, stop, curRep)
 end
 
 function QueueBase:toggle_video() player.toggle_vid() end

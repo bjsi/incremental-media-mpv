@@ -3,6 +3,51 @@ local importer = require("systems.importer")
 
 local keys = {
 
+    ["iv-clear-ab-loop"] = {
+        ["key"] = "c",
+        ["callback"] = function() active.queue:clear_abloop() end
+    },
+
+    ["iv-set-speed-110"] = {
+        ["key"] = "1",
+        ["callback"] = function() active.queue:set_speed(1.1) end
+    },
+
+    ["iv-set-speed-120"] = {
+        ["key"] = "2",
+        ["callback"] = function() active.queue:set_speed(1.2) end
+    },
+
+    ["iv-set-speed-70"] = {
+        ["key"] = "7",
+        ["callback"] = function() active.queue:set_speed(0.7) end
+    },
+
+    ["iv-set-speed-80"] = {
+        ["key"] = "8",
+        ["callback"] = function() active.queue:set_speed(0.8) end
+    },
+
+    ["iv-set-speed-90"] = {
+        ["key"] = "9",
+        ["callback"] = function() active.queue:set_speed(0.9) end
+    },
+
+    ["iv-set-speed-100"] = {
+        ["key"] = "0",
+        ["callback"] = function() active.queue:set_speed(1) end
+    },
+
+    ["iv-set-end-boundary-extract"] = {
+        ["key"] = "@",
+        ["callback"] = function() active.queue:set_end_boundary_extract() end
+    },
+
+    ["iv-copy-url"] = {
+        ["key"] = "Ctrl+c",
+        ["callback"] = function() active.queue:copy_url() end
+    },
+
     ["iv-has-children"] = {
         ["key"] = "H",
         ["callback"] = function() active.queue:has_children() end
@@ -99,7 +144,7 @@ local keys = {
 
     --- Create an extract or cloze based on the current ab-loop settings
     ["iv-extract"] = {
-        ["key"] = "2",
+        ["key"] = "e",
         ["callback"] = function() active.queue:extract() end
     },
 

@@ -68,7 +68,7 @@ function ExtractQueueBase:adjust_extract(postpone, start)
         return
     end
 
-    local adj = postpone and 0.1 or -0.1
+    local adj = postpone and 0.05 or -0.05
     local oldStart = tonumber(curRep.row["start"])
     local oldStop = tonumber(curRep.row["stop"])
     local newStart = start and oldStart + adj or oldStart
@@ -188,9 +188,11 @@ function ExtractQueueBase:handle_extract(start, stop, curRep)
         sounds.play("echo")
         player.unset_abloop()
         irt:write()
+        return true
     else
         sounds.play("negative")
         log.err("Failed to add item to the rep table.")
+        return false
     end
 end
 
