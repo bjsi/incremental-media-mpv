@@ -74,7 +74,8 @@ function ItemQueueBase:adjust_cloze(postpone, start)
     end
 
     mp.set_property("pause", "yes")
-    local newStart, newStop = EDL.new(cur.row["url"]):adjust_cloze(postpone, start)
+    local fullUrl = player.get_full_url(cur.row["url"])
+    local newStart, newStop = EDL.new(fullUrl):adjust_cloze(postpone, start)
     if newStart == nil or newStop == nil then
         log.err("Failed to adjust cloze.")
         return

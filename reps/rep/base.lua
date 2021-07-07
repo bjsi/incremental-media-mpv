@@ -26,7 +26,7 @@ function Rep:type()
 end
 
 function Rep:is_dismissed()
-    return self.row["dismissed"] == 1
+    return self.row["dismissed"] == "1"
 end
 
 function Rep:is_yt() return self.row["type"] == "youtube" end

@@ -16,11 +16,7 @@ function player.get_full_url(rep)
         url = ydl.url_prefix .. url
     elseif rep:is_local() or rep:type() == "item" then
         if not sys.is_absolute_path(url) then
-            log.debug("path is not aboslute", url)
             url = mpu.join_path(fs.media, url)
-            log.debug("joined path with " .. fs.media .. " to create " .. url)
-        else
-            log.debug("path is absolute", url)
         end
     end
     return url
