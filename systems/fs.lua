@@ -3,7 +3,10 @@ local ext = require "utils.ext"
 local mpopts = require("mp.options")
 
 local settings = {
-    ["queue"] = "main"
+    ["start"] = false,
+    ["import"] = "",
+    ["queue"] = "main",
+    ["export"] = "",
 }
 
 mpopts.read_options(settings, "im")
@@ -19,7 +22,7 @@ fs.topics_data = mpu.join_path(fs.data, "topics.csv")
 fs.extracts_data = mpu.join_path(fs.data, "extracts.csv")
 fs.items_data = mpu.join_path(fs.data, "items.csv")
 fs.sounds = mpu.join_path(fs.base, "sounds")
-fs.sine = mpu.join_path(fs.media, "sine.opus")
-fs.base_sine = mpu.join_path(fs.sounds, "sine.opus")
+fs.sine = mpu.join_path(fs.media, "sine.mp3")
+fs.sine_base = mpu.join_path(fs.sounds, "sine.mp3")
 
 return fs

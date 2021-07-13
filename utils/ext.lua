@@ -1,5 +1,50 @@
 local ext = {}
 
+function ext.list_slice(list, start, length)
+	local slice = {}
+	for i = start, start + length do
+		table.insert(slice, list[i])
+	end
+	return slice
+end
+
+function ext.list_range(list, from, to)
+	if not to then to = #list
+	elseif to < 0 then to = #list + to + 1 end
+	return ext.list_slice(list, from, to - from)
+end
+
+function ext.list_reverse(list)
+	local res = {}
+	for i = #list, 1, -1 do
+		table.insert(res, list[i])
+	end
+	return res
+end
+
+function ext.index_by_key(tbl, key)
+    local ret = {}
+    for _, v in ipairs(tbl) do
+        ret[v.row[key]] = v
+    end
+    return ret
+end
+
+function ext.validate_afactor(n)
+    local af = tonumber(n)
+    return af ~= nil and af >= 1
+end
+
+function ext.validate_interval(n)
+    local int = tonumber(n)
+    return int ~= nil and int >= 1
+end
+
+function ext.validate_priority(n)
+    local pri = tonumber(n)
+    return pri ~= nil and pri >= 0 and pri <= 100
+end
+
 function ext.list_copy(list)
     local ret = {}
     for i, v in ipairs(list) do

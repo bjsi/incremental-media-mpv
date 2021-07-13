@@ -77,7 +77,8 @@ function ScheduledRepTable:next_repetition()
 end
 
 function ScheduledRepTable:schedule(rep)
-    local sched = Scheduler()
+    local af = rep.row["afactor"]
+    local sched = Scheduler(af)
     sched:schedule(self, rep)
 end
 

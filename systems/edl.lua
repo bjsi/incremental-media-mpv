@@ -24,31 +24,34 @@ end
 
 function EDL:pre_cloze(parentPath, parentStart, clozeStart)
     local _, fname = mpu.split_path(parentPath)
+    local preClozeLength = clozeStart - parentStart
     return table.concat(
         {
             fname,
             parentStart,
-            clozeStart - parentStart
+            preClozeLength
         }, ",")
 end
 
 function EDL:cloze(clozeEnd, clozeStart)
     local _, fname = mpu.split_path(fs.sine)
+    local clozeLength = clozeEnd - clozeStart
     return table.concat(
         {
             fname,
             0,
-            clozeEnd - clozeStart
+            clozeLength
         }, ",")
 end
 
 function EDL:post_cloze(parentPath, clozeEnd, parentEnd)
     local _, fname = mpu.split_path(parentPath)
+    local postClozeLength = parentEnd - clozeEnd
     return table.concat(
         {
             fname,
             clozeEnd,
-            parentEnd - clozeEnd
+            postClozeLength
         }, ",")
 end
 
@@ -90,10 +93,6 @@ function EDL:read()
     local cloze = self:parse_line(match())
     local postCloze = self:parse_line(match())
 
-    log.debug(preCloze)
-    log.debug(cloze)
-    log.debug(postCloze)
-
     local function pred(arr) return arr == nil or #arr ~= 3 end
     if ext.list_any(pred, {preCloze, cloze, postCloze}) then
         log.err("Invalid EDL data.")
@@ -102,9 +101,15 @@ function EDL:read()
 
     local parentPath = preCloze[1]
     local parentStart = tonumber(preCloze[2])
-    local clozeStart = tonumber(preCloze[3]) + parentStart
-    local clozeEnd = tonumber(cloze[3]) + clozeStart
-    local parentEnd = tonumber(postCloze[3]) + clozeEnd
+
+    local preClozeLength = tonumber(preCloze[3])
+    local clozeStart = parentStart + preClozeLength
+
+    local clozeLength = tonumber(cloze[3])
+    local clozeEnd = clozeStart + clozeLength
+
+    local postClozeLength = tonumber(postCloze[3])
+    local parentEnd = clozeEnd + postClozeLength
 
     log.debug("Successfully parsed EDL file: " .. self.outputPath)
     return parentPath, parentStart, parentEnd, clozeStart, clozeEnd

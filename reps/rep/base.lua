@@ -1,4 +1,5 @@
 local ext = require("utils.ext")
+local player = require("systems.player")
 
 local Rep = {}
 Rep.__index = Rep
@@ -13,11 +14,15 @@ setmetatable(Rep, {
 
 function Rep:_init(row) self.row = row end
 
+function Rep:to_export()
+    return self.row["toexport"] == "1"
+end
+
 function Rep:is_deleted()
     if self:is_yt() then
         return false
     elseif self:is_local() then
-        return not ext.file_exists(self.row["url"])
+        return not ext.file_exists(player.get_full_url(self.row["url"]))
     end
 end
 
@@ -44,6 +49,10 @@ end
 
 function Rep:valid_start()
     return tonumber(self.row["start"]) ~= nil
+end
+
+function Rep:duration()
+    return tonumber(self.row["stop"]) - tonumber(self.row["start"])
 end
 
 return Rep

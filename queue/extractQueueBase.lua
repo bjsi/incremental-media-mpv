@@ -60,7 +60,7 @@ function ExtractQueueBase:parent()
     active.change_queue(queue)
 end
 
-function ExtractQueueBase:adjust_extract(postpone, start)
+function ExtractQueueBase:adjust_extract(postpone, start, n)
     local curRep = self.playing
     if not curRep then
         log.debug("Failed to adjust extract because currently playing is nil")
@@ -68,7 +68,7 @@ function ExtractQueueBase:adjust_extract(postpone, start)
         return
     end
 
-    local adj = postpone and 0.05 or -0.05
+    local adj = postpone and n or -n
     local oldStart = tonumber(curRep.row["start"])
     local oldStop = tonumber(curRep.row["stop"])
     local newStart = start and oldStart + adj or oldStart
@@ -126,43 +126,43 @@ function ExtractQueueBase:save_data()
     self.reptable:write(self.reptable)
 end
 
-function ExtractQueueBase:advance_start()
+function ExtractQueueBase:advance_start(n)
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
-        Base.advance_start(self)
+        Base.advance_start(self, n)
     else
-        self:adjust_extract(false, true)
+        self:adjust_extract(false, true, n)
     end
 end
 
-function ExtractQueueBase:advance_stop()
+function ExtractQueueBase:advance_stop(n)
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
-        Base.advance_stop(self)
+        Base.advance_stop(self, n)
     else
-        self:adjust_extract(false, false)
+        self:adjust_extract(false, false, n)
     end
 end
 
-function ExtractQueueBase:postpone_start()
+function ExtractQueueBase:postpone_start(n)
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
-        Base.postpone_start(self)
+        Base.postpone_start(self, n)
     else
-        self:adjust_extract(true, true)
+        self:adjust_extract(true, true, n)
     end
 end
 
-function ExtractQueueBase:postpone_stop()
+function ExtractQueueBase:postpone_stop(n)
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
-        Base.postpone_stop(self)
+        Base.postpone_stop(self, n)
     else
-        self:adjust_extract(true, false)
+        self:adjust_extract(true, false, n)
     end
 end
 
@@ -172,7 +172,7 @@ function ExtractQueueBase:handle_extract(start, stop, curRep)
         return false
     end
 
-    if not start or not stop or (start > stop) then 
+    if not start or not stop or (start > stop) then
         log.err("Invalid extract boundaries.")
         return false
     end

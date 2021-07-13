@@ -4,13 +4,15 @@ local extract_header = {
     [3] = "type",
     [4] = "parent",
     [5] = "dismissed",
-    [6] = "url",
-    [7] = "start",
-    [8] = "stop",
-    [9] = "priority",
-    [10] = "interval",
-    [11] = "nextrep",
-    [12] = "speed"
+    [6] = "toexport",
+    [7] = "afactor",
+    [8] = "url",
+    [9] = "start",
+    [10] = "stop",
+    [11] = "priority",
+    [12] = "interval",
+    [13] = "nextrep",
+    [14] = "speed"
 }
 
 return extract_header

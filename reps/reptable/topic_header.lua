@@ -4,13 +4,15 @@ local topic_header = {
     [3] = "type",
     [4] = "url",
     [5] = "dismissed",
-    [6] = "start",
-    [7] = "stop",
-    [8] = "curtime",
-    [9] = "priority",
-    [10] = "interval",
-    [11] = "dependency",
-    [12] = "nextrep",
-    [13] = "speed"
+    [6] = "chapter",
+    [7] = "afactor",
+    [8] = "start",
+    [9] = "stop",
+    [10] = "curtime",
+    [11] = "priority",
+    [12] = "interval",
+    [13] = "dependency",
+    [14] = "nextrep",
+    [15] = "speed"
 }
 return topic_header

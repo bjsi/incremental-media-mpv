@@ -7,6 +7,7 @@ local ext = require("utils.ext")
 local TopicRepTable = require("reps.reptable.topics")
 local repCreators = require("reps.rep.repCreators")
 local ydl = require "systems.ydl"
+local importer = require "systems.importer"
 
 local GlobalExtractQueue
 local GlobalItemQueue
@@ -108,7 +109,11 @@ function TopicQueueBase:load_grand_queue()
 end
 
 function TopicQueueBase:activate()
-    return Base.activate(self)
+    if Base.activate(self) then
+        player.on_overrun = function() self:next_repetition() end
+        return true
+    end
+    return false
 end
 
 local function on_time_changed(_, time) active.queue:update_curtime(time) end
@@ -128,6 +133,25 @@ function TopicQueueBase:update_curtime(time)
     if not time then return end
     if not self.playing then return end
     self.playing.row["curtime"] = tostring(ext.round(time, 2))
+end
+
+function TopicQueueBase:split_chapters()
+    local cur = self.playing
+    if cur == nil or not cur:type() == "topic" then
+        log.err("Failed to split chapters because cur is nil or not topic.")
+        sounds.play("negative")
+        return
+    end
+
+    local info = ydl.get_info(cur.row["url"])
+    if ext.empty(info) or ext.empty(info["chapters"]) then
+        log.debug("Failed to get vid info or chapters.")
+        sounds.play("negative")
+        return
+    end
+
+    -- if importer.split_and_import_chapters() then
+        
 end
 
 function TopicQueueBase:has_children()
@@ -171,6 +195,10 @@ function TopicQueueBase:handle_extract(start, stop, curRep)
         sounds.play("negative")
         log.err("Failed to create extract")
     end
+end
+
+function TopicQueueBase:to_export()
+    sounds.play("negative")
 end
 
 function TopicQueueBase:child()

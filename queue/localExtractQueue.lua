@@ -3,7 +3,6 @@ local sort = require("reps.reptable.sort")
 local UnscheduledExtractRepTable = require("reps.reptable.unscheduledExtracts")
 local sounds = require("systems.sounds")
 local ext = require("utils.ext")
-local log = require "utils.log"
 
 local LocalExtractQueue = {}
 LocalExtractQueue.__index = LocalExtractQueue

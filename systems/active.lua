@@ -1,11 +1,14 @@
 local log = require("utils.log")
+
 local GlobalExtractQueue
 local GlobalItemQueue
 local GlobalTopicQueue
+local menu
 
 local active = {}
 
 active.queue = nil
+active.locked = false
 
 function active.on_shutdown()
     if active.queue then
@@ -32,6 +35,14 @@ function active.load_global_items()
     active.change_queue(giq)
 end
 
+function active.enter_update_lock()
+    active.locked = true
+end
+
+function active.exit_update_lock()
+    active.locked = false
+end
+
 function active.change_queue(newQueue)
     if active.queue then
         active.queue:clean_up_events()
@@ -46,11 +57,14 @@ function active.change_queue(newQueue)
 
     log.debug("Loading new queue...")
     active.queue = newQueue
+
     if not active.queue:activate() then
         log.err("Failed to activate new queue.")
         return false
     end
 
+    menu = menu or require("systems.menu.menuBase")
+    menu.update()
     active.queue:subscribe_to_events()
     return true
 end

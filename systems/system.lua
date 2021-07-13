@@ -92,6 +92,7 @@ function sys.copy(from, to)
 
     toFile:write(fromData)
     toFile:close()
+    return true
 end
 
 sys.platform = (function()
@@ -129,8 +130,7 @@ end)()
 
 local function handle_process_result(success, res, err)
     if not success then
-        log.err("failed to run subprocess: '" .. err .. "'; arguments: " ..
-                    mpu.format_json(args))
+        log.err("failed to run subprocess: '" .. err)
         return
     end
     return {

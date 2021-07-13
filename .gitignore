@@ -1,4 +1,5 @@
 data/
+fix_items.py
 *.wav
 *.edl
 env

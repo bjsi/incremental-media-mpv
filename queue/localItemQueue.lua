@@ -1,8 +1,6 @@
 local ItemQueueBase = require("queue.itemQueueBase")
 local sort = require("reps.reptable.sort")
-local UnscheduledItemRepTable = require("reps.reptable.unscheduledItems")
 local ext = require("utils.ext")
-local log = require("utils.log")
 local sounds = require("systems.sounds")
 
 local LocalItemQueue = {}
@@ -29,11 +27,20 @@ function LocalItemQueue:activate()
     return false
 end
 
-function LocalItemQueue:subsetter(oldRep, reps)    
-    local subset = ext.list_filter(reps, function(r) return r:is_outstanding() end)
-    local ret = ext.list_filter(subset, function(r) return r:is_child_of(oldRep) end)
-    sort.by_created(subset)
-    return ret, ret[1]
+function LocalItemQueue:subsetter(oldRep, reps)
+    local subset = ext.list_filter(reps, function(r) return not r:is_deleted() and r:is_child_of(oldRep) end)
+
+    -- Sorting subset
+    self:sort(subset)
+
+    return subset, subset[1]
+end
+
+function LocalItemQueue:sort(reps)
+    if not self.sorted then
+        sort.by_created(reps)
+    end
+    self.sorted = true
 end
 
 return LocalItemQueue

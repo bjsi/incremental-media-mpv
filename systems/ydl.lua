@@ -10,12 +10,13 @@ local ydl = {}
 
 ydl.url_prefix = "https://www.youtube.com/watch?v="
 
-function ydl.download_audio(url)
+function ydl.download_audio(url, goodQuality)
+    local quality = goodQuality and "bestaudio" or "worstaudio"
     local args = {
         "youtube-dl",
         "--no-check-certificate",
         "-x",
-        "-f", "worstaudio/worst",
+        "-f", quality,
         mpu.join_path(fs.media, "%(id)s.%(ext)s")
     }
 
@@ -70,12 +71,12 @@ function ydl.get_info(url)
     return t
 end
 
-function ydl.get_audio_stream(url)
+function ydl.get_audio_stream(url, goodQuality)
+    local quality = goodQuality and "bestaudio" or "worstaudio"
     local args = {
         "youtube-dl",
         "--no-check-certificate",
-        "-f",
-        "worstaudio",
+        "-f", quality,
         "--youtube-skip-dash-manifest",
         "-g",
         url
@@ -86,7 +87,7 @@ function ydl.get_audio_stream(url)
         local lines = ret.stdout
         local matches = lines:gmatch("([^\n]*)\n?")
         url = matches()
-        local format = url:gmatch("mime=audio%%2F([a-z]+)&")()
+        local format = url:gmatch("mime=audio%%2F([a-z0-9]+)&")()
         return url, format
     else
         log.debug("Failed to get audio stream.")

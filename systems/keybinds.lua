@@ -1,7 +1,43 @@
 local active = require("systems.active")
+local menu = require("systems.menu.menuBase")
 local importer = require("systems.importer")
 
 local keys = {
+
+    ["iv-menu-open"] = {
+        ["key"] = "m",
+        ["callback"] = function() menu.open() end
+    },
+
+    ["iv-toggle-export"] = {
+        ["key"] = "X",
+        ["callback"] = function() active.queue:toggle_export() end
+    },
+
+    ["iv-increase-priority"] = {
+        ["key"] = "PGDWN",
+        ["callback"] = function() active.queue:adjust_priority(1) end
+    },
+
+    ["iv-decrease-priority"] = {
+        ["key"] = "PGUP",
+        ["callback"] = function() active.queue:adjust_priority(-1) end
+    },
+
+    ["iv-increase-afactor"] = {
+        ["key"] = "Shift+PGUP",
+        ["callback"] = function() active.queue:adjust_afactor(1) end
+    },
+
+    ["iv-decrease-afactor"] = {
+        ["key"] = "Shift+PGDWN",
+        ["callback"] = function() active.queue:adjust_afactor(-1) end
+    },
+
+    -- ["iv-split-chapters"] = {
+    --     ["key"] = "S",
+    --     ["callback"] = function() active.queue:split_chapters() end
+    -- },
 
     ["iv-clear-ab-loop"] = {
         ["key"] = "c",
@@ -45,7 +81,12 @@ local keys = {
 
     ["iv-copy-url"] = {
         ["key"] = "Ctrl+c",
-        ["callback"] = function() active.queue:copy_url() end
+        ["callback"] = function() active.queue:copy_url(false) end
+    },
+
+    ["iv-copy-url-with-timestamp"] = {
+        ["key"] = "Ctrl+Shift+c",
+        ["callback"] = function() active.queue:copy_url(true) end
     },
 
     ["iv-has-children"] = {
@@ -160,28 +201,48 @@ local keys = {
         ["callback"] = function() active.queue:loop() end
     },
 
+    ["iv-advance-start-big"] = {
+        ["key"] = "Y",
+        ["callback"] = function() active.queue:advance_start(2) end
+    },
+
     --- Advance the start of an extract or cloze by a small amount.
     ["iv-advance-start"] = {
         ["key"] = "y",
-        ["callback"] = function() active.queue:advance_start() end
+        ["callback"] = function() active.queue:advance_start(0.05) end
+    },
+
+    ["iv-postpone-start-big"] = {
+        ["key"] = "U",
+        ["callback"] = function() active.queue:postpone_start(2) end
     },
 
     --- Postpone the start of the active ab loop, extract or cloze by a small amount.
     ["iv-postpone-start"] = {
         ["key"] = "u",
-        ["callback"] = function() active.queue:postpone_start() end
+        ["callback"] = function() active.queue:postpone_start(0.05) end
+    },
+
+    ["iv-postpone-stop-big"] = {
+        ["key"] = "O",
+        ["callback"] = function() active.queue:postpone_stop(2) end
     },
 
     --- Postpone the end of the active ab loop, extract or cloze by a small amount.
     ["iv-postpone-stop"] = {
         ["key"] = "o",
-        ["callback"] = function() active.queue:postpone_stop() end
+        ["callback"] = function() active.queue:postpone_stop(0.05) end
     },
 
+    ["iv-advance-stop-big"] = {
+        ["key"] = "I",
+        ["callback"] = function() active.queue:advance_stop(2) end
+    },
+    
     --- Advance the end of the active ab loop, extract or cloze by a small amount.
     ["iv-advance-stop"] = {
         ["key"] = "i",
-        ["callback"] = function() active.queue:advance_stop() end
+        ["callback"] = function() active.queue:advance_stop(0.05) end
     },
 
     --- Toggle between video+audio or just audio.

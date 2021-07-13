@@ -15,6 +15,10 @@ setmetatable(TopicRep, {
 
 function TopicRep:_init(row) Scheduled._init(self, row) end
 
+function TopicRep:is_chapter()
+    return self.row["chapter"] == "1"
+end
+
 function TopicRep:is_outstanding(checkDue)
     local default = not self:is_deleted() and not self:is_done() and not self:is_dismissed() and not self:has_dependency()
     if checkDue then

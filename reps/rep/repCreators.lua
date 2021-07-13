@@ -20,8 +20,10 @@ function repCreators.createTopic(title, type, url, priority, stop, dependency)
         ["id"] = sys.uuid(),
         ["title"] = title,
         ["dismissed"] = 0,
+        ["chapter"] = 0,
         ["type"] = type,
         ["url"] = url,
+        ["afactor"] = 2,
         ["start"] = 0,
         ["stop"] = stop,
         ["curtime"] = 0,
@@ -58,7 +60,9 @@ function repCreators.createExtract(parent, start, stop)
 
     extractRow["start"] = tostring(ext.round(start, 2))
     extractRow["dismissed"] = 0
+    extractRow["toexport"] = 0
     extractRow["created"] = tostring(os.time())
+    extractRow["afactor"] = 2
     extractRow["stop"] = tostring(ext.round(stop, 2))
     extractRow["id"] = sys.uuid()
     extractRow["interval"] = 1
@@ -82,7 +86,7 @@ end
 function repCreators.createYouTubeItem(parent, itemFileName)
 
     -- local audioStreamUrl = player.get_stream_urls()
-    local audioStreamUrl, format = ydl.get_audio_stream(parent.row["url"])
+    local audioStreamUrl, format = ydl.get_audio_stream(parent.row["url"], false)
     if ext.empty(audioStreamUrl) or ext.empty(format) then
         log.err("Failed to get youtube audio stream.")
         return nil
@@ -98,16 +102,20 @@ function repCreators.createItem(parent, clozeStart, clozeStop)
     local itemFileName = mpu.join_path(fs.media, filename)
     local itemUrl, startTime, stopTime
 
+    local parentStart = tonumber(parent.row["start"])
+    local parentStop = tonumber(parent.row["stop"])
+
     if parent:is_yt() then
         itemUrl = repCreators.createYouTubeItem(parent, itemFileName)
+        local parentLength = parentStop - parentStart
         startTime = 0
-        stopTime = -1
-        clozeStart = clozeStart - tonumber(parent.row["start"])
-        clozeStop = clozeStop - tonumber(parent.row["start"])
+        stopTime = parentLength
+        clozeStart = clozeStart - parentStart
+        clozeStop = clozeStop - parentStart
     elseif parent:is_local() then
         itemUrl = parent.row["url"]
-        startTime = parent.row["start"]
-        stopTime = parent.row["stop"]
+        startTime = parentStart
+        stopTime = parentStop
     else
         error("Unrecognized extract type.")
     end
@@ -134,8 +142,12 @@ function repCreators.createItem(parent, clozeStart, clozeStop)
     itemRow["id"] = sys.uuid()
     itemRow["created"] = os.time()
     itemRow["dismissed"] = 0
+    itemRow["toexport"] = 1
     itemRow["url"] = fname
     itemRow["parent"] = parent.row["id"]
+    itemRow["speed"] = 1
+    itemRow["start"] = parentStart
+    itemRow["stop"] = parentStop
 
     return ItemRep(itemRow)
 end

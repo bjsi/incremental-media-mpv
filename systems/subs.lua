@@ -95,7 +95,7 @@ subs.get = function()
 end
 
 subs.append = function()
-    if subs.dialogs.insert(subs.get_current()) then menu.update() end
+    if subs.dialogs.insert(subs.get_current()) then el_data_menuata_menu.update() end
 end
 
 subs.observe = function()
@@ -110,7 +110,7 @@ end
 
 subs.set_timing = function(position)
     subs.user_timings.set(position)
-    menu.update()
+    el_data_menuata_menu.update()
     log.notify(ext.capitalize_first(position) .. " time has been set.")
     if not subs.observed then subs.observe() end
 end
@@ -129,7 +129,7 @@ subs.clear = function()
     subs.unobserve()
     subs.dialogs = new_sub_list()
     subs.user_timings = new_timings()
-    menu.update()
+    el_data_menuata_menu.update()
 end
 
 subs.clear_and_notify = function()

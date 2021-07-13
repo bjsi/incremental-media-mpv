@@ -1,5 +1,6 @@
 local log = require("utils.log")
 local mpu = require("mp.utils")
+local exporter = require("systems.exporter")
 local importer = require("systems.importer")
 local mpopt = require("mp.options")
 local active = require("systems.active")
@@ -15,7 +16,8 @@ local fs = require "systems.fs"
 local settings = {
     ["start"] = false,
     ["import"] = "",
-    ["queue"] = "main"
+    ["queue"] = "main",
+    ["export"] = "",
 }
 
 mpopt.read_options(settings, "im")
@@ -36,6 +38,7 @@ local function loadMedia()
     mp.set_property("force-window", "yes")
     mp.observe_property("time-pos", "number", player.loop_timer.check_loop)
     mp.set_property("loop", "inf")
+
     local queue = getInitialQueue()
     if not queue or ext.empty(queue.reptable.subset) then
         log.debug("No repetitions available. Creating empty topic queue...")
@@ -68,6 +71,13 @@ local function run()
             local sound = ret and "positive" or "negative"
             sounds.play_sync(sound)
             mp.commandv("quit", ret and 0 or 1)
+        elseif not ext.empty(settings["export"]) then
+            local exportFolder = settings["export"]
+            local ret = exporter.as_sm_xml(exportFolder)
+            log.debug("Exiting after export...")
+            local sound = ret and "positive" or "negative"
+            sounds.play_sync(sound)
+            mp.commandv("quit", ret and 0 or 1)
         else
             require("systems.keybinds")
             loadMedia()
@@ -75,6 +85,6 @@ local function run()
     end
 end
 
-if settings["start"] or not ext.empty(settings["import"]) then
+if settings["start"] or not ext.empty(settings["import"]) or not ext.empty(settings["export"]) then
     run()
 end

@@ -25,6 +25,8 @@ function ItemQueueBase:_init(name, oldRep, subsetter)
     Base._init(self, name, UnscheduledItemRepTable(subsetter), oldRep)
     self.bigSeek = 2
     self.smallSeek = 0.1
+    self.createLoopBoundaries = false
+    self.useStartStop = false
 end
 
 function ItemQueueBase:load_grand_queue()
@@ -63,7 +65,12 @@ function ItemQueueBase:parent()
 end
 
 function ItemQueueBase:save_data()
+    self:update_speed()
     self.reptable:write(self.reptable)
+end
+
+function ItemQueueBase:adjust_afactor(_)
+    sounds.play("negative")
 end
 
 function ItemQueueBase:adjust_cloze(postpone, start)
@@ -74,7 +81,7 @@ function ItemQueueBase:adjust_cloze(postpone, start)
     end
 
     mp.set_property("pause", "yes")
-    local fullUrl = player.get_full_url(cur.row["url"])
+    local fullUrl = player.get_full_url(cur)
     local newStart, newStop = EDL.new(fullUrl):adjust_cloze(postpone, start)
     if newStart == nil or newStop == nil then
         log.err("Failed to adjust cloze.")
@@ -87,9 +94,9 @@ function ItemQueueBase:adjust_cloze(postpone, start)
     -- TODO: validate
 
     if start then
-        mp.commandv("loadfile", cur.row["url"], "replace", "start=" .. tostring(newStart - 0.4))
+        mp.commandv("loadfile", fullUrl, "replace", "start=" .. tostring(newStart - 0.4))
     else 
-        mp.commandv("loadfile", cur.row["url"], "replace", "start=" .. tostring(newStop - 0.05))
+        mp.commandv("loadfile", fullUrl, "replace", "start=" .. tostring(newStop - 0.05))
     end
 
     log.debug("Cloze boundaries updated to: " .. tostring(newStart) .. " -> " .. tostring(newStop))

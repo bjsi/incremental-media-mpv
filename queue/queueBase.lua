@@ -4,6 +4,8 @@ local log = require("utils.log")
 local player = require("systems.player")
 local Stack = require("queue.stack")
 local ext = require "utils.ext"
+local active = require "systems.active"
+local menu   = require "systems.menu.menuBase"
 
 local QueueBase = {}
 QueueBase.__index = QueueBase
@@ -24,12 +26,15 @@ function QueueBase:_init(name, reptable, oldRep)
     self.playing = nil
     self.oldRep = oldRep
     self.createLoopBoundaries = true
+    self.useStartStop = true
     self.bigSeek = 5
     self.smallSeek = 1
 end
 
 function QueueBase:activate()
-    log.debug("Activating: " .. self.name)
+    log.debug(table.concat({"Activating:", self.name, "with", tostring(#self.reptable.subset), "reps."}, " "))
+    player.on_overrun = nil
+    player.on_underrun = nil
     return self:loadRep(self.reptable.fst, self.oldRep)
 end
 
@@ -62,6 +67,8 @@ function QueueBase:next_repetition()
     if self:loadRep(toLoad, oldRep) and oldRep ~= nil then
         self.bwd_history:push(oldRep)
         log.debug("Pushing oldRep onto bwd history", self.bwd_history)
+        log.notify("next rep")
+        menu.update()
     end
 end
 
@@ -132,10 +139,11 @@ function QueueBase:set_end_boundary_extract()
     end
 end
 
-function QueueBase:copy_url()
+function QueueBase:copy_url(includeTimestamp)
     local cur = self.playing
     if cur == nil then return end
-    local url = player.get_full_url(cur)
+
+    local url = includeTimestamp and player.get_full_url(cur, mp.get_property("time-pos")) or player.get_full_url(cur)
     if ext.empty(url) then
         log.err("Failed to get full url for current rep")
         return
@@ -143,24 +151,63 @@ function QueueBase:copy_url()
     sys.clipboard_write(url)
 end
 
-function QueueBase:advance_start()
-    self:adjust_abloop(false, true)
+function QueueBase:advance_start(n)
+    self:adjust_abloop(false, true, n)
 end
 
-function QueueBase:postpone_start()
-    self:adjust_abloop(true, true)
+function QueueBase:adjust_interval(n)
+    local cur = self.playing
+    if cur == nil then return false end
+
+    local curInt = tonumber(cur.row["interval"])
+    local adj = tonumber(n)
+    if curInt == nil or adj == nil then return false end
+
+    local newInt = curInt + adj
+    if ext.validate_interval(newInt) then
+        cur.row["interval"] = newInt
+        self:save_data()
+        log.notify("interval: " .. tostring(newInt))
+        menu.update()
+        return true
+    end
 end
 
-function QueueBase:advance_stop()
-    self:adjust_abloop(false, false)
+function QueueBase:adjust_priority(n)
+    local cur = self.playing
+    if cur == nil then return end
+    local curPri = tonumber(cur.row["priority"])
+    local adj = tonumber(n)
+    if curPri == nil or adj == nil then return end
+    local newPri = curPri + adj
+    if ext.validate_priority(newPri) and cur ~= nil then
+        cur.row["priority"] = newPri
+        self:save_data()
+        log.notify("priority: " .. tostring(newPri))
+        menu.update()
+        return true
+    end
+    return false
 end
 
-function QueueBase:postpone_stop()
-    self:adjust_abloop(true, false)
+function QueueBase:split_chapters()
+    sounds.play("negative")
 end
 
-function QueueBase:adjust_abloop(postpone, start)
-    local adj = postpone and 0.05 or -0.05
+function QueueBase:postpone_start(n)
+    self:adjust_abloop(true, true, n)
+end
+
+function QueueBase:advance_stop(n)
+    self:adjust_abloop(false, false, n)
+end
+
+function QueueBase:postpone_stop(n)
+    self:adjust_abloop(true, false, n)
+end
+
+function QueueBase:adjust_abloop(postpone, start, n)
+    local adj = postpone and n or -n
 
     local a = tonumber(mp.get_property("ab-loop-a"))
     local b = tonumber(mp.get_property("ab-loop-b"))
@@ -204,6 +251,37 @@ function QueueBase:adjust_abloop(postpone, start)
     end
 end
 
+function QueueBase:adjust_afactor(n)
+    local cur = self.playing
+    if cur == nil then return end
+
+    local curAF = tonumber(cur.row["afactor"])
+    local adj = tonumber(n)
+    if curAF == nil or adj == nil then return end
+        
+    local newAF = curAF + adj
+    if ext.validate_afactor(newAF) then
+        cur.row["afactor"] = newAF
+        log.debug("Updated afactor to: " .. newAF)
+        log.notify("interval: " .. tostring(newAF))
+        self:save_data()
+        menu.update()
+        return true
+    end
+
+    return false
+end
+
+function QueueBase:toggle_export()
+    local cur = self.playing
+    if cur == nil then return end
+    local exp = tonumber(cur.row["toexport"])
+    cur.row["toexport"] = exp == 1 and 0 or 1
+    local sound = exp == 1 and "positive" or "negative"
+    sounds.play(sound)
+    self:save_data()
+end
+
 function QueueBase:clear_abloop()
     player.unset_abloop()
 end
@@ -244,6 +322,12 @@ function QueueBase:reload()
 end
 
 function QueueBase:extract()
+    if active.locked then
+        log.debug("Can't extract during update lock.")
+        sounds.play("negative")
+        return false
+    end
+
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if a == "no" or b == "no" then
@@ -262,7 +346,11 @@ function QueueBase:extract()
     local start = a < b and a or b
     local stop = a > b and a or b
     local curRep = self.playing
-    return self:handle_extract(start, stop, curRep)
+
+    active.enter_update_lock()
+    local ret = self:handle_extract(start, stop, curRep)
+    active.exit_update_lock()
+    return ret
 end
 
 function QueueBase:toggle_video() player.toggle_vid() end
@@ -293,6 +381,7 @@ function QueueBase:dismiss()
     sounds.play("delete")
     self.reptable:update_subset()
     self:save_data()
+    menu.update()
 end
 
 function QueueBase:load_grand_queue()
@@ -305,7 +394,7 @@ function QueueBase:clean_up_events()
 end
 
 function QueueBase:loadRep(newRep, oldRep)
-    if player.play(newRep, oldRep, self.createLoopBoundaries) then
+    if player.play(newRep, oldRep, self.createLoopBoundaries, self.useStartStop) then
         self.playing = newRep
         self.reptable:update_dependencies()
         return true

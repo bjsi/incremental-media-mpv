@@ -3,17 +3,25 @@ local ext = require("utils.ext")
 local subs = require("systems.subs")
 local log = require("utils.log")
 local sounds = require("systems.sounds")
-local active = require("systems.active")
 local ydl = require "systems.ydl"
 local sys = require("systems.system")
 local fs = require "systems.fs"
 
 local player = {}
 
-function player.get_full_url(rep)
+function player.get_full_url(rep, timestamp)
     local url = rep.row["url"]
     if rep:is_yt() then
         url = ydl.url_prefix .. url
+        if not ext.empty(timestamp) then
+            timestamp = tonumber(timestamp)
+            url = table.concat(
+                {
+                    url,
+                    "&t=",
+                    tostring(ext.round(timestamp, 0))
+                })
+        end
     elseif rep:is_local() or rep:type() == "item" then
         if not sys.is_absolute_path(url) then
             url = mpu.join_path(fs.media, url)
@@ -21,6 +29,10 @@ function player.get_full_url(rep)
     end
     return url
 end
+
+player.on_overrun = nil
+
+player.on_underrun = nil
 
 function player.load(newRep, oldRep, start)
     log.debug("player.load: start = " .. tostring(start))
@@ -41,28 +53,30 @@ function player.setSpeed(speed)
     end
 end
 
--- TODO: What if loadfile fails?
 function player.play(newRep, oldRep, createLoopBoundaries)
     if newRep == nil then
         log.err("Failed to play new rep because it is nil.")
         return false
     end
 
-    local speed = tonumber(newRep:valid_speed() and newRep.row["speed"] or 1)
-    local start = tonumber(newRep:valid_start() and newRep.row["start"] or 0)
+    local speed = tonumber(newRep.row["speed"])
+    local start = tonumber(newRep.row["start"])
     local curtime = tonumber(newRep.row["curtime"])
     if curtime ~= nil then start = curtime end
-    local stop = tonumber(newRep:valid_stop() and newRep.row["stop"] or -1)
-
-    player.load(newRep, oldRep, start)
-    player.setSpeed(speed)
+    local stop = tonumber(newRep.row["stop"])
 
     -- reset loops and timers
     player.unset_abloop()
     player.pause_timer.stop()
+
+    player.load(newRep, oldRep, start)
+
+    player.setSpeed(speed)
+
     if not createLoopBoundaries then
         start = 0
-        stop = -1
+        stop = newRep:duration()
+        if newRep:type() == "topic" then stop = stop - 1 end
     end
 
     log.debug("Setting loop boundaries - start: " .. tostring(start) .. " stop: " .. tostring(stop))
@@ -97,20 +111,22 @@ player.loop_timer = (function()
         if time == nil then return end
         local overrun = stop_time > 0 and time >= stop_time
         local underrun = start_time > 0 and time < start_time
-        if overrun or underrun then
-            mp.commandv("seek", start_time, "absolute")
+
+        if overrun then
+            if player.on_overrun ~= nil then
+                log.debug("OVERRUN")
+                player.on_overrun()
+            else
+                mp.commandv("seek", start_time, "absolute")
+            end
+        elseif underrun then
+            if player.on_underrun ~= nil then
+                player.on_underrun()
+            else
+                mp.commandv("seek", start_time, "absolute")
+            end
         end
     end
-
-    -- local on_el_changed = function(_, start_t, stop_t)
-    --     log.debug("Received element changed event.")
-    --     if start_t == nil then return end
-    --     if stop_t == nil then return end
-    --     set_start_time(tonumber(start_t))
-    --     set_stop_time(tonumber(stop_t))
-    -- end
-
-    -- mp.register_script_message("element_changed", on_el_changed)
 
     return {
         set_start_time = set_start_time,

@@ -13,6 +13,7 @@ setmetatable(Scheduler, {
 })
 
 function Scheduler:_init(afactor)
+    afactor = tonumber(afactor)
     if self:verify_afactor(afactor) then self.afactor = afactor end
     log.debug("Init scheduler with afactor: ", self.afactor)
 end
@@ -22,6 +23,7 @@ function Scheduler:verify_afactor(n) return n ~= nil and n > 0 end
 function Scheduler:verify_interval(n) return n ~= nil and n > 0 end
 
 function Scheduler:schedule(repTable, rep)
+
     -- add interval days to current date
     local today = dt.date_today()
     local todayY, todayM, todayD = dt.parse_hhmmss(today)
