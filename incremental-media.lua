@@ -12,6 +12,7 @@ local player = require("systems.player")
 local ext = require("utils.ext")
 local sounds = require "systems.sounds"
 local fs = require "systems.fs"
+local menuBase = require "menu.menuBase"
 
 local settings = {
     ["start"] = false,
@@ -35,7 +36,11 @@ end
 
 local function loadMedia()
     log.debug("Loading Media")
-    mp.set_property("force-window", "yes")
+
+    if not mp.get_property_bool("audio-only") then
+        mp.set_property("force-window", "yes")
+    end
+
     mp.observe_property("time-pos", "number", player.loop_timer.check_loop)
     mp.set_property("loop", "inf")
 
@@ -44,9 +49,9 @@ local function loadMedia()
         log.debug("No repetitions available. Creating empty topic queue...")
         queue = GlobalTopicQueue(nil)
     end
+
     if not active.change_queue(queue) then
-        log.err("Failed to load the initial queue.")
-        sounds.play("negative")
+        menuBase.open()
     end
 end
 
@@ -69,6 +74,7 @@ local function run()
             local sound = ret and "positive" or "negative"
             sounds.play_sync(sound)
             mp.commandv("quit", ret and 0 or 1)
+
         elseif not ext.empty(settings["export"]) then
             local exportFolder = settings["export"]
             local ret = exporter.as_sm_xml(exportFolder)

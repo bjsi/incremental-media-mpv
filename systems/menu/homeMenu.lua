@@ -75,7 +75,6 @@ end
 
 --
 -- OSD
-
 ---- OSD Queue Info
 
 function HomeSubmenu:add_queue_osd(osd, queue)

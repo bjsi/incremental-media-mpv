@@ -23,10 +23,10 @@ menu.overlay_draw = function(text)
 end
 
 menu.base_binds = {
-    { key = 'ESC', fn = function() menu.close() end },
-    { key = 'h', fn = function() menu.activate_menu("home") end },
-    { key = "i", fn = function() menu.activate_menu("import") end},
-    { key = "s", fn = function() menu.activate_menu("queue") end},
+    { key = 'ESC', desc = "", fn = function() menu.close() end },
+    { key = 'H', desc = "", fn = function() menu.activate_menu("home") end },
+    { key = "I", desc = "", fn = function() menu.activate_menu("import") end},
+    { key = "Q", desc = "", fn = function() menu.activate_menu("queue") end},
     -- { key = "s", fn = function() menu.activate_menu("subset") end},
 }
 
