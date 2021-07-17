@@ -10,6 +10,8 @@ ffmpeg, youtube-dl, mpv, git
 
 ## Installation
 
+The installation process involves using git to clone this project into the mpv scripts folder, and also downloading a couple of script modules that the script depends on for the UI.
+
 ### Main Scripts Folder
 
 1. Go to the mpv scripts folder for your operating system. NOTE: You may need to create the scripts folder.
@@ -31,8 +33,8 @@ ffmpeg, youtube-dl, mpv, git
 | GNU/Linux | `~/.config/mpv/script-modules/` |
 | Windows | `C:/Users/Username/AppData/Roaming/mpv/script-modules/` |
 
-2. Copy the text from [this file](https://raw.githubusercontent.com/CogentRedTester/mpv-scroll-list/master/scroll-list.lua) into a new file called scroll-list.lua inside the script-modules folder.
-3. Copy the text from [this file](https://raw.githubusercontent.com/CogentRedTester/mpv-user-input/master/user-input-module.lua) into a new file called user-input-module.lua in the script-modules folder.
+2. Save the text from [this file](https://raw.githubusercontent.com/CogentRedTester/mpv-scroll-list/master/scroll-list.lua) into a new file called scroll-list.lua inside the script-modules folder.
+3. Save the text from [this file](https://raw.githubusercontent.com/CogentRedTester/mpv-user-input/master/user-input-module.lua) into a new file called user-input-module.lua in the script-modules folder.
 
 ### Updating
 
