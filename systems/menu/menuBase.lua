@@ -1,12 +1,14 @@
 local log = require "utils.log"
+local ext = require "utils.ext"
 local cfg = require "systems.config"
 local OSD = require('systems.osd_styler')
 
 -- Based on: https://github.com/Ajatt-Tools/mpvacious/blob/master/subs2srs.lua
 
-local el_data
 local home
 local import
+local subset
+local queue
 
 local menu = {
     active = false,
@@ -23,9 +25,13 @@ end
 menu.base_binds = {
     { key = 'ESC', fn = function() menu.close() end },
     { key = 'h', fn = function() menu.activate_menu("home") end },
+    { key = "i", fn = function() menu.activate_menu("import") end},
+    { key = "s", fn = function() menu.activate_menu("queue") end},
+    -- { key = "s", fn = function() menu.activate_menu("subset") end},
 }
 
-menu.active_binds = menu.base_binds
+menu.active_binds = {}
+ext.table_copy(menu.base_binds, menu.active_binds)
 
 menu.update = function()
     if menu.active == false then
@@ -35,20 +41,24 @@ menu.update = function()
     local osd = OSD:new():size(cfg.menu_font_size):align(4)
 
     local submenu
-    if menu.state == 'el_data' then
-        submenu = el_data or require("systems.menu.elDataMenu")
-    elseif menu.state == "home" then
+    if menu.state == "home" then
         submenu = home or require("systems.menu.homeMenu")
     elseif menu.state == "import" then
         submenu = import or require("systems.menu.importMenu")
+    elseif menu.state == "subset" then
+        submenu = subset or require("systems.menu.subsetMenu")
+    elseif menu.state == "queue" then
+        submenu = queue or require("systems.menu.queueMenu")
     end
 
-    submenu.activate(osd)
+    menu.reset_binds_to_base()
+    submenu():activate(osd)
     menu.add_binds()
     menu.overlay_draw(osd:get_text())
 end
 
 function menu.activate_menu(m)
+    log.debug("Changing menu state to " .. m)
     menu.state = m
     menu.remove_binds()
     menu.update()
@@ -66,7 +76,6 @@ menu.open = function()
     end
 
     menu.add_binds()
-
     menu.active = true
     menu.update()
 end
@@ -79,7 +88,7 @@ end
 
 menu.reset_binds_to_base = function()
     menu.remove_binds()
-    menu.active_binds = menu.base_binds
+    ext.table_copy(menu.base_binds, menu.active_binds)
     menu.add_binds()
 end
 
@@ -98,6 +107,7 @@ menu.close = function()
 
     menu.overlay:remove()
     menu.active = false
+    menu.show_bindings = false
 end
 
 return menu

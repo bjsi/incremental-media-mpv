@@ -3,7 +3,9 @@ local sys = require("systems.system")
 
 local config = {}
 
-config.menu_font_size = 25
+config.menu_font_size = 20
+config.default_priority_min = 20
+config.default_priority_max = 60
 
 config.audio = {
     format = "mp3", -- mp3

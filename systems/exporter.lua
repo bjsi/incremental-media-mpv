@@ -133,7 +133,7 @@ function exporter.as_sm_xml(outputFolder)
 
                 -- Create question and answer
                 local edl = EDL.new(url)
-                local parentPath, parentStart, parentEnd, clozeStart, clozeEnd = edl:read()
+                local parentPath, parentStart, parentEnd, clozeStart, clozeEnd, mediaFile = edl:read()
                 local qFname = table.concat({child.row["id"], "-q", ".", "mp3"})
                 local aFname = table.concat({child.row["id"], "-a", ".", "mp3"})
                 local qFpath = mpu.join_path(filesFolder, qFname)
@@ -146,9 +146,14 @@ function exporter.as_sm_xml(outputFolder)
                     log.err("Failed to generate item files.")
                     return false
                 end
-                
+
+                if not ext.empty(mediaFile) then
+                    content:add_image("files\\" .. mediaFile)
+                    sys.copy(mpu.join_path(fs.media, mediaFile), mpu.join_path(filesFolder, mediaFile))
+                end
+
                 content:add_sound(true, "files\\" .. qFname, qFname)
-                content:add_sound(true, "files\\" .. aFname, aFname)
+                content:add_sound(false, "files\\" .. aFname, aFname)
 
                 extractFolder:add_child(audioEl)
                 ct = ct + 1

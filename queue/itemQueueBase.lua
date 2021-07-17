@@ -5,6 +5,7 @@ local log = require("utils.log")
 local active = require("systems.active")
 local UnscheduledItemRepTable = require("reps.reptable.unscheduledItems")
 local sounds = require "systems.sounds"
+local ext    = require "utils.ext"
 
 local LocalExtractQueue
 local LocalTopicQueue

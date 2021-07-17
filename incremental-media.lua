@@ -54,8 +54,6 @@ local function run()
     if not loaded then
         loaded = true
 
-        log.debug("running")
-
         log.debug("Queue: ", fs.data)
 
         sys.verify_dependencies()

@@ -71,8 +71,7 @@ function ydl.get_info(url)
     return t
 end
 
-function ydl.get_audio_stream(url, goodQuality)
-    local quality = goodQuality and "bestaudio" or "worstaudio"
+function ydl.get_streams(url, quality)
     local args = {
         "youtube-dl",
         "--no-check-certificate",
@@ -81,8 +80,27 @@ function ydl.get_audio_stream(url, goodQuality)
         "-g",
         url
     }
+    return sys.subprocess(args)
+end
 
-    local ret = sys.subprocess(args)
+function ydl.get_video_stream(url, goodQuality)
+    local quality = goodQuality and "best" or "worst"
+    local ret = ydl.get_streams(url, quality)
+    if ret.status == 0 then
+        local lines = ret.stdout
+        local matches = lines:gmatch("([^\n]*)\n?")
+        url = matches()
+        local format = url:gmatch("mime=video%%2F([a-z0-9]+)&")()
+        return url, format
+    else
+        log.debug("Failed to get video stream.")
+        return nil, nil
+    end
+end
+
+function ydl.get_audio_stream(url, goodQuality)
+    local quality = goodQuality and "bestaudio" or "worstaudio"
+    local ret = ydl.get_streams(url, quality)
     if ret.status == 0 then
         local lines = ret.stdout
         local matches = lines:gmatch("([^\n]*)\n?")

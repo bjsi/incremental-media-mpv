@@ -4,6 +4,7 @@ local importer = require("systems.importer")
 
 local keys = {
 
+
     ["iv-menu-open"] = {
         ["key"] = "m",
         ["callback"] = function() menu.open() end
@@ -14,23 +15,44 @@ local keys = {
         ["callback"] = function() active.queue:toggle_export() end
     },
 
+    -- Priority
+    --
     ["iv-increase-priority"] = {
-        ["key"] = "PGDWN",
+        ["key"] = "Up",
         ["callback"] = function() active.queue:adjust_priority(1) end
     },
-
     ["iv-decrease-priority"] = {
-        ["key"] = "PGUP",
+        ["key"] = "Down",
         ["callback"] = function() active.queue:adjust_priority(-1) end
     },
-
-    ["iv-increase-afactor"] = {
-        ["key"] = "Shift+PGUP",
-        ["callback"] = function() active.queue:adjust_afactor(1) end
+    ["iv-increase-priority-big"] = {
+        ["key"] = "Shift+Up",
+        ["callback"] = function() active.queue:adjust_priority(5) end
+    },
+    ["iv-decrease-priority-big"] = {
+        ["key"] = "Shift+Down",
+        ["callback"] = function() active.queue:adjust_priority(-5) end
     },
 
+    -- Interval
+    --
+    ["iv-increase-interval"] = {
+        ["key"] = "Ctrl+Up",
+        ["callback"] = function() active.queue:adjust_interval(1) end,
+    },
+    ["iv-decrease-interval"] = {
+        ["key"] = 'Ctrl+Down', 
+        ["callback"] = function() active.queue:adjust_interval(-1) end,
+    },
+
+    -- A-Factor
+    --
+    ["iv-increase-afactor"] = {
+        ["key"] = "Alt+Up",
+        ["callback"] = function() active.queue:adjust_afactor(1) end
+    },
     ["iv-decrease-afactor"] = {
-        ["key"] = "Shift+PGDWN",
+        ["key"] = "Alt+Down",
         ["callback"] = function() active.queue:adjust_afactor(-1) end
     },
 
@@ -102,12 +124,6 @@ local keys = {
     ["iv-dismiss"] = {
         ["key"] = "Ctrl+d",
         ["callback"] = function() active.queue:dismiss() end
-    },
-
-    -- Load a grandparent / grandchild queue
-    ["iv-grand"] = {
-        ["key"] = "G",
-        ["callback"] = function() active.queue:load_grand_queue() end
     },
 
     ["iv-global-extracts"] = {

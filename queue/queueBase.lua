@@ -1,4 +1,6 @@
 local sounds = require("systems.sounds")
+local fs = require("systems.fs")
+local mpu = require("mp.utils")
 local sys = require("systems.system")
 local log = require("utils.log")
 local player = require("systems.player")
@@ -350,6 +352,12 @@ function QueueBase:extract()
     active.enter_update_lock()
     local ret = self:handle_extract(start, stop, curRep)
     active.exit_update_lock()
+    if ret then
+        log.notify("new extract created!")
+        menu.update()
+    else
+        log.notify("extraction failed!")
+    end
     return ret
 end
 

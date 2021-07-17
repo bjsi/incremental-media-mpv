@@ -76,6 +76,13 @@ function element:with_name(name)
     return self
 end
 
+function element:add_image(url)
+    local image = element.new("Image")
+    image:add_child(element.new("URL", url))
+    image:add_child(element.new("Name", url))
+    self:add_child(image)
+end
+
 function element:add_sound(question, url, name)
     local text = question and "Question" or "Answer"
     local sound = element.new("Sound")

@@ -11,6 +11,7 @@ local EDL = require("systems.edl")
 local ItemRep = require("reps.rep.item")
 local TopicRep = require("reps.rep.topic")
 local sys = require("systems.system")
+local player = require("systems.player")
 
 local repCreators = {}
 
@@ -69,17 +70,20 @@ function repCreators.createExtract(parent, start, stop)
     extractRow["nextrep"] = "1970-01-01"
     extractRow["parent"] = parent.row["id"]
     extractRow["speed"] = 1
+    extractRow["notes"] = ""
+    extractRow["subs"] = ""
 
     return ExtractRep(extractRow)
 end
 
-function repCreators.createItemEdl(startTime, stopTime, itemFilePath, relClozeStart, relClozeStop, edlOutputPath)
+function repCreators.createItemEdl(startTime, stopTime, itemFilePath, relClozeStart, relClozeStop, edlOutputPath, mediaName)
     return EDL.new(edlOutputPath):write(
         itemFilePath,
         startTime,
         stopTime,
         relClozeStart,
-        relClozeStop
+        relClozeStop,
+        mediaName
     )
 end
 
@@ -97,7 +101,39 @@ function repCreators.createYouTubeItem(parent, itemFileName)
     return ret.status == 0 and itemFilePath or nil
 end
 
-function repCreators.createItem(parent, clozeStart, clozeStop)
+function repCreators.download_media(parent, clozeStart, clozeStop, type)
+    local vidstream
+    local vidUrl = player.get_full_url(parent)
+    local mediafp = mpu.join_path(fs.media, tostring(os.time()))
+
+    local mediaName
+
+    if parent:is_yt() then
+        vidstream = ydl.get_video_stream(vidUrl, false)
+    elseif parent:is_local() then
+        vidstream = vidUrl
+    end
+
+    if type == "screenshot" then
+        mediafp = mediafp .. ".jpg"
+        -- TODO: wrong start time
+        if ffmpeg.screenshot(vidstream, clozeStart, mediafp) then
+            local _
+            _, mediaName = mpu.split_path(mediafp)
+        end
+    elseif type == "gif" then
+        mediafp = mediafp .. ".gif"
+        -- TODO: wrong start time
+        if ffmpeg.extract_gif(vidstream, clozeStart, clozeStop, mediafp) then
+            local _
+            _, mediaName = mpu.split_path(mediafp)
+        end
+    end
+
+    return mediaName
+end
+
+function repCreators.createItem(parent, clozeStart, clozeStop, mediaType)
     local filename = tostring(os.time(os.date("!*t")))
     local itemFileName = mpu.join_path(fs.media, filename)
     local itemUrl, startTime, stopTime
@@ -127,7 +163,12 @@ function repCreators.createItem(parent, clozeStart, clozeStop)
 
     local edlOutputPath = mpu.join_path(fs.media, itemFileName .. ".edl")
 
-    if not repCreators.createItemEdl(startTime, stopTime, itemUrl, clozeStart, clozeStop, edlOutputPath) then
+    local mediaName
+    if mediaType then
+        mediaName = repCreators.download_media(parent, clozeStart, clozeStop, mediaType)
+    end
+
+    if not repCreators.createItemEdl(startTime, stopTime, itemUrl, clozeStart, clozeStop, edlOutputPath, mediaName) then
         log.err("Failed to create item EDL file.")
         return nil
     end

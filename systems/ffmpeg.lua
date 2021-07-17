@@ -5,6 +5,35 @@ local fs = require("systems.fs")
 
 local ffmpeg = {}
 
+function ffmpeg.extract_gif(url, start, stop, outputPath)
+    log.debug("GIF extract. Start: ", start, "Stop: ", stop)
+    local args = {
+        "ffmpeg",
+        "-ss", tostring(start),
+        "-t", tostring(stop - start),
+        "-i", url,
+        "-vf", "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
+        "-loop", "0",
+        outputPath
+    }
+    return sys.subprocess(args).status == 0
+end
+
+function ffmpeg.screenshot(url, start, outputPath)
+    local args = {
+        "ffmpeg",
+        "-ss", tostring(start),
+        "-i", url,
+        "-vframes", "1",
+        "-q:v", "3",
+        outputPath
+    }
+
+    log.debug("Screenshot args", args)
+
+    return sys.subprocess(args).status == 0
+end
+
 function ffmpeg.generate_item_files(parentPath, parentStart, parentEnd, clozeStart, clozeEnd, question_fp, cloze_fp)
     local clozeLength = clozeEnd - clozeStart
     local args = {

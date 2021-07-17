@@ -176,13 +176,13 @@ end
 function TopicQueueBase:handle_extract(start, stop, curRep)
     if curRep == nil then
         log.err("Failed to extract because current rep was nil.")
-        return
+        return false
     end
 
     local extract = repCreators.createExtract(curRep, start, stop)
     if not extract then
         log.err("Failed to handle extract.")
-        return
+        return false
     end
 
     GlobalExtractQueue = GlobalExtractQueue or require("queue.globalExtractQueue")
@@ -191,9 +191,11 @@ function TopicQueueBase:handle_extract(start, stop, curRep)
         sounds.play("echo")
         player.unset_abloop()
         geq:save_data()
+        return true
     else
         sounds.play("negative")
         log.err("Failed to create extract")
+        return false
     end
 end
 

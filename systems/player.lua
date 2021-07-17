@@ -83,6 +83,10 @@ function player.play(newRep, oldRep, createLoopBoundaries)
     player.loop_timer.set_start_time(start)
     player.loop_timer.set_stop_time(stop)
 
+    local media = newRep.row["media"]
+    if media then
+        mp.set_property("external-file", mpu.join_path(fs.media, media))
+    end
     return true
 end
 

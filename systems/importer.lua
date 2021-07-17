@@ -1,4 +1,5 @@
 local sys = require("systems.system")
+local cfg = require("systems.config")
 local ext = require("utils.ext")
 local ffmpeg = require("systems.ffmpeg")
 local active = require("systems.active")
@@ -59,7 +60,8 @@ function importer.import(url)
             topics = importer.create_local_topics(url)
         end
     else
-        topics = importer.create_yt_topics(url)
+        local infos = ydl.get_info(url)
+        topics = importer.create_yt_topics(infos)
     end
 
     return importer.add_topics_to_queue(topics)
@@ -103,22 +105,36 @@ function importer.create_local_topics(url)
     return {topic}
 end
 
-function importer.create_yt_topic(info, prevId)
+function importer.create_yt_topic(info, prevId, priority)
     local title = str.db_friendly(info["title"])
     local ytId = info["id"]
     local duration = info["duration"]
-    return repCreators.createTopic(title, "youtube", ytId, 30, duration, prevId)
+    return repCreators.createTopic(title, "youtube", ytId, priority, duration, prevId)
 end
 
-function importer.create_yt_topics(url)
-    local infos = ydl.get_info(url)
+function importer.create_yt_topics(infos, splitChaps, download, priMin, priMax, dependencyImport) 
+    if infos == nil then
+        return {}
+    end
+
+    if tonumber(priMin) == nil or tonumber(priMax) == nil then
+        priMin = cfg.default_priority_min
+        priMax = cfg.default_priority_max
+    end
+
     local topics = {}
     local prevId = ""
     for _, info in ipairs(infos) do
         if info then
-            local topic = importer.create_yt_topic(info, prevId)
+
+            -- TODO: chapters
+            -- TODO: download
+            local priStep = (priMax - priMin) / #infos
+            local curPriority = priMin;
+            local topic = importer.create_yt_topic(info, prevId, curPriority)
             table.insert(topics, topic)
-            prevId = topic.row["id"]
+            prevId = dependencyImport and topic.row["id"] or ""
+            curPriority = ext.round(curPriority + priStep, 2);
         end
     end
     return topics

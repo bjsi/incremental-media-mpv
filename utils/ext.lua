@@ -1,5 +1,16 @@
 local ext = {}
 
+-- inclusive
+function ext.randomWithinInterval(min, max)
+    return math.floor(math.random() * (max - min + 1) + min)
+end
+
+function ext.table_copy(from, to)
+    for _, v in ipairs(from) do
+        table.insert(to, v)
+    end
+end
+
 function ext.list_slice(list, start, length)
 	local slice = {}
 	for i = start, start + length do

@@ -55,7 +55,7 @@ function EDL:post_cloze(parentPath, clozeEnd, parentEnd)
         }, ",")
 end
 
-function EDL:write(parentPath, parentStart, parentEnd, clozeStart, clozeEnd)
+function EDL:write(parentPath, parentStart, parentEnd, clozeStart, clozeEnd, media)
     local handle = self:open("w")
     if handle == nil then
         log.err("Failed to open EDL file for writing.")
@@ -66,6 +66,10 @@ function EDL:write(parentPath, parentStart, parentEnd, clozeStart, clozeEnd)
     handle:write(self:pre_cloze(parentPath, parentStart, clozeStart) .. "\n")
     handle:write(self:cloze(clozeEnd, clozeStart) .. "\n")
     handle:write(self:post_cloze(parentPath, clozeEnd, parentEnd) .. "\n")
+    if media then
+        handle:write("!new_stream\n")
+        handle:write(media .. "\n")
+    end
 
     handle:close()
 
@@ -92,6 +96,8 @@ function EDL:read()
     local preCloze = self:parse_line(match())
     local cloze = self:parse_line(match())
     local postCloze = self:parse_line(match())
+    match() -- !new_stream header
+    local media = match()
 
     local function pred(arr) return arr == nil or #arr ~= 3 end
     if ext.list_any(pred, {preCloze, cloze, postCloze}) then
@@ -112,7 +118,7 @@ function EDL:read()
     local parentEnd = clozeEnd + postClozeLength
 
     log.debug("Successfully parsed EDL file: " .. self.outputPath)
-    return parentPath, parentStart, parentEnd, clozeStart, clozeEnd
+    return parentPath, parentStart, parentEnd, clozeStart, clozeEnd, media
 end
 
 function EDL:adjust_cloze(postpone, start)
@@ -120,7 +126,7 @@ function EDL:adjust_cloze(postpone, start)
     local advance = not postpone
     local stop = not start
 
-    local parentPath, parentStart, parentEnd, clozeStart, clozeEnd = self:read()
+    local parentPath, parentStart, parentEnd, clozeStart, clozeEnd, media = self:read()
     if advance and start then
         clozeStart = clozeStart - adj
     elseif postpone and start then
@@ -133,7 +139,7 @@ function EDL:adjust_cloze(postpone, start)
 
     -- TODO: validate!!!
 
-    local succ = self:write(parentPath, parentStart, parentEnd, clozeStart, clozeEnd)
+    local succ = self:write(parentPath, parentStart, parentEnd, clozeStart, clozeEnd, media)
     return succ and clozeStart - parentStart, clozeEnd - parentStart or nil, nil
 end
 

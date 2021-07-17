@@ -4,9 +4,14 @@ function str.only_alphanumeric(s)
     return s:gsub('%W','')
 end
 
-function str.db_friendly(s)
+function str.remove_db_delimiters(s)
     s = s:gsub(',', '')
     s = s:gsub('|', '')
+    return s
+end
+
+function str.db_friendly(s)
+    s = str.remove_db_delimiters(s)
     s = s:gsub('%s', '')
     return s
 end
