@@ -43,5 +43,3 @@ To update to the latest version, navigate into the incremental-media-mpv folder 
 To launch the incremental media script, run the following command:
 
 `mpv --idle=once --script-opts=im-start=yes`
-
-Copy youtube video or playlist urls to the clipboard and press Ctrl+Shift+V to import into the topic queue. Hit G to reload the global topic queue.
