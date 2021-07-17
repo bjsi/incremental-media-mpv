@@ -12,7 +12,7 @@ local player = require("systems.player")
 local ext = require("utils.ext")
 local sounds = require "systems.sounds"
 local fs = require "systems.fs"
-local menuBase = require "menu.menuBase"
+local menuBase = require "systems.menu.menuBase"
 
 local settings = {
     ["start"] = false,
