@@ -24,5 +24,7 @@ fs.items_data = mpu.join_path(fs.data, "items.csv")
 fs.sounds = mpu.join_path(fs.base, "sounds")
 fs.sine = mpu.join_path(fs.media, "sine.mp3")
 fs.sine_base = mpu.join_path(fs.sounds, "sine.mp3")
+fs.meaning_zh_base = mpu.join_path(fs.sounds, "meaning_zh.mp3")
+fs.meaning_zh = mpu.join_path(fs.media, "meaning_zh.mp3")
 
 return fs

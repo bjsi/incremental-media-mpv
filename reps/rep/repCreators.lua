@@ -89,8 +89,8 @@ end
 
 function repCreators.createYouTubeItem(parent, itemFileName)
 
-    -- local audioStreamUrl = player.get_stream_urls()
-    local audioStreamUrl, format = ydl.get_audio_stream(parent.row["url"], false)
+    local fullUrl = player.get_full_url(parent)
+    local audioStreamUrl, format = ydl.get_audio_stream(fullUrl, false)
     if ext.empty(audioStreamUrl) or ext.empty(format) then
         log.err("Failed to get youtube audio stream.")
         return nil
@@ -133,7 +133,7 @@ function repCreators.download_media(parent, clozeStart, clozeStop, type)
     return mediaName
 end
 
-function repCreators.createItem(parent, clozeStart, clozeStop, mediaType)
+function repCreators.createItem(parent, clozeStart, clozeStop, mediaType, question, answer, format)
     local filename = tostring(os.time(os.date("!*t")))
     local itemFileName = mpu.join_path(fs.media, filename)
     local itemUrl, startTime, stopTime
@@ -189,6 +189,9 @@ function repCreators.createItem(parent, clozeStart, clozeStop, mediaType)
     itemRow["speed"] = 1
     itemRow["start"] = parentStart
     itemRow["stop"] = parentStop
+    itemRow["question"] = question and question or ""
+    itemRow["answer"] = answer and answer or ""
+    itemRow["format"] = format and format or ""
 
     return ItemRep(itemRow)
 end

@@ -98,7 +98,7 @@ end
 -- TODO: import directory
 function importer.create_local_topics(url)
     local _, fn = mpu.split_path(url)
-    local title = str.db_friendly(str.remove_ext(fn))
+    local title = str.remove_db_delimiters(str.remove_ext(fn))
     local priority = 30
     local duration = ffmpeg.get_duration(url)
     local topic = repCreators.createTopic(title, "local", url, priority, duration)

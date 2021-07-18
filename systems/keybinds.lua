@@ -5,6 +5,11 @@ local importer = require("systems.importer")
 local keys = {
 
 
+    ["iv-create-qa"] = {
+        ["key"] = "Alt+e",
+        ["callback"] = function() active.queue:extract("QA") end
+    },
+
     ["iv-menu-open"] = {
         ["key"] = "m",
         ["callback"] = function() menu.open() end
@@ -203,6 +208,11 @@ local keys = {
     ["iv-extract"] = {
         ["key"] = "e",
         ["callback"] = function() active.queue:extract() end
+    },
+
+    ["iv-extract-extract"] = {
+        ["key"] = "Ctrl+e",
+        ["callback"] = function() active.queue:extract("extract") end
     },
 
     --- Load the next repetition, scheduling the current repetition if necessary.

@@ -6,9 +6,14 @@ local ext = require("utils.ext")
 local log = require("utils.log")
 local active = require("systems.active")
 
+package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"})..package.path
+local ui = require "user-input-module"
+local get_user_input = ui.get_user_input
+
 local LocalTopicQueue
 local LocalItemQueue
 local GlobalItemQueue
+local GlobalTopicQueue
 
 local ExtractQueueBase = {}
 ExtractQueueBase.__index = ExtractQueueBase
@@ -27,6 +32,21 @@ function ExtractQueueBase:_init(name, oldRep, repTable)
     Base._init(self, name, repTable, oldRep)
     self.bigSeek = 2.5
     self.smallSeek = 0.1
+    self.create_qa_chain = {
+        function(args, chain, i) self:query_qa_format(args, chain, i) end,
+        function(args, chain, i) self:query_include_image(args, chain, i) end,
+        function(args, chain, i) self:query_question(args, chain, i) end,
+        function(args, chain, i) self:query_answer(args, chain, i) end,
+        function(args, chain, i) self:query_confirm_qa(args, chain, i) end,
+    }
+end
+
+function ExtractQueueBase:call_chain(args, chain, i)
+    if chain ~= nil and i <= #chain then
+        chain[i](args, chain, i)
+    else
+        log.debug("End of chain: ", args)
+    end
 end
 
 function ExtractQueueBase:child()
@@ -166,17 +186,7 @@ function ExtractQueueBase:postpone_stop(n)
     end
 end
 
-function ExtractQueueBase:handle_extract(start, stop, curRep)
-    if curRep == nil then
-        log.debug("Failed to extract because current rep was nil.")
-        return false
-    end
-
-    if not start or not stop or (start > stop) then
-        log.err("Invalid extract boundaries.")
-        return false
-    end
-
+function ExtractQueueBase:handle_extract_cloze(start, stop, curRep)
     local item = repCreators.createItem(curRep, start, stop)
     if ext.empty(item) then
         return false
@@ -193,6 +203,190 @@ function ExtractQueueBase:handle_extract(start, stop, curRep)
         sounds.play("negative")
         log.err("Failed to add item to the rep table.")
         return false
+    end
+end
+
+function ExtractQueueBase:query_confirm_qa(args, chain, i)
+    local handle = function(input)
+        if input == nil or input == "n" then
+            log.notify("Cancelling.")
+            return
+        elseif input == "y" or input == "" then
+            log.debug(args)
+            log.notify("Importing.")
+        else
+            log.notify("Invalid input.")
+            self:call_chain(args, chain, i)
+            return
+        end
+
+        local extract = repCreators.createItem(
+            args["curRep"],
+            args["start"],
+            args["stop"],
+            false, -- args["mediaType"],
+            args["question"],
+            args["answer"],
+            args["format"]
+        )
+
+        if extract == nil then
+            log.notify("Failed to create topics.")
+            return
+        end
+
+        log.debug(extract)
+
+    end
+
+    get_user_input(handle, {
+            text = "Confirm? ([y]/n):",
+            replace = true,
+        })
+end
+
+function ExtractQueueBase:query_include_image(args, chain, i)
+    local handler = function (input)
+        if input == nil then
+            log.notify("Cancelling")
+            return
+        end
+        if input == "n" or input == ""then
+            args["mediaType"] = false
+            i = i + 1
+        elseif input == "y"  then
+            args["mediaType"] = "screenshot"
+            i = i + 1
+        else
+            log.notify("Invalid input.")
+        end
+
+        self:call_chain(args, chain, i)
+    end
+
+    get_user_input(handler, {
+            text = "Include image? (y/[n]):",
+            replace = true,
+        })
+end
+
+function ExtractQueueBase:query_answer(args, chain, i)
+    local handler = function(input)
+        if input == nil then
+            log.notify("Cancelled.")
+            return
+        end
+
+        args["answer"] = input
+        self:call_chain(args, chain, i + 1)
+    end
+
+    get_user_input(handler, {
+            text = "Answer: ",
+            replace = true,
+        })
+end
+
+function ExtractQueueBase:query_question(args, chain, i)
+    local handler = function(input)
+        if input == nil then
+            log.notify("Cancelled.")
+            return
+        end
+
+        args["question"] = input
+        self:call_chain(args, chain, i + 1)
+    end
+
+    get_user_input(handler, {
+            text = "Question: ",
+            replace = true,
+        })
+end
+
+function ExtractQueueBase:query_qa_format(args, chain, i)
+
+    local choices = {
+        [1] = "meaning",
+        [2] = "cloze-context"
+    }
+
+    local handler = function(input)
+        local choice = tonumber(input)
+        if choice == nil then
+            log.notify("Cancelled.")
+            return
+        end
+
+        if choice < 1 or choice > #choices then
+            log.notify("Invalid input.")
+            self:call_chain(args, chain, i)
+            return
+        end
+
+        args["format"] = choices[choice]
+        self:call_chain(args, chain, i + 1)
+    end
+
+    get_user_input(handler, {
+            text = "QA format:\n1) meaning\n2) cloze answer with context\n",
+            replace = true,
+        })
+end
+
+function ExtractQueueBase:handle_extract_qa(start, stop, curRep)
+    local queue = active.queue
+    if queue == nil or curRep == nil then return end
+    self:call_chain({start = start, stop = stop, curRep = curRep}, self.create_qa_chain, 1)
+end
+
+function ExtractQueueBase:handle_extract_extract(start, stop, curRep)
+
+    local queue = active.queue
+    if queue == nil then return end
+
+    GlobalTopicQueue = GlobalTopicQueue or require("queue.globalTopicQueue")
+    local gtq = GlobalTopicQueue(nil)
+    local parent = ext.first_or_nil(function(r) return r:is_parent_of(curRep) end, gtq.reptable.reps)
+    if parent == nil then
+        log.debug("Failed to find parent element.")
+        return
+    end
+
+    local extract = repCreators.createExtract(parent, start, stop)
+    if ext.empty(extract) then
+        return false
+    end
+
+    if queue.reptable:add_to_reps(extract) then
+        sounds.play("echo")
+        player.unset_abloop()
+        queue:save_data()
+        return true
+    else
+        sounds.play("negative")
+        log.err("Failed to add item to the rep table.")
+        return false
+    end
+end
+
+function ExtractQueueBase:handle_extract(start, stop, curRep, extractType)
+    if curRep == nil then
+        log.debug("Failed to extract because current rep was nil.")
+        return false
+    end
+
+    if not start or not stop or (start > stop) then
+        log.err("Invalid extract boundaries.")
+        return false
+    end
+
+    if extractType == "extract" then
+        return self:handle_extract_extract(start, stop, curRep)
+    elseif extractType == "QA" then
+        return self:handle_extract_qa(start, stop, curRep)
+    else
+        return self:handle_extract_cloze(start, stop, curRep)
     end
 end
 

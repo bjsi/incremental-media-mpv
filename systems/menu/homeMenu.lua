@@ -36,27 +36,28 @@ function HomeSubmenu:_init()
     Base._init(self)
 
     self.keybinds = {}
+
     self.base_binds = {}
 
     self.topic_keybinds = {
-        { key = "t", fn = function() self:edit_title() end },
+        { key = "t", desc = "edit title", fn = function() self:edit_title() end },
+        { key = "c", desc = "extract chapter", fn = function() self:extract_chapter() end },
+        { key = "C", desc = "extract all chapters", fn = function() self:extract_all_chapters() end },
     }
 
     self.media_keybinds = {
-        { key = "S", fn = function() self:toggle_media() end },
-        { key = "r", fn = function() self:remove_media() end },
+        { key = "r", desc = "remove media", fn = function() self:remove_media() end },
     }
 
     self.extract_keybinds = {
-        { key = "n", fn = function() self:extract_edit_notes() end },
-        -- { key = "g", fn = function() self:extract_add_gif() end },
-        -- { key = "s", fn = function() self:extract_add_screenshot() end },
+        { key = "n", desc = "edit notes", fn = function() self:edit_current_field('notes') end },
     }
 
     self.item_keybinds = {
-        { key = "S", fn = function() self:item_add_media("screenshot") end },
-        { key = "G", fn = function() self:item_add_media("gif") end },
-        { key = "W", fn = function() self:item_generate_meaning_card() end },
+        { key = "S", desc = "add screenshot", fn = function() self:item_add_media("screenshot") end },
+        { key = "G", desc = "add gif", fn = function() self:item_add_media("gif") end },
+        { key = "q", desc = "edit question", fn = function() self:edit_current_field("question") end },
+        { key = "a", desc = "edit answer", fn = function() self:edit_current_field("answer") end },
     }
 end
 
@@ -110,47 +111,18 @@ function HomeSubmenu:add_chapter_info(osd)
     osd:item("chapters: "):text(tostring(num)):newline()
 end
 
----- OSD Binds
-
-function HomeSubmenu:add_base_binds_osd(osd)
-    osd:text("Bindings"):newline()
-    osd:tab():item("i: "):text("import menu"):newline()
-end
-
-function HomeSubmenu:add_topic_binds_osd(osd)
-    local chaps = mp.get_property_native("chapter-list")
-    local num = chaps ~= nil and #chaps or 0
-    if num > 0 then
-        osd:tab():italics("chapters"):newline()
-        osd:tab():item('c: '):text('extract chapter '):newline()
-        osd:tab():item('C: '):text('extract all chapters '):newline():newline()
-    end
-end
-
-function HomeSubmenu:add_media_binds_osd(osd)
-    osd:tab():item('r: '):text("remove media"):newline():newline()
-end
-
-function HomeSubmenu:add_extract_binds_osd(osd)
-    osd:tab():item('n: '):text("edit notes"):newline()
-    -- osd:tab():item('G: '):text("add gif to children"):newline()
-    -- osd:tab():item('S: '):text("add screenshot to children"):newline()
-end
-
-function HomeSubmenu:add_item_binds_osd(osd)
-    osd:tab():item('S: '):text("add cloze screenshot"):newline()
-    osd:tab():item('G: '):text("add cloze gif"):newline()
-    -- osd:tab():item("W: "):text("meaning card"):newline()
-end
-
 ---- Element Type OSDs
+
+function HomeSubmenu:add_question_osd(osd, cur)
+    osd:item("Q: "):text(cur.row["question"]):newline()
+    osd:item("A: "):text(cur.row["answer"]):newline()
+    osd:item("Format: "):text(cur.row["format"]):newline()
+end
 
 function HomeSubmenu:add_item_osd(osd, cur)
     self:add_generic_info(osd, cur)
     osd:newline()
-    self:add_base_binds_osd(osd)
-    self:add_item_binds_osd(osd)
-    self:add_media_binds_osd(osd)
+    self:add_question_osd(osd, cur)
     self:add_keybinds(self.item_keybinds)
 end
 
@@ -190,8 +162,6 @@ function HomeSubmenu:add_topic_osd(osd, cur)
     local leq = LocalExtractQueue(cur)
     osd:item("children: "):text(#leq.reptable.subset):newline():newline():newline()
 
-    self:add_base_binds_osd(osd)
-    self:add_topic_binds_osd(osd)
     self:add_keybinds(self.topic_keybinds)
 end
 
@@ -209,9 +179,7 @@ function HomeSubmenu:add_extract_osd(osd, cur)
 
     osd:newline()
 
-    self:add_base_binds_osd(osd)
     self:add_keybinds(self.extract_keybinds)
-    self:add_extract_binds_osd(osd)
 end
 
 function HomeSubmenu:add_element_osd(osd, queue)
@@ -229,6 +197,31 @@ function HomeSubmenu:add_element_osd(osd, queue)
     elseif type == "item" then
         self:add_item_osd(osd, cur)
     end
+end
+
+function HomeSubmenu:remove_media()
+    local queue = active.queue
+    if queue == nil or queue.playing == nil then return end
+    local cur = queue.playing
+    
+    local handler = function(input)
+        if input == nil or input == "n" or input == "" then
+            log.notify("Cancelling")
+        end
+
+        if input == "y" then
+            cur.row["media"] = ""
+            queue:save_data()
+            log.notify("Removed media.")
+            return
+        end
+    end
+
+    get_user_input(function(input) handler(input) end,
+        {
+            text = "Remove media? (y/[n]): ",
+            replace = true,
+        })
 end
 
 function HomeSubmenu:item_add_media(type)
@@ -280,30 +273,31 @@ function HomeSubmenu:item_add_media(type)
     end
 end
 
-function HomeSubmenu:extract_edit_notes()
+function HomeSubmenu:edit_current_field(field)
     local queue = active.queue
     if queue == nil or queue.playing == nil then return end
 
     local cur = queue.playing
-    local notes = cur.row["notes"] and cur.row["notes"] or ""
+    if cur == nil then return end
 
     local handler = function(input)
         if input == nil then
             log.notify("Cancelled.")
             return
         end
-        cur.row["notes"] = str.remove_db_delimiters(input)
+
+        cur.row[field] = str.remove_db_delimiters(input)
         queue:save_data()
-        log.notify("Saved notes.")
+        log.notify("Saved " .. field)
         menuBase = menuBase or require("systems.menu.menuBase")
         menuBase.update()
     end
 
     get_user_input(function(input) handler(input) end,
         {
-            text = "Edit notes: ",
+            text = "Edit " .. field .. ": ",
             replace = true,
-            default_input = notes
+            default_input = cur.row[field]
         })
 end
 

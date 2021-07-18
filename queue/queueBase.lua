@@ -323,7 +323,7 @@ function QueueBase:reload()
     return true
 end
 
-function QueueBase:extract()
+function QueueBase:extract(extractType)
     if active.locked then
         log.debug("Can't extract during update lock.")
         sounds.play("negative")
@@ -350,7 +350,7 @@ function QueueBase:extract()
     local curRep = self.playing
 
     active.enter_update_lock()
-    local ret = self:handle_extract(start, stop, curRep)
+    local ret = self:handle_extract(start, stop, curRep, extractType)
     active.exit_update_lock()
     if ret then
         log.notify("new extract created!")

@@ -4,6 +4,13 @@ function str.only_alphanumeric(s)
     return s:gsub('%W','')
 end
 
+function str.limit_length(s, n)
+    if #s >= n then
+        return s:sub(0, n) .. "..."
+    end
+    return s
+end
+
 function str.remove_db_delimiters(s)
     s = s:gsub(',', '')
     s = s:gsub('|', '')

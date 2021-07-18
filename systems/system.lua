@@ -24,6 +24,10 @@ function sys.create_essential_files()
     if not ext.file_exists(fs.sine) then
         sys.copy(fs.sine_base, fs.sine)
     end
+
+    if not ext.file_exists(fs.meaning_zh) then
+        sys.copy(fs.meaning_zh_base, fs.meaning_zh)
+    end
 end
 
 function sys.get_bkp_name(ogPath)

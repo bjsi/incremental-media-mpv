@@ -24,9 +24,12 @@ setmetatable(ImportSubmenu, {
 
 function ImportSubmenu:_init()
     Base._init(self)
+    -- osd:tab():item("i: "):italics("import videos / playlists"):newline()
+    -- osd:tab():item("p: "):italics("update playlists"):newline()
 
     self.keybinds = {
-        { key = 'i', fn = function() self:query_import() end },
+        { key = 'i', desc = "import video / playlist", fn = function() self:query_import() end },
+        { key = 'p', desc = "update playlists", fn = function() self:query_update_playlists() end },
     }
 
     self.yt_chain = {
@@ -43,6 +46,10 @@ function ImportSubmenu:query_priority_yt(args, chain, i)
     else
         self:query_priority_single(args, chain, i)
     end
+end
+
+function ImportSubmenu:query_update_playlists()
+    log.notify("TODO")
 end
 
 function ImportSubmenu:query_priority_single(args, chain, i)
@@ -147,10 +154,6 @@ end
 
 function ImportSubmenu:add_osd(osd)
     osd:submenu("Import Menu"):newline():newline()
-    osd:submenu("Bindings"):newline()
-    osd:tab():item("i: "):italics("import videos / playlists"):newline()
-    osd:tab():item("p: "):italics("update playlists"):newline()
-    osd:tab():item("h: "):italics("home menu"):newline()
 end
 
 function ImportSubmenu:import_file(file)

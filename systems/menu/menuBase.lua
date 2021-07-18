@@ -23,17 +23,18 @@ menu.overlay_draw = function(text)
 end
 
 menu.base_binds = {
-    { key = 'ESC', desc = "", fn = function() menu.close() end },
-    { key = 'H', desc = "", fn = function() menu.activate_menu("home") end },
-    { key = "I", desc = "", fn = function() menu.activate_menu("import") end},
-    { key = "Q", desc = "", fn = function() menu.activate_menu("queue") end},
-    -- { key = "s", fn = function() menu.activate_menu("subset") end},
+    { key = 'ESC', desc = "close menu", fn = function() menu.close() end },
+    { key = 'H', desc = "home menu", fn = function() menu.activate_menu("home") end },
+    { key = "I", desc = "import menu", fn = function() menu.activate_menu("import") end},
+    { key = "Alt+c", desc = "queue menu", fn = function() menu.activate_menu("queue") end},
 }
 
 menu.active_binds = {}
+
 ext.table_copy(menu.base_binds, menu.active_binds)
 
 menu.update = function()
+
     if menu.active == false then
         return
     end
@@ -52,8 +53,16 @@ menu.update = function()
     end
 
     menu.reset_binds_to_base()
-    submenu():activate(osd)
+    local sub = submenu()
+
+    if menu.state == "queue" then
+        menu.close()
+        return
+    end
+
+    sub:activate(osd)
     menu.add_binds()
+    menu.add_binds_osd(osd)
     menu.overlay_draw(osd:get_text())
 end
 
@@ -80,6 +89,13 @@ menu.open = function()
     menu.update()
 end
 
+menu.add_binds_osd = function(osd)
+    osd:submenu("Commands"):newline()
+    for _, val in pairs(menu.active_binds) do
+        osd:tab():item(val.key .. ": "):italics(val.desc):newline()
+    end
+end
+
 menu.remove_binds = function()
     for _, val in pairs(menu.active_binds) do
         mp.remove_key_binding(val.key)
@@ -88,6 +104,7 @@ end
 
 menu.reset_binds_to_base = function()
     menu.remove_binds()
+    menu.active_binds = {}
     ext.table_copy(menu.base_binds, menu.active_binds)
     menu.add_binds()
 end
@@ -103,8 +120,8 @@ menu.close = function()
         return
     end
 
+    menu.state = "home"
     menu.remove_binds()
-
     menu.overlay:remove()
     menu.active = false
     menu.show_bindings = false

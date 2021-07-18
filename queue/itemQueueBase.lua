@@ -30,6 +30,22 @@ function ItemQueueBase:_init(name, oldRep, subsetter)
     self.useStartStop = false
 end
 
+local function showChapterTitle(_, n)
+    if n == nil then return end 
+    local chapter_list = mp.get_property_native('chapter-list', {})
+    log.debug(chapter_list)
+    local chapter = chapter_list[n]
+    log.debug(chapter)
+end
+
+function ItemQueueBase:clean_up_events()
+    mp.unobserve_property(showChapterTitle)
+end
+
+function ItemQueueBase:subscribe_to_events()
+    mp.observe_property("chapter", "number", showChapterTitle)
+end
+
 function ItemQueueBase:load_grand_queue()
     local itemGrandChild = self.playing
     if not itemGrandChild then
