@@ -2,10 +2,12 @@ local active = require("systems.active")
 local cfg = require("systems.config")
 local Base = require("systems.menu.submenuBase")
 local OSD = require("systems.osd_styler")
-local log = require("utils.log")local ext = require("utils.ext")local sounds = require("systems.sounds")local str = require("utils.str")
+local log = require("utils.log")local ext = require("utils.ext")local sounds = require("systems.sounds")local str = require("utils.str")local date= require("utils.date")
 local list = dofile(mp.command_native({"expand-path", "~~/script-modules/scroll-list.lua"}))
 
 local LocalTopicQueue
+local LocalExtractQueue
+local LocalItemQueue
 local menuBase
 
 local QueueMenu = {}
@@ -23,19 +25,6 @@ setmetatable(QueueMenu, {
 function QueueMenu:_init()
     Base._init(self)
     self.keybinds = {}
-    self.binds_overlay = mp.create_osd_overlay and mp.create_osd_overlay('ass-events')
-    self:add_osd()
-end
-
-function QueueMenu:add_osd()
-    local queue = active.queue
-    if queue == nil then return end
-    local subset = queue.reptable.subset
-    list.list = {}
-    list.header = queue.name
-
-    menuBase = menuBase or require("systems.menu.menuBase")
-
     list.keybinds = {
         {'DOWN', 'scroll_down', function() list:scroll_down() end, {repeatable = true}},
         {'UP', 'scroll_up', function() list:scroll_up() end, {repeatable = true}},
@@ -47,22 +36,30 @@ function QueueMenu:add_osd()
         {'H', 'home_menu', function() self:home() end, {}},
         {'w', 'parent_queue', function() self:home() end, {}},
         {'s', 'child_queue', function() self:home() end, {}},
-        {'ENTER', 'local_queue', function() self:home() end, {}},
+        {'ENTER', 'toggle_children', function() self:toggle_children() end, {}},
     }
+    self:add_osd()
+end
+
+function QueueMenu:add_osd()
+    local queue = active.queue
+    if queue == nil then return end
+    local subset = queue.reptable.subset
+    list.list = {}
+    list.header = queue.name
 
     for i, v in ipairs(subset) do
         local item = {}
         item.style = ""
-
-        local osd = OSD:new():size(cfg.menu_font_size - 1):align(4)
+        local itemOsd = OSD:new():size(cfg.menu_font_size - 1):align(4)
         local title = tostring(i) .. ". " .. list.ass_escape(str.limit_length(v.row.title, 40))
         if i == 1 then
-            osd:color("ff0000"):bold(title):tab():text(v.row.priority)
+            itemOsd:color("ff0000"):bold(title):tab():text(v.row.priority)
         else
-            osd:text(title):tab():text(v.row.priority)
+            itemOsd:text(title):tab():text(v.row.priority)
         end
-        
-        item.ass = osd:get_text()
+
+        item.ass = itemOsd:get_text()
         item.rep = v
         list.list[i] = item
     end
@@ -93,7 +90,6 @@ function QueueMenu:add_header_osd(queue)
 end
 
 function QueueMenu:home()
-    self.binds_overlay:remove()
     list:close()
     menuBase = menuBase or require("systems.menu.menuBase")
     menuBase.state = "home"
@@ -118,6 +114,54 @@ function QueueMenu:adjust_priority(selected, adj)
     queue:save_data()
     list:close()
     self:add_osd()
+end
+
+function QueueMenu:toggle_children()
+    local curListItem = list.__current
+    curListItem.show_children = not curListItem.show_children
+    local curRep = curListItem.rep
+
+    if not curListItem.show_children then
+        for i, v in ipairs(list.list) do
+            if v.rep:is_child_of(curRep) then
+                table.remove(list.list, i)
+            end
+        end
+
+        list:update()
+        return
+    end
+
+    local children
+    if curRep:type() == "topic" then
+        LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
+        local leq = LocalExtractQueue(curRep)
+        children = leq.reptable.subset
+    elseif curRep:type() == "extract" then
+        LocalItemQueue = LocalItemQueue or require("queue.localItemQueue")
+        local liq = LocalItemQueue(curRep)
+        children = liq.reptable.subset
+    end
+
+    if ext.empty(children) then
+        log.notify("No child elements available.")
+        return
+    end
+
+    for _, v in ipairs(children) do
+        local item = {}
+        local itemOsd = OSD:new():size(cfg.menu_font_size - 1):align(4)
+        local start = date.human_readable_time(tonumber(v.row.start)):sub(0, 6)
+        local stop = date.human_readable_time(tonumber(v.row.stop)):sub(0, 6)
+        local title = str.capitalize_first(v:type()) .. " " .. start .. " -> " .. stop
+        itemOsd:tab():text("╚═ " .. title)
+
+        item.ass = itemOsd:get_text()
+        item.rep = v
+        table.insert(list.list, list.selected + 1, item)
+    end
+
+    list:update()
 end
 
 function QueueMenu:local_queue(selected)

@@ -76,7 +76,10 @@ function repCreators.createExtract(parent, start, stop)
     return ExtractRep(extractRow)
 end
 
-function repCreators.createItemEdl(startTime, stopTime, itemFilePath, relClozeStart, relClozeStop, edlOutputPath, mediaName)
+function repCreators.createItemEdl(startTime, stopTime, itemFilePath, relClozeStart, relClozeStop, edlOutputPath, mediaName, format)
+
+    --if not format or format == "cloze" then
+        
     return EDL.new(edlOutputPath):write(
         itemFilePath,
         startTime,
@@ -168,7 +171,7 @@ function repCreators.createItem(parent, clozeStart, clozeStop, mediaType, questi
         mediaName = repCreators.download_media(parent, clozeStart, clozeStop, mediaType)
     end
 
-    if not repCreators.createItemEdl(startTime, stopTime, itemUrl, clozeStart, clozeStop, edlOutputPath, mediaName) then
+    if not repCreators.createItemEdl(startTime, stopTime, itemUrl, clozeStart, clozeStop, edlOutputPath, mediaName, format) then
         log.err("Failed to create item EDL file.")
         return nil
     end
