@@ -53,6 +53,6 @@ To launch the incremental media script, run the following command:
 | GNU/Linux | `~/.config/mpv/script-opts/` |
 | Windows | `C:/Users/Username/AppData/Roaming/mpv/script-opts/` |
 
-To increase the font size of the text dialog input (which is really tiny by default), create a file called user-input.conf in the script-opts folder and set the font_size option to your preferred size. The default is 16.
+To increase the font size of the text dialog input (which is really tiny by default), create a file called user_input.conf in the script-opts folder and set the font_size option to your preferred size. The default is 16.
 
 eg. font_size=24
