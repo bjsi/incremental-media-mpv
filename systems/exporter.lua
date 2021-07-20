@@ -29,6 +29,16 @@ local function getGrandparent(grandparents, parents, child)
     end
 end
 
+function exporter.get_to_export()
+    GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
+    local giq = GlobalItemQueue(nil)
+    local toExport = ext.list_filter(giq.reptable.reps, function(r) return r:to_export() end)
+    if ext.empty(toExport) then
+        return 0
+    end
+    return #toExport
+end
+
 function exporter.as_sm_xml(outputFolder)
 
     GlobalTopicQueue = GlobalTopicQueue or require("queue.globalTopicQueue")

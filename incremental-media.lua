@@ -18,6 +18,7 @@ local settings = {
     ["start"] = false,
     ["import"] = "",
     ["queue"] = "main",
+    ["mode"] = "master",
     ["export"] = "",
 }
 
@@ -64,6 +65,8 @@ local function run()
         sys.verify_dependencies()
         sys.create_essential_files()
         sys.backup()
+
+        mp.register_script_message("get_to_import", function(time) return exporter.get_to_export(time) end)
 
         mp.register_event("shutdown", active.on_shutdown)
 

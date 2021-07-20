@@ -8,6 +8,31 @@ local ext = require "utils.ext"
 
 local sys = {}
 
+function sys.json_rpc_request(tbl)
+    local json = mpu.format_json(tbl)
+    if not json then
+        log.debug("Invalid json")
+        return nil
+    end
+
+    local jsonFile = mpu.join_path(sys.tmp_dir, "body.json")
+    local h = io.open(jsonFile, "w")
+    h:write(json .. "\n")
+    h:close()
+
+    if sys.platform == "win" then
+        local bat = mpu.join_path(mp.get_script_directory(), "curl_telnet.bat")
+        local args = {
+            bat,
+            "localhost",
+            "9898",
+            jsonFile
+        }
+        log.debug(args)
+        return sys.subprocess(args)
+    end
+end
+
 function sys.create_essential_files()
     local folders = {fs.data, fs.media, fs.bkp}
     for _, folder in pairs(folders) do
