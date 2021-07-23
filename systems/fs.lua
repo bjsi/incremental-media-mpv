@@ -1,5 +1,4 @@
 local mpu = require("mp.utils")
-local ext = require "utils.ext"
 local mpopts = require("mp.options")
 
 local settings = {

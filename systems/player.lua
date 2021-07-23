@@ -13,8 +13,8 @@ function player.get_full_url(rep, timestamp)
     local url = rep.row["url"]
     if rep:is_yt() then
         url = ydl.url_prefix .. url
-        if not ext.empty(timestamp) then
-            timestamp = tonumber(timestamp)
+        timestamp = tonumber(timestamp)
+        if not ext.empty(timestamp) and timestamp > 0 then
             url = table.concat(
                 {
                     url,

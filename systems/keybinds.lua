@@ -5,11 +5,6 @@ local system   = require("systems.system")
 
 local keys = {
 
-    ["iv-test-json-rpc"] = {
-        ["key"] = "Ctrl+r",
-        ["callback"] = function() system.json_rpc_request({id = 1, method="hello", params={}}) end
-    },
-
     ["iv-create-qa"] = {
         ["key"] = "Alt+e",
         ["callback"] = function() active.queue:extract("QA") end

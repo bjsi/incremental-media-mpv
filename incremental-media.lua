@@ -65,9 +65,9 @@ local function run()
         sys.verify_dependencies()
         sys.create_essential_files()
         sys.backup()
-
-        mp.register_script_message("get_to_import", function(time) return exporter.get_to_export(time) end)
-
+        
+        sounds.start_background_process()
+        mp.register_script_message("export_to_sm", function(time) exporter.export_to_sm(time) end)
         mp.register_event("shutdown", active.on_shutdown)
 
         if not ext.empty(settings["import"]) then
@@ -92,6 +92,40 @@ local function run()
     end
 end
 
+-- Only allows one instance of the script to
+-- run for each queue.
+
+local pid_file = mpu.join_path(fs.data, "pid_file")
+
+local read_pid_file = function()
+    local h = io.open(pid_file, "r")
+    if h == nil then return -1 end
+    local pid = h:read("*all")
+    h:close()
+    return pid
+end
+
+local write_pid_file = function()
+    local h = io.open(pid_file, "w")
+    if h == nil then return end
+    h:write(mpu.getpid())
+    h:close()
+end
+
+local delete_pid_file = function()
+    log.debug("Removing PID file.")
+    os.remove(pid_file)
+end
+
+
 if settings["start"] or not ext.empty(settings["import"]) or not ext.empty(settings["export"]) then
-    run()
+    local pid = read_pid_file()
+    if pid ~= -1 and sys.pid_running(pid) then
+        log.debug("Already running with PID: ", pid, ". Exiting.")
+        mp.commandv("quit", 65)
+    else
+        write_pid_file()
+        mp.register_event("shutdown", delete_pid_file)
+        run()
+    end
 end

@@ -3,7 +3,7 @@ local sys = require("systems.system")
 
 local config = {}
 
-config.menu_font_size = 20
+config.menu_font_size = 24
 config.default_priority_min = 20
 config.default_priority_max = 60
 

@@ -24,9 +24,9 @@ end
 
 menu.base_binds = {
     { key = 'ESC', desc = "close menu", fn = function() menu.close() end },
-    { key = 'H', desc = "home menu", fn = function() menu.activate_menu("home") end },
-    { key = "I", desc = "import menu", fn = function() menu.activate_menu("import") end},
-    { key = "Alt+c", desc = "queue menu", fn = function() menu.activate_menu("queue") end},
+    { key = 'H', showif = function() return menu.state ~= "home" end, desc = "home menu", fn = function() menu.activate_menu("home") end },
+    { key = "I", showif = function() return menu.state ~= "import" end, desc = "import menu", fn = function() menu.activate_menu("import") end},
+    { key = "Alt+c", showif = function() return menu.start ~= "queue" end, desc = "queue menu", fn = function() menu.activate_menu("queue") end},
 }
 
 menu.active_binds = {}
@@ -92,7 +92,9 @@ end
 menu.add_binds_osd = function(osd)
     osd:submenu("Commands"):newline()
     for _, val in pairs(menu.active_binds) do
-        osd:tab():item(val.key .. ": "):italics(val.desc):newline()
+        if not val.showif or (val.showif and val.showif()) then
+            osd:tab():item(val.key .. ": "):italics(val.desc):newline()
+        end
     end
 end
 

@@ -4,6 +4,7 @@ fix_items.py
 *.edl
 env
 *.webm
+pid_file
 
 
 # Byte-compiled / optimized / =

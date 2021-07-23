@@ -35,6 +35,7 @@ function ExtractQueueBase:_init(name, oldRep, repTable)
     self.create_qa_chain = {
         function(args, chain, i) self:query_qa_format(args, chain, i) end,
         function(args, chain, i) self:query_include_image(args, chain, i) end,
+        function(args, chain, i) self:query_include_sound(args, chain, i) end,
         function(args, chain, i) self:query_question(args, chain, i) end,
         function(args, chain, i) self:query_answer(args, chain, i) end,
         function(args, chain, i) self:query_confirm_qa(args, chain, i) end,
@@ -186,7 +187,7 @@ function ExtractQueueBase:postpone_stop(n)
     end
 end
 
-function ExtractQueueBase:handle_extract_cloze(start, stop, curRep)
+function ExtractQueueBase:handle_extract_normal_cloze(start, stop, curRep)
     local item = repCreators.createItem(curRep, start, stop)
     if ext.empty(item) then
         return false
@@ -220,7 +221,10 @@ function ExtractQueueBase:query_confirm_qa(args, chain, i)
             return
         end
 
-        local extract = repCreators.createItem(
+        -- if no question, answer, media... just cancel.
+        -- include audio?
+
+        local item = repCreators.createItem(
             args["curRep"],
             args["start"],
             args["stop"],
@@ -230,13 +234,10 @@ function ExtractQueueBase:query_confirm_qa(args, chain, i)
             args["format"]
         )
 
-        if extract == nil then
-            log.notify("Failed to create topics.")
+        if item == nil then
+            log.notify("Failed to create item.")
             return
         end
-
-        log.debug(extract)
-
     end
 
     get_user_input(handle, {
@@ -245,27 +246,91 @@ function ExtractQueueBase:query_confirm_qa(args, chain, i)
         })
 end
 
-function ExtractQueueBase:query_include_image(args, chain, i)
+function ExtractQueueBase:query_flashcard_side(media, args, chain, i)
     local handler = function (input)
         if input == nil then
             log.notify("Cancelling")
             return
         end
-        if input == "n" or input == ""then
-            args["mediaType"] = false
+
+        if input == "a" or input == ""then
+            args[media.."-side"] = "answer"
             i = i + 1
-        elseif input == "y"  then
-            args["mediaType"] = "screenshot"
+        elseif input == "q"  then
+            args[media.."-side"] = "question"
             i = i + 1
         else
             log.notify("Invalid input.")
+            self:query_flashcard_side(media, args, chain, i)
+            return
         end
 
         self:call_chain(args, chain, i)
     end
 
     get_user_input(handler, {
-            text = "Include image? (y/[n]):",
+            text = media .. " side? (a/[q]):",
+            replace = true,
+        })
+end
+
+function ExtractQueueBase:query_include_sound(args, chain, i)
+    local handler = function (input)
+        if input == nil then
+            log.notify("Cancelling")
+            return
+        end
+
+        if input == "n" or input == ""then
+            args["sound"] = false
+        elseif input == "y" then
+            args["sound"] = true
+        else
+            log.notify("Invalid input.")
+            self:call_chain(args, chain, i)
+            return
+        end
+
+        self:call_chain(args, chain, i + 1)
+    end
+
+    get_user_input(handler, {
+            text = "Include sound? (n/[y]):",
+            replace = true,
+        })
+end
+
+function ExtractQueueBase:query_sound_side(args, chain, i)
+    self:query_flashcard_side("sound", args, chain, i)
+end
+
+function ExtractQueueBase:query_image_side(args, chain, i)
+    self:query_flashcard_side("image", args, chain, i)
+end
+
+function ExtractQueueBase:query_include_image(args, chain, i)
+    local handler = function (input)
+        if input == nil then
+            log.notify("Cancelling")
+            return
+        end
+        if input == "n" or input == "" then
+            args["mediaType"] = false
+        elseif input == "s"  then
+            args["mediaType"] = "screenshot"
+        elseif input == "g"  then
+            args["mediaType"] = "gif"
+        else
+            log.notify("Invalid input.")
+            self:call_chain(args, chain, i)
+            return
+        end
+
+        self:call_chain(args, chain, i + 1)
+    end
+
+    get_user_input(handler, {
+            text = "Include image? (s/g/[n]):",
             replace = true,
         })
 end
@@ -307,7 +372,7 @@ end
 function ExtractQueueBase:query_qa_format(args, chain, i)
 
     local choices = {
-        [1] = "meaning",
+        [1] = "normal-qa",
         [2] = "cloze-context"
     }
 
@@ -329,15 +394,16 @@ function ExtractQueueBase:query_qa_format(args, chain, i)
     end
 
     get_user_input(handler, {
-            text = "QA format:\n1) meaning\n2) cloze answer with context\n",
+            text = "QA format:\n1) normal\n2) cloze answer with context\n",
             replace = true,
         })
 end
 
-function ExtractQueueBase:handle_extract_qa(start, stop, curRep)
+function ExtractQueueBase:create_qa()
     local queue = active.queue
-    if queue == nil or curRep == nil then return end
-    self:call_chain({start = start, stop = stop, curRep = curRep}, self.create_qa_chain, 1)
+    if queue == nil or queue.playing == nil then return end
+    local curRep = queue.playing
+    self:call_chain({start = curRep.row.start, stop = curRep.row.stop, curRep = curRep}, self.create_qa_chain, 1)
 end
 
 function ExtractQueueBase:handle_extract_extract(start, stop, curRep)
@@ -370,23 +436,26 @@ function ExtractQueueBase:handle_extract_extract(start, stop, curRep)
     end
 end
 
+function ExtractQueueBase:handle_extract_cloze_context(start, stop, curRep)
+end
+
 function ExtractQueueBase:handle_extract(start, stop, curRep, extractType)
     if curRep == nil then
-        log.debug("Failed to extract because current rep was nil.")
+        log.debug("Failed to create item because current rep was nil.")
         return false
     end
 
     if not start or not stop or (start > stop) then
-        log.err("Invalid extract boundaries.")
+        log.err("Invalid boundaries.")
         return false
     end
 
     if extractType == "extract" then
         return self:handle_extract_extract(start, stop, curRep)
-    elseif extractType == "QA" then
-        return self:handle_extract_qa(start, stop, curRep)
+    elseif extractType == "cloze-context" then
+        return self:handle_extract_cloze_context(start, stop, curRep)
     else
-        return self:handle_extract_cloze(start, stop, curRep)
+        return self:handle_extract_normal_cloze(start, stop, curRep)
     end
 end
 

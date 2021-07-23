@@ -106,7 +106,7 @@ function importer.create_local_topics(url)
 end
 
 function importer.create_yt_topic(info, prevId, priority)
-    local title = str.db_friendly(info["title"])
+    local title = str.remove_db_delimiters(info["title"])
     local ytId = info["id"]
     local duration = info["duration"]
     return repCreators.createTopic(title, "youtube", ytId, priority, duration, prevId)

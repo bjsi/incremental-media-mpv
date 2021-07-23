@@ -6,8 +6,11 @@ local item_header = {
     [5] = "parent",
     [6] = "url",
     [7] = "priority",
-    [8] = "start",
-    [9] = "stop",
-    [10] = "speed",
+    [8] = "format",
+    [9] = "question",
+    [10] = "answer",
+    [11] = "start",
+    [12] = "stop",
+    [13] = "speed",
 }
 return item_header

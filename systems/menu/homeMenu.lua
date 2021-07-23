@@ -50,7 +50,7 @@ function HomeSubmenu:_init()
     }
 
     self.extract_keybinds = {
-        { key = "n", desc = "edit notes", fn = function() self:edit_current_field('notes') end },
+        { key='Q', desc = "create Q/A", fn = function() active.queue:create_qa() end},
     }
 
     self.item_keybinds = {

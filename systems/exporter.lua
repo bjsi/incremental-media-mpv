@@ -29,14 +29,150 @@ local function getGrandparent(grandparents, parents, child)
     end
 end
 
-function exporter.get_to_export()
+local function read_as_b64(fp)
+    local h = io.open(fp, "rb")
+    local data = h:read("*all")
+    h:close()
+    return b64.encode(data)
+end
+
+function exporter.create_topic_export_data(v)
+    local topic = {
+        id = v.row["id"],
+        title = v.row.title,
+        url = player.get_full_url(v, v.row.start),
+        start = v.row.start,
+        qtext = "",
+        stop = v.row.stop,
+        priority = v.row.priority,
+        extracts = {
+            ["nil"] = nil, -- so mpu.format_json turns it into a dict if empty
+        }
+    }
+
+    return topic
+end
+
+function exporter.create_extract_export_data(v)
+    local extract = {
+        id = v.row["id"],
+        parent = v.row["parent"],
+        qtext = "",
+        url = player.get_full_url(v, v.row["start"]),
+        start = v.row.start,
+        stop = v.row.stop,
+        priority = v.row.priority,
+        items = {
+            ["nil"] = nil, -- so mpu.format_json turns it into a dict
+        }
+    }
+    return extract
+end
+
+function exporter.create_item_export_data(v)
+    local item = {
+        id = v.row["id"],
+        parent = v.row["parent"],
+        qtext = "test question",
+        atext = "test answer",
+        edl = "",
+        format = v.row["format"],
+        flashcard_medias = {},
+        stored_medias = {},
+        priority = v.row["priority"],
+        start = v.row["start"],
+        stop = v.row["stop"],
+        speed = v.row["speed"]
+    }
+
+    local edlUrl = player.get_full_url(v)
+    local h = io.open(edlUrl, "r")
+    item["edl"] = h:read("*all")
+    h:close()
+
+    local edl = EDL.new(edlUrl)
+    local parentPath, parentStart, parentEnd, clozeStart, clozeEnd, mediaFile = edl:read()
+    if not v:is_local() then
+        parentPath = mpu.join_path(fs.media, parentPath)
+    end
+
+    local qFpath = mpu.join_path(sys.tmp_dir, sys.uuid() .. ".mp3")
+    local aFpath = mpu.join_path(sys.tmp_dir, sys.uuid() .. ".mp3")
+    if not ffmpeg.generate_cloze_item_files(parentPath, parentStart, parentEnd, clozeStart, clozeEnd, qFpath, aFpath) then
+        log.err("Failed to generate item files.")
+        return false
+    end
+
+    item["stored_medias"] = {
+        {
+            fname = str.basename(parentPath),
+            b64 = read_as_b64(parentPath),
+        }
+    }
+
+    item["flashcard_medias"] = {
+        {
+            type = "sound",
+            showat = "question",
+            fname = str.basename(qFpath),
+            text = "audio cloze question",
+            b64 = read_as_b64(qFpath)
+        },
+        {
+            type = "sound",
+            showat = "answer",
+            fname = str.basename(aFpath),
+            text = "audio cloze answer",
+            b64 = read_as_b64(aFpath)
+        },
+    }
+
+    if mediaFile then
+        local fullUrl = mpu.join_path(fs.media, mediaFile)
+        item["flashcard_medias"] = {
+            type = "image",
+            showat = "answer",
+            fname = mediaFile,
+            text = "",
+            b64 = read_as_b64(fullUrl)
+        }
+    end
+
+    return item
+end
+
+function exporter.export_to_sm(time)
+    GlobalTopicQueue = GlobalTopicQueue or require("queue.globalTopicQueue")
+    local gtq = GlobalTopicQueue(nil)
+    local grandParents = ext.index_by_key(gtq.reptable.reps, "id")
+
+    GlobalExtractQueue = GlobalExtractQueue or require("queue.globalExtractQueue")
+    local geq = GlobalExtractQueue(nil)
+    local parents = ext.index_by_key(geq.reptable.reps, "id")
+
     GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
     local giq = GlobalItemQueue(nil)
     local toExport = ext.list_filter(giq.reptable.reps, function(r) return r:to_export() end)
-    if ext.empty(toExport) then
-        return 0
+
+    local topics = {} -- id indexed
+    for _, v in ipairs(toExport) do
+        local grandparent = getGrandparent(grandParents, parents, v)
+        if topics[grandparent.row.id] == nil then
+            local topic = exporter.create_topic_export_data(grandparent)
+            topics[topic.id] = topic
+        end
+
+        local parent = getParent(parents, v)
+        if topics[grandparent.row.id].extracts[parent.row.id] == nil then
+            local extract = exporter.create_extract_export_data(parent)
+            topics[grandparent.row.id].extracts[parent.row.id] = extract
+        end
+
+        local item = exporter.create_item_export_data(v)
+        topics[grandparent.row.id].extracts[parent.row.id].items[item.id] = item
     end
-    return #toExport
+
+    sys.json_rpc_request("ImportTopics", { topics })
 end
 
 function exporter.as_sm_xml(outputFolder)

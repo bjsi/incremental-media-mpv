@@ -1,6 +1,7 @@
 local mpu = require("mp.utils")
 local fs = require("systems.fs")
 local sys = require("systems.system")
+local log = require("utils.log")
 
 local sounds = {
     files = {
@@ -19,13 +20,34 @@ local sounds = {
     }
 }
 
--- TODO: Keep a background process to run sounds
-sounds.play = function(sound)
-    local fp = mpu.join_path(fs.sounds, sounds.files[sound])
-    local args = {"mpv", "--no-video", "--really-quiet", fp}
+local pid = tostring(mpu.getpid())
+local pipeOrSock = sys.platform == "win" and [[\\.\pipe\background-sounds]]..pid or "/tmp/background-sounds"..pid..".sock"
+
+sounds.start_background_process = function()
+    local args = {
+        "mpv",
+        "--no-video",
+        "--really-quiet",
+        "--idle=yes", -- keeps it running after playing files.
+        "--input-ipc-server=" .. pipeOrSock,
+    }
+
+    log.debug("Starting background sounds process.")
     sys.background_process(args)
+
+    -- on exit, send command to quit
+    mp.register_event("shutdown", function()
+        log.debug("Killing background sounds process.")
+        sys.write_to_ipc(pipeOrSock, "quit")
+    end)
 end
 
+sounds.play = function(sound)
+    local fp = mpu.join_path(fs.sounds, sounds.files[sound])
+    sys.write_to_ipc(pipeOrSock, "loadfile " .. fp)
+end
+
+-- TODO: write to background_process pipe
 sounds.play_sync = function(sound)
     local fp = mpu.join_path(fs.sounds, sounds.files[sound])
     local args = {"mpv", "--no-video", "--really-quiet", fp}

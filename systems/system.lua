@@ -8,8 +8,47 @@ local ext = require "utils.ext"
 
 local sys = {}
 
-function sys.json_rpc_request(tbl)
-    local json = mpu.format_json(tbl)
+function sys.write_to_ipc(pipeOrSock, data)
+    local args
+    if sys.platform == "win" then
+        args = {
+            "cmd", "/c",
+            table.concat({
+                "echo",
+                data, ">", pipeOrSock
+            }, " ")
+        }
+    elseif sys.platform == "mac" or sys.platform == "lnx" then
+        data = { command = str.split(data) }
+        args = {
+            "sh", "-c",
+            "echo '" .. mpu.format_json(data) .."' | socat - " .. pipeOrSock
+        }
+    end
+    sys.background_process(args)
+end
+
+function sys.pid_running(pid)
+    pid = tostring(pid)
+    local args
+    if sys.platform == "lnx" or sys.platform == "max" then
+        args = {
+            "ps", "-p", pid
+        }
+    elseif sys.platform == "win" then
+        args = {"powershell", "-NoProfile", "-Command", "Get-Process -Id " .. pid}
+    end
+    return sys.subprocess(args).status == 0
+end
+
+function sys.json_rpc_request(method, params)
+    local req = {
+        id = 1,
+        method = method,
+        params = params,
+    }
+
+    local json = mpu.format_json(req)
     if not json then
         log.debug("Invalid json")
         return nil
@@ -20,15 +59,19 @@ function sys.json_rpc_request(tbl)
     h:write(json .. "\n")
     h:close()
 
+    local args = {
+        "localhost",
+        "9898",
+        jsonFile
+    }
+
     if sys.platform == "win" then
         local bat = mpu.join_path(mp.get_script_directory(), "curl_telnet.bat")
-        local args = {
-            bat,
-            "localhost",
-            "9898",
-            jsonFile
-        }
-        log.debug(args)
+        table.insert(args, 1, bat)
+        return sys.subprocess(args)
+    elseif sys.platform == "lnx" or sys.platform == "mac" then
+        local sh = mpu.join_path(mp.get_script_directory(), "curl_telnet.sh")
+        table.insert(args, 1, sh)
         return sys.subprocess(args)
     end
 end
@@ -40,7 +83,7 @@ function sys.create_essential_files()
             if not sys.create_dir(folder) then
                 log.debug("Could not create essential folder: " .. folder ..
                               ". Exiting...")
-                mp.commmandv("exit")
+                mp.commmandv("quit")
                 return false
             end
         end
@@ -96,7 +139,7 @@ function sys.verify_dependencies()
         if not sys.has_dependency(dep) then
             log.debug("Could not find dependency " .. dep ..
                           " in path. Exiting...")
-            mp.commmandv("exit")
+            mp.commmandv("quit")
             return
         end
     end

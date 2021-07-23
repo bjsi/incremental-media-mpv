@@ -34,7 +34,13 @@ function ffmpeg.screenshot(url, start, outputPath)
     return sys.subprocess(args).status == 0
 end
 
-function ffmpeg.generate_item_files(parentPath, parentStart, parentEnd, clozeStart, clozeEnd, question_fp, cloze_fp)
+function ffmpeg.generate_qa_item_files(parentPath)
+end
+
+function ffmpeg.generate_meaning_item_files(parentPath)
+end
+
+function ffmpeg.generate_cloze_item_files(parentPath, parentStart, parentEnd, clozeStart, clozeEnd, question_fp, cloze_fp)
     local clozeLength = clozeEnd - clozeStart
     local args = {
         "ffmpeg",
