@@ -5,10 +5,13 @@ local ext  = require("utils.ext")
 local str  = require("utils.str")
 local log  = require("utils.log")
 local player = require("systems.player")
-local edl    = require("systems.edl")
+local ClozeEDL    = require("systems.edl.edl")
+local QAEDL = require("systems.edl.qaEdl")
+local ClozeContextEDL = require("systems.edl.clozeContextEdl")
 local ffmpeg = require("systems.ffmpeg")
 local ydl    = require("systems.ydl")
 local fs     = require("systems.fs")
+local item_format = require("reps.rep.item_format")
 
 package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"})..package.path
 local ui = require "user-input-module"
@@ -229,9 +232,23 @@ function HomeSubmenu:item_add_media(type)
     if queue == nil or queue.playing == nil then return end
     local cur = queue.playing
 
-    local edlPath = player.get_full_url(cur)
-    local e = edl.new(edlPath)
-    local parentPath, parentStart, parentEnd, clozeStart, clozeEnd, _ = e:read()
+
+    -- TODO: edl update
+    local edlFullPathWithExt = player.get_full_url(cur)
+    local edl
+
+    if cur.row.format == item_format.cloze then
+        edl = ClozeEDL.new(edlFullPathWithExt)
+    elseif cur.row.format == item_format.cloze_context then
+        edl = ClozeContextEDL.new(edlFullPathWithExt)
+    elseif cur.row.format == item_format.qa then
+        edl = QAEDL.new(edlFullPathWithExt)
+    end
+
+    -- TODO: check this
+    local parentPath, parentStart, parentEnd, clozeStart, clozeEnd, _ = edl:read()
+
+
     if clozeStart == nil then return end
 
     GlobalExtractQueue = GlobalExtractQueue or require("queue.globalExtractQueue")
@@ -267,7 +284,7 @@ function HomeSubmenu:item_add_media(type)
         e:write(parentPath, parentStart, parentEnd, clozeStart, clozeEnd, filename)
         log.notify("Added " .. type)
         local curtime = mp.get_property("time-pos")
-        mp.commandv("loadfile", edlPath, "replace", "start=" .. curtime)
+        mp.commandv("loadfile", edlFullPathWithExt, "replace", "start=" .. curtime)
     else
         log.notify("Failed to add " .. type)
     end

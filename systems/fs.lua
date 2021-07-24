@@ -25,5 +25,7 @@ fs.sine = mpu.join_path(fs.media, "sine.mp3")
 fs.sine_base = mpu.join_path(fs.sounds, "sine.mp3")
 fs.meaning_zh_base = mpu.join_path(fs.sounds, "meaning_zh.mp3")
 fs.meaning_zh = mpu.join_path(fs.media, "meaning_zh.mp3")
+fs.silence_base = mpu.join_path(fs.sounds, "silence.mp3")
+fs.silence = mpu.join_path(fs.media, "silence.mp3")
 
 return fs

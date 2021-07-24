@@ -8,6 +8,15 @@ local ext = require "utils.ext"
 
 local sys = {}
 
+function sys.read_text(file, readmode)
+    local h = io.open(file, "r")
+    local data
+    if h ~= nil then
+        data = h:read(readmode)
+    end
+    return data
+end
+
 function sys.write_to_ipc(pipeOrSock, data)
     local args
     if sys.platform == "win" then
@@ -95,6 +104,10 @@ function sys.create_essential_files()
 
     if not ext.file_exists(fs.meaning_zh) then
         sys.copy(fs.meaning_zh_base, fs.meaning_zh)
+    end
+
+    if not ext.file_exists(fs.silence) then
+        sys.copy(fs.silence_base, fs.silence)
     end
 end
 

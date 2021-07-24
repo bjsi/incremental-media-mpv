@@ -1,11 +1,14 @@
 local Base = require("queue.queueBase")
 local player = require("systems.player")
-local EDL = require("systems.edl")
+local ClozeEDL = require("systems.edl.edl")
+local ClozeContextEDL = require("systems.edl.clozeContextEdl")
+local QAEDL = require("systems.edl.qaEdl")
 local log = require("utils.log")
 local active = require("systems.active")
 local UnscheduledItemRepTable = require("reps.reptable.unscheduledItems")
 local sounds = require "systems.sounds"
 local ext    = require "utils.ext"
+local item_format = require "reps.rep.item_format"
 
 local LocalExtractQueue
 local LocalTopicQueue
@@ -97,9 +100,16 @@ function ItemQueueBase:adjust_cloze(postpone, start)
         return
     end
 
+    -- TODO: Allow readjustment of other item formats
+    if not cur.row.format == item_format.cloze then
+        log.debug("Can't adjust a non-cloze format item.")
+        sounds.play("negative")
+        return
+    end
+
     mp.set_property("pause", "yes")
     local fullUrl = player.get_full_url(cur)
-    local newStart, newStop = EDL.new(fullUrl):adjust_cloze(postpone, start)
+    local newStart, newStop = ClozeEDL.new(fullUrl):adjust_cloze(postpone, start)
     if newStart == nil or newStop == nil then
         log.err("Failed to adjust cloze.")
         return

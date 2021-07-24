@@ -2,12 +2,18 @@ local active = require("systems.active")
 local menu = require("systems.menu.menuBase")
 local importer = require("systems.importer")
 local system   = require("systems.system")
+local item_format = require("reps.rep.item_format")
 
 local keys = {
 
     ["iv-create-qa"] = {
-        ["key"] = "Alt+e",
-        ["callback"] = function() active.queue:extract("QA") end
+        ["key"] = "Alt+q",
+        ["callback"] = function() active.queue:extract(item_format.qa) end
+    },
+
+    ["iv-create-cloze-context"] = {
+        ["key"] = "Alt+c",
+        ["callback"] = function() active.queue:extract(item_format.cloze_context) end
     },
 
     ["iv-menu-open"] = {
@@ -211,7 +217,7 @@ local keys = {
     },
 
     ["iv-extract-extract"] = {
-        ["key"] = "Ctrl+e",
+        ["key"] = "Alt+e",
         ["callback"] = function() active.queue:extract("extract") end
     },
 

@@ -5,6 +5,7 @@ local sounds = require("systems.sounds")
 local ext = require("utils.ext")
 local log = require("utils.log")
 local active = require("systems.active")
+local item_format = require("reps.rep.item_format")
 
 package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"})..package.path
 local ui = require "user-input-module"
@@ -187,26 +188,6 @@ function ExtractQueueBase:postpone_stop(n)
     end
 end
 
-function ExtractQueueBase:handle_extract_normal_cloze(start, stop, curRep)
-    local item = repCreators.createItem(curRep, start, stop)
-    if ext.empty(item) then
-        return false
-    end
-
-    GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
-    local irt = GlobalItemQueue(nil).reptable
-    if irt:add_to_reps(item) then
-        sounds.play("echo")
-        player.unset_abloop()
-        irt:write()
-        return true
-    else
-        sounds.play("negative")
-        log.err("Failed to add item to the rep table.")
-        return false
-    end
-end
-
 function ExtractQueueBase:query_confirm_qa(args, chain, i)
     local handle = function(input)
         if input == nil or input == "n" then
@@ -222,22 +203,30 @@ function ExtractQueueBase:query_confirm_qa(args, chain, i)
         end
 
         -- if no question, answer, media... just cancel.
-        -- include audio?
 
-        local item = repCreators.createItem(
-            args["curRep"],
-            args["start"],
-            args["stop"],
-            false, -- args["mediaType"],
-            args["question"],
-            args["answer"],
-            args["format"]
+        local text = { 
+            question = args.question and args.question or "",
+            answer = args.answer and args.answer or "",
+        }
+        local sound = args.sound
+        local media = args.media
+        local parent = args.curRep
+        local format = args.format
+
+        local itemRep = repCreators.createItem1(
+            parent,
+            sound,
+            media,
+            text,
+            format
         )
 
-        if item == nil then
+        if itemRep == nil then
             log.notify("Failed to create item.")
             return
         end
+
+        -- TODO: Add to the queue.
     end
 
     get_user_input(handle, {
@@ -372,8 +361,8 @@ end
 function ExtractQueueBase:query_qa_format(args, chain, i)
 
     local choices = {
-        [1] = "normal-qa",
-        [2] = "cloze-context"
+        [1] = item_format.qa,
+        [2] = item_format.cloze_context,
     }
 
     local handler = function(input)
@@ -389,12 +378,12 @@ function ExtractQueueBase:query_qa_format(args, chain, i)
             return
         end
 
-        args["format"] = choices[choice]
+        args["format"] = { name = choices[choice] }
         self:call_chain(args, chain, i + 1)
     end
 
     get_user_input(handler, {
-            text = "QA format:\n1) normal\n2) cloze answer with context\n",
+            text = "QA format:\n1) classic Q/A\n2) cloze answer with context\n",
             replace = true,
         })
 end
@@ -436,26 +425,44 @@ function ExtractQueueBase:handle_extract_extract(start, stop, curRep)
     end
 end
 
-function ExtractQueueBase:handle_extract_cloze_context(start, stop, curRep)
+function ExtractQueueBase:handle_extract_cloze(curRep, sound, format)
+    local itemRep = repCreators.createItem1(curRep, sound, nil, nil, format)
+    if ext.empty(itemRep) then
+        return false
+    end
+
+    GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
+    local giq = GlobalItemQueue(nil)
+    local irt = giq.reptable
+    if irt:add_to_reps(itemRep) then
+        sounds.play("echo")
+        player.unset_abloop()
+        giq:save_data()
+        return true
+    else
+        sounds.play("negative")
+        log.err("Failed to add " .. format["name"] .. " item to the rep table.")
+        return false
+    end
 end
 
-function ExtractQueueBase:handle_extract(start, stop, curRep, extractType)
+function ExtractQueueBase:handle_extract(loopStart, loopStop, curRep, extractType)
     if curRep == nil then
         log.debug("Failed to create item because current rep was nil.")
         return false
     end
 
-    if not start or not stop or (start > stop) then
+    if not loopStart or not loopStop or (loopStart > loopStop) then
         log.err("Invalid boundaries.")
         return false
     end
 
     if extractType == "extract" then
-        return self:handle_extract_extract(start, stop, curRep)
-    elseif extractType == "cloze-context" then
-        return self:handle_extract_cloze_context(start, stop, curRep)
-    else
-        return self:handle_extract_normal_cloze(start, stop, curRep)
+        return self:handle_extract_extract(loopStart, loopStop, curRep)
+    elseif extractType == item_format.cloze_context or extractType == item_format.cloze then
+        local sound = { path=curRep.row.url, start=curRep.row.start, stop=curRep.row.stop }
+        local format = { name=extractType, ["cloze-start"]=loopStart, ["cloze-stop"]=loopStop }
+        return self:handle_extract_cloze(curRep, sound, format)
     end
 end
 
