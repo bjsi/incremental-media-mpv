@@ -132,9 +132,15 @@ function repCreators.createItem1(parent, sound, media, text, format)
         if parent:is_local() then
             -- sound["path"] = fullUrl -- TODO: audio extraction?
         elseif parent:is_yt() then
-            -- TODO: adjust start stop
+
             -- here, sound["path"] is relative to fs.media!
             sound["path"] = repCreators.download_yt_audio(fullUrl, sound["start"], sound["stop"])
+
+            -- Adjust to relative times after extracting audio
+            format["cloze-start"] = format["cloze-start"] - sound["start"]
+            format["cloze-stop"] = format["cloze-stop"] - sound["start"]
+            sound["stop"] = sound["stop"] - sound["start"]
+            sound["start"] = 0
         end
 
         if not sound["path"] or not sys.exists(mpu.join_path(fs.media, sound["path"])) then
@@ -171,7 +177,6 @@ function repCreators.createItem1(parent, sound, media, text, format)
     if format["name"] == item_format.cloze then
         log.debug("Creating cloze edl.")
         local edl = ClozeEDL.new(edlFullPathWithExt)
-        -- TODO: relative or full start / stop
         ret = edl:write(sound, format, media)
 
     -- QA
@@ -202,7 +207,7 @@ function repCreators.createItem1(parent, sound, media, text, format)
     end
 
     log.debug("Successfully created item: ", itemRep)
-    return true
+    return itemRep
 end
 
 function repCreators.create_item_rep(parent, sound, text, format, edlFileNameWithExt)
@@ -212,12 +217,6 @@ function repCreators.create_item_rep(parent, sound, text, format, edlFileNameWit
         return nil
     end
 
-    -- TODO: what if you don't add sound?
-    -- quick hack: use parent start stop
-
-    local start = sound and sound["start"] or parent.row["start"]
-    local stop = sound and sound["stop"] or parent.row.stop
-
     itemRow["id"] = sys.uuid()
     itemRow["created"] = os.time()
     itemRow["dismissed"] = 0
@@ -226,12 +225,12 @@ function repCreators.create_item_rep(parent, sound, text, format, edlFileNameWit
 
     -- Sound
     itemRow["url"] = edlFileNameWithExt
-    itemRow["start"] = start
-    itemRow["stop"] = stop
+    itemRow["start"] = parent.row.start
+    itemRow["stop"] = parent.row.stop
 
     -- Text
-    itemRow["question"] = text["question"]
-    itemRow["answer"] = text["answer"]
+    itemRow["question"] = text and text["question"] or ""
+    itemRow["answer"] = text and text["answer"] or ""
 
     -- Format
     itemRow["format"] = format["name"]

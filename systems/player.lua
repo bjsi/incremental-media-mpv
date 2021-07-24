@@ -76,7 +76,7 @@ function player.play(newRep, oldRep, createLoopBoundaries)
     if not createLoopBoundaries then
         start = 0
         stop = newRep:duration()
-        if newRep:type() == "topic" then stop = stop - 1 end
+        if newRep:type() == "topic" then stop = stop - 2 end
     end
 
     log.debug("Setting loop boundaries - start: " .. tostring(start) .. " stop: " .. tostring(stop))

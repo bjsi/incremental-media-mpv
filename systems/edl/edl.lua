@@ -61,7 +61,6 @@ function ClozeEDL:media(mediaPath, showat)
     return "!new_stream\n" .. table.concat({ mediaPath, "title="..showat }, ",")
 end
 
-
 -- sound, format, media
 function ClozeEDL:write(sound, format, media)
     if format.name ~= item_format.cloze then
@@ -77,8 +76,8 @@ function ClozeEDL:write(sound, format, media)
 
     handle:write(self.header)
     handle:write(self:format_pre_cloze(sound["path"], sound["start"], format["cloze-start"]) .. "\n")
-    handle:write(self:format_cloze(format["cloze-end"], format["cloze-start"]) .. "\n")
-    handle:write(self:format_post_cloze(sound["path"], format["cloze-end"], sound["stop"]) .. "\n")
+    handle:write(self:format_cloze(format["cloze-stop"], format["cloze-start"]) .. "\n")
+    handle:write(self:format_post_cloze(sound["path"], format["cloze-stop"], sound["stop"]) .. "\n")
 
     if media then
         handle:write(self:media(media["path"], media["showat"]) .. "\n")
@@ -138,7 +137,7 @@ function ClozeEDL:read()
 
     log.debug("Successfully parsed EDL file: " .. self.outputPath)
     local sound = { path=parentPath, start=parentStart, stop=parentEnd }
-    local format = { name = item_format.cloze, start = clozeStart, stop = clozeEnd }
+    local format = { name=item_format.cloze, ["cloze-start"]=clozeStart, ["cloze-stop"] = clozeEnd }
     return sound, format, media
 end
 
@@ -150,19 +149,19 @@ function ClozeEDL:adjust_cloze(postpone, start)
     local sound, format, media = self:read()
 
     if advance and start then
-        format["cloze-start"] = format["clozeStart"] - adj
+        format["cloze-start"] = format["cloze-start"] - adj
     elseif postpone and start then
         format["cloze-start"] = format["cloze-start"] + adj
     elseif advance and stop then
-        format["cloze-end"] = format["cloze-end"] - adj
+        format["cloze-stop"] = format["cloze-stop"] - adj
     elseif postpone and stop then
-        format["cloze-end"] = format["cloze-end"] + adj
+        format["cloze-stop"] = format["cloze-stop"] + adj
     end
 
     -- TODO: validate!!!
 
     local succ = self:write(sound, format, media)
-    return succ and format["cloze-start"] - sound["start"], format["cloze-end"] - sound["start"] or nil, nil
+    return succ and format["cloze-start"] - sound["start"], format["cloze-stop"] - sound["start"] or nil, nil
 end
 
 function ClozeEDL:parse_line(line)

@@ -52,7 +52,12 @@ function QueueMenu:add_osd()
         local item = {}
         item.style = ""
         local itemOsd = OSD:new():size(cfg.menu_font_size - 1):align(4)
-        local title = tostring(i) .. ". " .. list.ass_escape(str.limit_length(v.row.title, 40))
+        local title
+        if v.row.title then
+            title = tostring(i) .. ". " .. list.ass_escape(str.limit_length(v.row.title, 40))
+        else
+            title = tostring(i) .. ". " .. str.capitalize_first(v:type())
+        end
         if i == 1 then
             itemOsd:color("ff0000"):bold(title):tab():text(v.row.priority)
         else

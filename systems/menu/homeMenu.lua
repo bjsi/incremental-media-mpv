@@ -117,9 +117,9 @@ end
 ---- Element Type OSDs
 
 function HomeSubmenu:add_question_osd(osd, cur)
-    osd:item("Q: "):text(cur.row["question"]):newline()
-    osd:item("A: "):text(cur.row["answer"]):newline()
-    osd:item("Format: "):text(cur.row["format"]):newline()
+    osd:item("question: "):text(cur.row["question"]):newline()
+    osd:item("answer: "):text(cur.row["answer"]):newline()
+    osd:item("format: "):text(cur.row["format"]):newline()
 end
 
 function HomeSubmenu:add_item_osd(osd, cur)
@@ -232,7 +232,6 @@ function HomeSubmenu:item_add_media(type)
     if queue == nil or queue.playing == nil then return end
     local cur = queue.playing
 
-
     -- TODO: edl update
     local edlFullPathWithExt = player.get_full_url(cur)
     local edl
@@ -245,11 +244,7 @@ function HomeSubmenu:item_add_media(type)
         edl = QAEDL.new(edlFullPathWithExt)
     end
 
-    -- TODO: check this
-    local parentPath, parentStart, parentEnd, clozeStart, clozeEnd, _ = edl:read()
-
-
-    if clozeStart == nil then return end
+    local sound, format, media = edl:read()
 
     GlobalExtractQueue = GlobalExtractQueue or require("queue.globalExtractQueue")
     local geq = GlobalExtractQueue(nil)
@@ -259,13 +254,13 @@ function HomeSubmenu:item_add_media(type)
     local vidUrl = player.get_full_url(parent)
     local fp = mpu.join_path(fs.media, tostring(os.time()))
     local vidstream
-    local mediaStart = clozeStart
-    local mediaEnd = clozeEnd
+    local mediaStart = format["cloze-start"]
+    local mediaEnd = format["cloze-stop"]
 
     if parent:is_yt() then
         vidstream = ydl.get_video_stream(vidUrl, false)
-        mediaStart = clozeStart + tonumber(parent.row["start"])
-        mediaEnd = clozeEnd + tonumber(parent.row["start"])
+        mediaStart = format["cloze-start"] + tonumber(parent.row["start"])
+        mediaEnd = format["cloze-stop"] + tonumber(parent.row["start"])
     else
         vidstream = vidUrl
     end
@@ -273,7 +268,7 @@ function HomeSubmenu:item_add_media(type)
     local ret = false
     if type == "gif" then
         fp = fp .. ".gif"
-        ret = ffmpeg.extract_gif(vidstream, mediaStart, clozeEnd, fp)
+        ret = ffmpeg.extract_gif(vidstream, mediaStart, mediaEnd, fp)
     elseif type == "screenshot" then
         fp = fp .. ".jpg"
         ret = ffmpeg.screenshot(vidstream, mediaEnd, fp)
@@ -281,7 +276,7 @@ function HomeSubmenu:item_add_media(type)
     
     if ret then
         local _, filename = mpu.split_path(fp)
-        e:write(parentPath, parentStart, parentEnd, clozeStart, clozeEnd, filename)
+        edl:write(sound, format, { path = filename, showat="answer" })
         log.notify("Added " .. type)
         local curtime = mp.get_property("time-pos")
         mp.commandv("loadfile", edlFullPathWithExt, "replace", "start=" .. curtime)

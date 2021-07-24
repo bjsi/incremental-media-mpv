@@ -1,4 +1,5 @@
 local log = require("utils.log")
+local item_format = require("reps.rep.item_format")
 local mpu = require("mp.utils")
 local ext = require("utils.ext")
 local fs = require("systems.fs")
@@ -65,12 +66,12 @@ function ClozeContextEDL:write(sound, format, media)
     end
 
     handle:write(self.header)
-    handle:write(self:format_cloze(sound["path"], format["cloze-start"], format["cloze-end"]) .. "\n")
+    handle:write(self:format_cloze(sound["path"], format["cloze-start"], format["cloze-stop"]) .. "\n")
     handle:write(self:format_silence() .. "\n")
-    handle:write(self:format_context(sound["path"], sound["start"], sound["end"]) .. "\n")
+    handle:write(self:format_context(sound["path"], sound["start"], sound["stop"]) .. "\n")
 
     if media then
-        handle.write(self:format_media(media["path"], media["showat"]) .. "\n")
+        handle:write(self:format_media(media["path"], media["showat"]) .. "\n")
     end
 
     handle:close()
@@ -100,9 +101,10 @@ function ClozeContextEDL:read()
     local context = self:parse_line(match())
 
     match() -- !new_stream header or nil
-    local media = match() -- media or nil
+    local mediaLine = match() -- media or nil
 
-    if media then
+    local media
+    if mediaLine then
         local mediaData = self:parse_line(media)
         media = { path = mediaData[1], showat = str.remove_newlines(mediaData[2]:sub(7)) }
     end
@@ -124,7 +126,10 @@ function ClozeContextEDL:read()
     local clozeEnd = clozeStart + clozeLength
 
     log.debug("Successfully parsed EDL file: " .. self.outputPath)
-    return parentPath, parentStart, parentEnd, clozeStart, clozeEnd, media
+    local sound = { path=parentPath, start=parentStart, stop=parentEnd }
+    local format = { name=item_format.cloze_context, ["cloze-start"]=clozeStart, ["cloze-stop"] = clozeEnd }
+
+    return sound, format, media
 end
 
 function ClozeContextEDL:parse_line(line)
