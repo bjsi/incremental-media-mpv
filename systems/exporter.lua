@@ -49,7 +49,7 @@ function exporter.create_topic_export_data(v)
         stop = v.row.stop,
         priority = v.row.priority,
         extracts = {
-            ["nil"] = nil, -- so mpu.format_json turns it into a dict if empty
+            ["NULL"] = { id = "NULL"}, -- so mpu.format_json turns it into a dict
         }
     }
 
@@ -66,7 +66,7 @@ function exporter.create_extract_export_data(v)
         stop = v.row.stop,
         priority = v.row.priority,
         items = {
-            ["nil"] = nil, -- so mpu.format_json turns it into a dict
+            ["NULL"] = { id = "NULL"}, -- so mpu.format_json turns it into a dict
         }
     }
     return extract
@@ -74,7 +74,7 @@ end
 
 function exporter.add_qa_data(itemRep, exportItem, sound)
     local soundPath
-    if sound then
+    if sound and not sound["showat"] == "no" then
         soundPath = sound["path"]
         if not itemRep:is_local() then
             soundPath = mpu.join_path(fs.media, soundPath)
@@ -87,92 +87,88 @@ function exporter.add_qa_data(itemRep, exportItem, sound)
             return false
         end
 
-        exportItem["flashcard_medias"] = {
-            {
+        table.insert(exportItem["flashcard_medias"], {
                 type = "sound",
                 showat = "answer",
                 fname = str.basename(mediaFullPathWithExt),
                 text = "audio cloze context answer",
                 b64 = read_as_b64(mediaFullPathWithExt)
-            },
-        }
+            })
     end
 
     return true
 end
 
 function exporter.add_cloze_context_data(itemRep, exportItem, sound, format)
-    local soundPath = sound["path"]
+    local soundFullPathWithExt = sound["path"]
     if not itemRep:is_local() then
-        soundPath = mpu.join_path(fs.media, soundPath)
+        soundFullPathWithExt = mpu.join_path(fs.media, soundFullPathWithExt)
     end
 
     -- Add stored media
-    exportItem["stored_medias"] = {
+    table.insert(exportItem["stored_medias"], 
         {
-            fname = str.basename(sound["path"]),
-            b64 = read_as_b64(sound["path"]),
+            fname = str.basename(soundFullPathWithExt),
+            b64 = read_as_b64(soundFullPathWithExt),
         }
-    }
+    )
 
     -- Add flashcard media
     local aFpath = mpu.join_path(sys.tmp_dir, sys.uuid() .. ".mp3")
-    if not ffmpeg.generate_cloze_context_item_files(soundPath, sound, format,aFpath) then
+    if not ffmpeg.generate_cloze_context_item_files(soundFullPathWithExt, sound, format,aFpath) then
         log.err("Failed to generate cloze context item files.")
         return false
     end
 
-    exportItem["flashcard_medias"] = {
+    table.insert(exportItem["flashcard_medias"], 
         {
             type = "sound",
             showat = "answer",
             fname = str.basename(aFpath),
             text = "audio cloze context answer",
             b64 = read_as_b64(aFpath)
-        },
-    }
+        })
 
     return true
 end
 
 function exporter.add_cloze_data(itemRep, exportItem, sound, format)
-    local soundPath = sound["path"]
+    local soundFullPathWithExt = sound["path"]
     if not itemRep:is_local() then
-        soundPath = mpu.join_path(fs.media, soundPath)
+        soundFullPathWithExt = mpu.join_path(fs.media, soundFullPathWithExt)
     end
 
     -- Add stored media
-    exportItem["stored_medias"] = {
+    table.insert(exportItem["stored_medias"], 
         {
-            fname = str.basename(sound["path"]),
-            b64 = read_as_b64(sound["path"]),
+            fname = str.basename(soundFullPathWithExt),
+            b64 = read_as_b64(soundFullPathWithExt),
         }
-    }
+    )
 
     -- Add flashcard media
     local qFpath = mpu.join_path(sys.tmp_dir, sys.uuid() .. ".mp3")
     local aFpath = mpu.join_path(sys.tmp_dir, sys.uuid() .. ".mp3")
-    if not ffmpeg.generate_cloze_item_files(soundPath, sound, format, qFpath, aFpath) then
+    if not ffmpeg.generate_cloze_item_files(soundFullPathWithExt, sound, format, qFpath, aFpath) then
         log.err("Failed to generate item files.")
         return false
     end
 
-    exportItem["flashcard_medias"] = {
-        {
+    table.insert(exportItem["flashcard_medias"], {
             type = "sound",
             showat = "question",
             fname = str.basename(qFpath),
             text = "audio cloze question",
             b64 = read_as_b64(qFpath)
-        },
-        {
+        })
+
+    table.insert(exportItem["flashcard_medias"], {
             type = "sound",
             showat = "answer",
             fname = str.basename(aFpath),
             text = "audio cloze answer",
             b64 = read_as_b64(aFpath)
-        },
-    }
+        })
     return true
 end
 
@@ -218,13 +214,13 @@ function exporter.create_item_export_data(itemRep)
 
     if media ~= nil then
         local mediaFullPathWithExt = mpu.join_path(fs.media, media["path"])
-        exportItem["flashcard_medias"] = {
-            type = "image",
-            showat = media["showat"],
-            fname = media["path"],
-            text = "",
-            b64 = read_as_b64(mediaFullPathWithExt)
-        }
+        table.insert(exportItem["flashcard_medias"], {
+                type = "image",
+                showat = media["showat"],
+                fname = media["path"],
+                text = "",
+                b64 = read_as_b64(mediaFullPathWithExt)
+            })
     end
 
     return exportItem

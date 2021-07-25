@@ -105,8 +105,9 @@ function ClozeContextEDL:read()
 
     local media
     if mediaLine then
-        local mediaData = self:parse_line(media)
-        media = { path = mediaData[1], showat = str.remove_newlines(mediaData[2]:sub(7)) }
+        local mediaData = self:parse_line(mediaLine)
+        media = { path = mediaData[1], showat = "answer" } -- TODO: mixup between showat= and title=
+        log.debug("Context cloze media: ", media)
     end
 
     local function pred(arr) return arr == nil or #arr ~= 3 end

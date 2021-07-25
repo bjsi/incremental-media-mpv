@@ -282,7 +282,7 @@ function HomeSubmenu:item_add_media(type)
         fp = fp .. ".gif"
         ret = ffmpeg.extract_gif(vidstream, mediaStart, mediaStop, fp)
     elseif type == "screenshot" then
-        fp = fp .. ".jpg"
+        fp = fp .. ".png" -- TODO: GDI errors on SM side
         ret = ffmpeg.screenshot(vidstream, mediaStop, fp)
     end
     

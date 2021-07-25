@@ -8,11 +8,11 @@ local ext = require "utils.ext"
 
 local sys = {}
 
-function sys.read_text(file, readmode)
+function sys.read_text(file)
     local h = io.open(file, "r")
     local data
     if h ~= nil then
-        data = h:read(readmode)
+        data = h:read("*all")
     end
     return data
 end

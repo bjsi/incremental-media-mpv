@@ -84,7 +84,7 @@ function ffmpeg.generate_cloze_context_item_files(parentPath, sound, format, out
 end
 
 function ffmpeg.generate_cloze_item_files(parentPath, sound, format, question_fp, cloze_fp)
-    local clozeLength = tonumber(format["cloze-stop"]) - tonumber("cloze-start")
+    local clozeLength = tonumber(format["cloze-stop"]) - tonumber(format["cloze-start"])
 
     local args = {
         "ffmpeg",
