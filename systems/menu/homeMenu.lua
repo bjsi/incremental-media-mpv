@@ -254,13 +254,25 @@ function HomeSubmenu:item_add_media(type)
     local vidUrl = player.get_full_url(parent)
     local fp = mpu.join_path(fs.media, tostring(os.time()))
     local vidstream
-    local mediaStart = format["cloze-start"]
-    local mediaEnd = format["cloze-stop"]
+
+    local mediaStart
+    local mediaStop
+
+    if cur.row.format == item_format.cloze then
+        mediaStart = format["cloze-start"]
+        mediaStop = format["cloze-stop"]
+    elseif cur.row.format == item_format.cloze_context then
+        mediaStart = sound["start"]
+        mediaStop = sound["stop"]
+    elseif cur.row.format == item_format.qa then
+        mediaStart = sound["start"]
+        mediaStop = sound["stop"]
+    end
 
     if parent:is_yt() then
         vidstream = ydl.get_video_stream(vidUrl, false)
-        mediaStart = format["cloze-start"] + tonumber(parent.row["start"])
-        mediaEnd = format["cloze-stop"] + tonumber(parent.row["start"])
+        mediaStart = mediaStart + tonumber(parent.row["start"])
+        mediaStop = mediaStop + tonumber(parent.row["start"])
     else
         vidstream = vidUrl
     end
@@ -268,10 +280,10 @@ function HomeSubmenu:item_add_media(type)
     local ret = false
     if type == "gif" then
         fp = fp .. ".gif"
-        ret = ffmpeg.extract_gif(vidstream, mediaStart, mediaEnd, fp)
+        ret = ffmpeg.extract_gif(vidstream, mediaStart, mediaStop, fp)
     elseif type == "screenshot" then
         fp = fp .. ".jpg"
-        ret = ffmpeg.screenshot(vidstream, mediaEnd, fp)
+        ret = ffmpeg.screenshot(vidstream, mediaStop, fp)
     end
     
     if ret then

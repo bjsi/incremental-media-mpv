@@ -34,7 +34,7 @@ end
 
 -- TODO: dirty hack
 function ItemRep:duration()
-    if not self.row.format == item_format.cloze_context then
+    if self.row.format ~= item_format.cloze_context then
         return Base.duration(self)
     else
         local edl = ClozeContextEDL.new(player.get_full_url(self))

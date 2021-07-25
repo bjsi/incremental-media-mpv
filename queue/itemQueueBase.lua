@@ -101,7 +101,7 @@ function ItemQueueBase:adjust_cloze(postpone, start)
     end
 
     -- TODO: Allow readjustment of other item formats
-    if not cur.row.format == item_format.cloze then
+    if cur.row.format ~= item_format.cloze then
         log.debug("Can't adjust a non-cloze format item.")
         sounds.play("negative")
         return

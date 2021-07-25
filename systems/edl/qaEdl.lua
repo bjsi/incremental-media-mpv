@@ -43,8 +43,8 @@ function QAEDL:format_sound(sound)
         }, ",")
 end
 
-function QAEDL:format_media(mediaPath, showat)
-    return "!new_stream\n" .. table.concat({ mediaPath, "title="..showat }, ",") .. "\n"
+function QAEDL:format_media(media)
+    return "!new_stream\n" .. table.concat({ media["path"], "title="..media["showat"] }, ",") .. "\n"
 end
 
 function QAEDL:write(sound, format, media)

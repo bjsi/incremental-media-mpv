@@ -231,7 +231,20 @@ function ExtractQueueBase:query_confirm_qa(args, chain, i)
             return false
         end
 
-        -- TODO: Add to the queue.
+        -- TODO: Turn into a function and reuse
+        GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
+        local giq = GlobalItemQueue(nil)
+        local irt = giq.reptable
+        if irt:add_to_reps(itemRep) then
+            sounds.play("echo")
+            player.unset_abloop()
+            giq:save_data()
+            return true
+        else
+            sounds.play("negative")
+            log.err("Failed to add " .. format["name"] .. " item to the rep table.")
+            return false
+        end
     end
 
     get_user_input(handle, {
@@ -277,12 +290,12 @@ function ExtractQueueBase:query_include_sound(args, chain, i)
 
         local cur = args.curRep
         args["sound"] = {}
-        args["sound"]["start"] = cur.row.start
-        args["sound"]["stop"] = cur.row.start
 
         if input == "n" or input == ""then
             args["sound"] = nil
         elseif input == "y" then
+            args["sound"]["start"] = cur.row.start
+            args["sound"]["stop"] = cur.row.start
             args["sound"]["showat"] = "answer"
         else
             log.notify("Invalid input.")
@@ -290,12 +303,6 @@ function ExtractQueueBase:query_include_sound(args, chain, i)
             return
         end
 
-        self:call_chain(args, chain, i + 1)
-    end
-
-    -- TODO: Quick hack - refactor
-    -- skip if cloze context format
-    if args["format"]["name"] == item_format.cloze_context then
         self:call_chain(args, chain, i + 1)
     end
 
@@ -321,14 +328,19 @@ function ExtractQueueBase:query_include_image(args, chain, i)
         end
 
         args["media"] = {}
+        local cur = args.curRep
         if input == "n" or input == "" then
             args["media"] = nil
         elseif input == "s"  then
             args["media"]["type"] = "screenshot"
             args["media"]["showat"] = "answer"
+            args["media"]["start"] = cur.row.start
+            args["media"]["stop"] = cur.row.stop
         elseif input == "g"  then
             args["media"]["type"] = "gif"
             args["media"]["showat"] = "answer"
+            args["media"]["start"] = cur.row.start
+            args["media"]["stop"] = cur.row.stop
         else
             log.notify("Invalid input.")
             self:call_chain(args, chain, i)
@@ -383,7 +395,6 @@ function ExtractQueueBase:query_qa_format(args, chain, i)
 
     local choices = {
         [1] = item_format.qa,
-        [2] = item_format.cloze_context,
     }
 
     local handler = function(input)
@@ -400,23 +411,11 @@ function ExtractQueueBase:query_qa_format(args, chain, i)
         end
 
         args["format"] = { name = choices[choice] }
-
-        -- TODO: Quick hack - refactor
-
-        local cur
-        if args["format"] == item_format.cloze_context then
-            args["sound"] = {}
-            args["sound"]["start"] = cur.row.start
-            args["sound"]["stop"] = cur.row.start
-
-            -- TODO: set the cloze start and stop
-        end
-
         self:call_chain(args, chain, i + 1)
     end
 
     get_user_input(handler, {
-            text = "QA format:\n1) classic Q/A\n2) cloze answer with context\n",
+            text = "QA format:\n1) classic Q/A\n",
             replace = true,
         })
 end
