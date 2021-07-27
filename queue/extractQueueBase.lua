@@ -291,11 +291,11 @@ function ExtractQueueBase:query_include_sound(args, chain, i)
         local cur = args.curRep
         args["sound"] = {}
 
-        if input == "n" or input == ""then
+        if input == "n" then
             args["sound"] = nil
-        elseif input == "y" then
+        elseif input == "y" or input == ""then
             args["sound"]["start"] = cur.row.start
-            args["sound"]["stop"] = cur.row.start
+            args["sound"]["stop"] = cur.row.stop
             args["sound"]["showat"] = "answer"
         else
             log.notify("Invalid input.")

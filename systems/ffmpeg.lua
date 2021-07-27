@@ -5,10 +5,19 @@ local fs = require("systems.fs")
 
 local ffmpeg = {}
 
+ffmpeg.reconnect_opts = {
+    "-reconnect", "1",
+    "-reconnect_streamed", "1",
+    "-reconnect_delay_max", "5",
+}
+
 function ffmpeg.extract_gif(url, start, stop, outputPath)
     log.debug("GIF extract. Start: ", start, "Stop: ", stop)
     local args = {
         "ffmpeg",
+        "-reconnect", "1",
+        "-reconnect_streamed", "1",
+        "-reconnect_delay_max", "5",
         "-ss", tostring(start),
         "-t", tostring(stop - start),
         "-i", url,
@@ -22,6 +31,9 @@ end
 function ffmpeg.screenshot(url, start, outputPath)
     local args = {
         "ffmpeg",
+        "-reconnect", "1",
+        "-reconnect_streamed", "1",
+        "-reconnect_delay_max", "5",
         "-ss", tostring(start),
         "-i", url,
         "-vframes", "1",
@@ -39,6 +51,9 @@ function ffmpeg.generate_qa_item_files(soundPath, outputFullPathWithExt)
 
     local args = {
         "ffmpeg", 
+        "-reconnect", "1",
+        "-reconnect_streamed", "1",
+        "-reconnect_delay_max", "5",
         "-i", soundPath,
         outputFullPathWithExt
     }
@@ -56,6 +71,9 @@ function ffmpeg.generate_cloze_context_item_files(parentPath, sound, format, out
     
     local args = {
         "ffmpeg",
+        "-reconnect", "1",
+        "-reconnect_streamed", "1",
+        "-reconnect_delay_max", "5",
         "-i", parentPath,
         "-i", fs.silence,
         "-filter_complex",
@@ -88,6 +106,9 @@ function ffmpeg.generate_cloze_item_files(parentPath, sound, format, question_fp
 
     local args = {
         "ffmpeg",
+        "-reconnect", "1",
+        "-reconnect_streamed", "1",
+        "-reconnect_delay_max", "5",
         "-i", parentPath,
         "-i", fs.sine,
         "-filter_complex",
@@ -140,6 +161,9 @@ end
 function ffmpeg.audio_extract(start, stop, audioUrl, outputPath)
     local args = {
         "ffmpeg",
+        "-reconnect", "1",
+        "-reconnect_streamed", "1",
+        "-reconnect_delay_max", "5",
         "-nostats",
         "-ss", tostring(start), "-to",
         tostring(stop), "-i", audioUrl,

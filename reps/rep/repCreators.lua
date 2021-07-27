@@ -89,7 +89,7 @@ function repCreators.download_yt_audio(fullUrl, start, stop)
         return nil
     end
 
-    local audioFileNameWithExt = audioFileNameNoExt..".".. format
+    local audioFileNameWithExt = audioFileNameNoExt..".".. "mp3"
     local ret = ffmpeg.audio_extract(start, stop, audioStreamUrl, mpu.join_path(fs.media, audioFileNameWithExt))
     return ret.status == 0 and audioFileNameWithExt or nil
 end
@@ -137,8 +137,10 @@ function repCreators.createItem1(parent, sound, media, text, format)
             sound["path"] = repCreators.download_yt_audio(fullUrl, sound["start"], sound["stop"])
 
             -- Adjust to relative times after extracting audio
-            format["cloze-start"] = format["cloze-start"] - sound["start"]
-            format["cloze-stop"] = format["cloze-stop"] - sound["start"]
+            if format["name"] == item_format.cloze then
+                format["cloze-start"] = format["cloze-start"] - sound["start"]
+                format["cloze-stop"] = format["cloze-stop"] - sound["start"]
+            end
             sound["stop"] = sound["stop"] - sound["start"]
             sound["start"] = 0
         end
