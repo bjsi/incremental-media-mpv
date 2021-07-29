@@ -1,6 +1,6 @@
 local mpu = require("mp.utils")
 local ext = require("utils.ext")
-local subs = require("systems.subs")
+local subs = require("systems.subs.subs")
 local log = require("utils.log")
 local sounds = require("systems.sounds")
 local ydl = require "systems.ydl"
@@ -67,6 +67,7 @@ function player.play(newRep, oldRep, createLoopBoundaries)
 
     -- reset loops and timers
     player.unset_abloop()
+    subs.clear()
     player.pause_timer.stop()
 
     player.load(newRep, oldRep, start)

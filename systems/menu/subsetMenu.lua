@@ -22,17 +22,14 @@ setmetatable(SubsetMenu, {
 function SubsetMenu:_init()
     Base._init(self)
 
-    self.keybinds = {}
-    self.base_binds = {}
-
-    self.subset_chain = { 
-        function(a, c, i) self:query_title(a, c, i) end,
-        function(a, c, i) self:confirm(a, c, i) end,
+    self.keybinds = {
+        { key = 'S', desc = "search", fn = function() self:search() end },
     }
 end
 
-function SubsetMenu:confirm(args, chain, i)
-    log.debug("Finding subset elements where title contains: " .. args["title"])
+function SubsetMenu:show_results(res)
+    for _, v in ipairs(res) do
+    end
 end
 
 function SubsetMenu:call_chain(args, chain, i)
@@ -43,22 +40,30 @@ function SubsetMenu:call_chain(args, chain, i)
     end
 end
 
-function SubsetMenu:query_title(args, chain, i)
+function SubsetMenu:query_title()
     local handle = function(input)
-        if ext.empty(input) then log.notify("Cancelling.") return end
-        args["title"] = input
+        if ext.empty(input) then 
+            log.notify("Cancelling.")
+            return
+        end
+
+        if not active.queue then
+            return
+            
+        end
+        
+        if active.queue.name:find("Topic") then
+        elseif active.queue.name:find("Extract") then
+        elseif active.queue.name:find("Item") then
+        end
         self:call_chain(args, chain, i + 1)
     end
 
     get_user_input(handle,
         {
-            text = "Subset with titles containing: ",
+            text = "Search: ",
             replace = true,
         })
-end
-
-function SubsetMenu:create_subset()
-    self:call_chain({}, self.subset_chain, 1)
 end
 
 function SubsetMenu:add_osd(osd)

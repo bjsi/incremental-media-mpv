@@ -39,6 +39,13 @@ local function read_as_b64(fp)
     return b64.encode(data)
 end
 
+
+local function create_q_text(itemRep, title, question, edl)
+end
+
+local function encode_q_html_data(data)
+end
+
 function exporter.create_topic_export_data(v)
     local topic = {
         id = v.row["id"],

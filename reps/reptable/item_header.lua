@@ -12,5 +12,6 @@ local item_header = {
     [11] = "start",
     [12] = "stop",
     [13] = "speed",
+    [14] = "subs",
 }
 return item_header

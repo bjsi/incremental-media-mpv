@@ -78,6 +78,16 @@ local function run()
             sounds.play_sync(sound)
             mp.commandv("quit", ret and 0 or 1)
 
+        elseif not ext.empty(settings["add_extract"]) then
+            local toImport = settings["add_extract"]
+            if not sys.exists(toImport) then
+                log.debug("Failed to add extract because import file does not exist.")
+                mp.commandv("quit", 1)
+            end
+
+            local geq = GlobalExtractQueue(nil)
+            -- TODO: 
+
         elseif not ext.empty(settings["export"]) then
             local exportFolder = settings["export"]
             local ret = exporter.as_sm_xml(exportFolder)
@@ -85,7 +95,9 @@ local function run()
             local sound = ret and "positive" or "negative"
             sounds.play_sync(sound)
             mp.commandv("quit", ret and 0 or 1)
-        else
+        end
+        
+        if settings["start"] then
             require("systems.keybinds")
             loadMedia()
         end
@@ -116,7 +128,6 @@ local delete_pid_file = function()
     log.debug("Removing PID file.")
     os.remove(pid_file)
 end
-
 
 if settings["start"] or not ext.empty(settings["import"]) or not ext.empty(settings["export"]) then
     local pid = read_pid_file()

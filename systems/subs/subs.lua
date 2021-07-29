@@ -1,8 +1,7 @@
 local log = require("utils.log")
 local ext = require("utils.ext")
 local str = require("utils.str")
-
-local Subtitle
+local Subtitle = require("systems.subs.subtitle")
 
 local function new_sub_list()
     local subs_list = {}
@@ -40,8 +39,10 @@ end
 local function new_timings()
     local self = {['start'] = -1, ['end'] = -1}
     local is_set = function(position) return self[position] >= 0 end
-    local set = function(position)
-        self[position] = mp.get_property_number('time-pos')
+    local set = function(position, time)
+        time = tonumber(time)
+        if not time then time = mp.get_property_number('time-pos') end
+        self[position] = time
     end
     local get = function(position) return self[position] end
     return {is_set = is_set, set = set, get = get}
@@ -89,13 +90,14 @@ subs.get = function()
     end
     if not ext.empty(sub['text']) then
         sub['text'] = str.trim(sub['text'])
-        sub['text'] = ext.escape_special_characters(sub['text'])
+        sub["text"] = str.remove_db_delimiters(sub["text"])
+        -- sub['text'] = str.escape_special_chars(sub['text'])
     end
     return sub
 end
 
 subs.append = function()
-    if subs.dialogs.insert(subs.get_current()) then el_data_menuata_menu.update() end
+    subs.dialogs.insert(subs.get_current())
 end
 
 subs.observe = function()
@@ -110,8 +112,7 @@ end
 
 subs.set_timing = function(position)
     subs.user_timings.set(position)
-    el_data_menuata_menu.update()
-    log.notify(ext.capitalize_first(position) .. " time has been set.")
+    log.notify(str.capitalize_first(position) .. " time has been set.")
     if not subs.observed then subs.observe() end
 end
 
@@ -129,10 +130,11 @@ subs.clear = function()
     subs.unobserve()
     subs.dialogs = new_sub_list()
     subs.user_timings = new_timings()
-    el_data_menuata_menu.update()
 end
 
 subs.clear_and_notify = function()
     subs.clear()
     log.notify("Timings have been reset.", "info", 2)
 end
+
+return subs

@@ -50,7 +50,7 @@ function repCreators.copyCommon(parentRow, childRow, childHeader)
     return childRow
 end
 
-function repCreators.createExtract(parent, start, stop)
+function repCreators.createExtract(parent, start, stop, subText)
     if not parent then 
         log.err("Failed to create extract because parent is nil")
         return nil
@@ -74,7 +74,7 @@ function repCreators.createExtract(parent, start, stop)
     extractRow["parent"] = parent.row["id"]
     extractRow["speed"] = 1
     extractRow["notes"] = ""
-    extractRow["subs"] = ""
+    extractRow["subs"] = subText and subText or ""
 
     return ExtractRep(extractRow)
 end
@@ -89,7 +89,7 @@ function repCreators.download_yt_audio(fullUrl, start, stop)
         return nil
     end
 
-    local audioFileNameWithExt = audioFileNameNoExt..".".. "mp3"
+    local audioFileNameWithExt = audioFileNameNoExt..".".. format
     local ret = ffmpeg.audio_extract(start, stop, audioStreamUrl, mpu.join_path(fs.media, audioFileNameWithExt))
     return ret.status == 0 and audioFileNameWithExt or nil
 end
@@ -137,7 +137,7 @@ function repCreators.createItem1(parent, sound, media, text, format)
             sound["path"] = repCreators.download_yt_audio(fullUrl, sound["start"], sound["stop"])
 
             -- Adjust to relative times after extracting audio
-            if format["name"] == item_format.cloze then
+            if format["name"] == item_format.cloze or format["name"] == item_format.cloze_context then
                 format["cloze-start"] = format["cloze-start"] - sound["start"]
                 format["cloze-stop"] = format["cloze-stop"] - sound["start"]
             end
@@ -191,8 +191,6 @@ function repCreators.createItem1(parent, sound, media, text, format)
     elseif format["name"] == item_format.cloze_context then
         log.debug("Creating cloze context edl.")
         local edl = ClozeContextEDL.new(edlFullPathWithExt)
-
-        -- TODO: relative or full start / stop
         ret = edl:write(sound, format, media)
     end
 
@@ -239,69 +237,9 @@ function repCreators.create_item_rep(parent, sound, text, format, edlFileNameWit
 
     -- Misc
     itemRow["speed"] = 1
+    itemRow["subs"] = parent.row.subs and parent.row.subs or ""
 
     return ItemRep(itemRow)
 end
-
--- function repCreators.createItem(parent, clozeStart, clozeStop, mediaType, question, answer, format)
---     local filename = tostring(os.time(os.date("!*t")))
---     local itemFileName = mpu.join_path(fs.media, filename)
---     local itemUrl, startTime, stopTime
-
---     local parentStart = tonumber(parent.row["start"])
---     local parentStop = tonumber(parent.row["stop"])
-
---     if parent:is_yt() then
---         itemUrl = repCreators.download_yt_audio(parent, itemFileName)
---         local parentLength = parentStop - parentStart
---         startTime = 0
---         stopTime = parentLength
---         clozeStart = clozeStart - parentStart
---         clozeStop = clozeStop - parentStart
---     elseif parent:is_local() then
---         itemUrl = parent.row["url"]
---         startTime = parentStart
---         stopTime = parentStop
---     end
-
---     if ext.empty(itemUrl) then
---         log.err("Failed to create item because url was nil.")
---         return nil
---     end
-
---     local edlOutputPath = mpu.join_path(fs.media, itemFileName .. ".edl")
-
---     local mediaName
---     if mediaType then
---         mediaName = repCreators.download_media(parent, clozeStart, clozeStop, mediaType)
---     end
-
---     if not repCreators.createItemEdl(startTime, stopTime, itemUrl, clozeStart, clozeStop, edlOutputPath, mediaName, format) then
---         log.err("Failed to create item EDL file.")
---         return nil
---     end
-
---     local itemRow = repCreators.copyCommon(parent.row, {}, itemHeader)
---     if not itemRow then
---         log.err("Failed to create item row")
---         return nil
---     end
-
---     local _, fname = mpu.split_path(edlOutputPath)
---     itemRow["id"] = sys.uuid()
---     itemRow["created"] = os.time()
---     itemRow["dismissed"] = 0
---     itemRow["toexport"] = 1
---     itemRow["url"] = fname
---     itemRow["parent"] = parent.row["id"]
---     itemRow["speed"] = 1
---     itemRow["start"] = parentStart
---     itemRow["stop"] = parentStop
---     itemRow["question"] = question and question or ""
---     itemRow["answer"] = answer and answer or ""
---     itemRow["format"] = format and format or ""
-
---     return ItemRep(itemRow)
--- end
 
 return repCreators
