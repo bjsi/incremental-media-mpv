@@ -79,30 +79,58 @@ function repCreators.createExtract(parent, start, stop, subText)
     return ExtractRep(extractRow)
 end
 
+local function get_audio_stream_path()
+    local stream = mp.get_property("stream-path")
+    local matches = stream:gmatch("https://[^;]+")
+    local audioUrl
+    local format
+    for v in matches do
+        format = v:gmatch("mime=audio%%2F([a-z0-9]+)&")()
+        if format then
+            audioUrl = v
+            break
+        end
+    end
+    return audioUrl, format
+end
+
+local function get_video_stream_path()
+    local stream = mp.get_property("stream-path")
+    local matches = stream:gmatch("https://[^;]+")
+    local videoUrl
+    local format
+    for v in x:gmatch("(https://[^;]+)") do
+        format = v:gmatch("mime=video%%2F([a-z0-9]+)&")()
+        if format then 
+            videoUrl = v
+            break
+        end
+    end
+    return videoUrl, format
+end
+
 function repCreators.download_yt_audio(fullUrl, start, stop)
     local audioFileNameNoExt = tostring(os.time())
 
-    -- Get direct link to audio stream.
-    local audioStreamUrl, format = ydl.get_audio_stream(fullUrl, false)
-    if ext.empty(audioStreamUrl) or ext.empty(format) then
+    local audioUrl, format = get_audio_stream_path()
+    if ext.empty(audioUrl) or ext.empty(format) then
         log.err("Failed to get youtube audio stream.")
         return nil
     end
 
-    local audioFileNameWithExt = audioFileNameNoExt..".".. format
-    local ret = ffmpeg.audio_extract(start, stop, audioStreamUrl, mpu.join_path(fs.media, audioFileNameWithExt))
+    local audioFileNameWithExt = audioFileNameNoExt.."."..format
+    local ret = ffmpeg.audio_extract(start, stop, audioUrl, mpu.join_path(fs.media, audioFileNameWithExt))
     return ret.status == 0 and audioFileNameWithExt or nil
 end
 
 function repCreators.download_media(parent, start, stop, type)
     local vidStreamUrl
-    local vidFullUrl = player.get_full_url(parent)
     local mediaFileNameNoExt = tostring(os.time())
 
     if parent:is_yt() then
-        vidStreamUrl = ydl.get_video_stream(vidFullUrl, false)
+        vidStreamUrl = get_video_stream_path()
     elseif parent:is_local() then
-        vidStreamUrl = vidFullUrl
+        vidStreamUrl = player.get_full_url(parent)
     end
 
     local ret
