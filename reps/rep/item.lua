@@ -24,6 +24,10 @@ end
 
 function ItemRep:type() return "item" end
 
+function ItemRep:is_yt() return false end
+
+function ItemRep:is_local() return true end
+
 function ItemRep:is_child_of(extract) 
     return (self.row["parent"] == extract.row["id"])
 end

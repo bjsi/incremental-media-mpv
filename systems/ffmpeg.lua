@@ -1,4 +1,5 @@
 local sys = require("systems.system")
+local str = require("utils.str")
 local mpu = require("mp.utils")
 local log = require "utils.log"
 local fs = require("systems.fs")
@@ -139,14 +140,15 @@ end
 function ffmpeg.get_duration(localUrl)
     local args = {
         "ffprobe",
+        localUrl,
         "-v", "quiet",
-        "-print_format", "json_compact=1",
-        "-show_format",
-        localUrl
+        "-print_format", "json=compact=0",
+        "-show_entries", "format"
     }
     local ret = sys.subprocess(args)
+    log.debug("duration", ret)
     if ret.status == 0 then
-        return tonumber(mpu.parse_json(ret.stdout)["format"]["duration"])
+        return tonumber(mpu.parse_json(str.remove_newlines(ret.stdout))["format"]["duration"])
     else
         return nil
     end

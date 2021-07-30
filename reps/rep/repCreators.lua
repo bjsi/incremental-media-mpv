@@ -1,4 +1,5 @@
 local log = require("utils.log")
+local str = require("utils.str")
 local ffmpeg = require("systems.ffmpeg")
 local ydl = require("systems.ydl")
 local mpu = require("mp.utils")
@@ -33,7 +34,7 @@ function repCreators.createTopic(title, type, url, priority, stop, dependency)
         ["curtime"] = 0,
         ["priority"] = priority,
         ["interval"] = 1,
-        ["dependency"] = dependency,
+        ["dependency"] = dependency and dependency or "",
         ["nextrep"] = "1970-01-01",
         ["speed"] = 1
     }
@@ -50,7 +51,7 @@ function repCreators.copyCommon(parentRow, childRow, childHeader)
     return childRow
 end
 
-function repCreators.createExtract(parent, start, stop, subText)
+function repCreators.createExtract(parent, start, stop, subText, priority)
     if not parent then 
         log.err("Failed to create extract because parent is nil")
         return nil
@@ -74,6 +75,7 @@ function repCreators.createExtract(parent, start, stop, subText)
     extractRow["parent"] = parent.row["id"]
     extractRow["speed"] = 1
     extractRow["notes"] = ""
+    extractRow["priority"] = priority and priority or parent.row.priority
     extractRow["subs"] = subText and subText or ""
 
     return ExtractRep(extractRow)
@@ -123,7 +125,7 @@ function repCreators.download_yt_audio(fullUrl, start, stop)
     return ret.status == 0 and audioFileNameWithExt or nil
 end
 
-function repCreators.download_media(parent, start, stop, type)
+function repCreators.extract_media(parent, start, stop, type)
     local vidStreamUrl
     local mediaFileNameNoExt = tostring(os.time())
 
@@ -158,7 +160,7 @@ function repCreators.createItem1(parent, sound, media, text, format)
 
     if sound ~= nil then
         if parent:is_local() then
-            -- sound["path"] = fullUrl -- TODO: audio extraction?
+            sound["path"] = fullUrl
         elseif parent:is_yt() then
 
             -- here, sound["path"] is relative to fs.media!
@@ -179,17 +181,8 @@ function repCreators.createItem1(parent, sound, media, text, format)
         end
     end
 
-    log.debug("sound: ", sound)
-    
-    -- download / extract media
-    -- media["path"] always relative to fs.media
     if media ~= nil then
-        if parent:is_local() then
-            -- TODO
-        elseif parent:is_yt() then
-            media["path"] = repCreators.download_media(parent, media["start"], media["stop"], media["type"])
-        end
-
+        media["path"] = repCreators.extract_media(parent, media["start"], media["stop"], media["type"])
         if not media["path"] or not sys.exists(mpu.join_path(fs.media, media["path"])) then
             log.debug("Failed to get media.")
             return nil
