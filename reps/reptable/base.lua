@@ -17,11 +17,9 @@ setmetatable(RepTableBase, {
 })
 
 function RepTableBase:_init(fp, header, subsetter)
-    log.debug("Initialising new reptable.")
     self.db = self:create_db(fp, header)
     self.defaultHeader = header
     self.subsetter = subsetter
-    log.debug("Reptable Base subsetter: ", subsetter)
     self.fst = nil
     self.reps = {}
     self.subset = {}
