@@ -35,9 +35,12 @@ mpopt.read_options(settings, "im")
 local loaded = false
 
 local function getInitialQueue()
-    if settings["add_extract"] then
+    if not ext.empty(settings["add_extract"]) then
         local le = LocalExtractQueue(nil)
-        local imported = ext.first_or_nil(function(r) return r.row.url == settings["add_extract"] and r.row.type == "local-oc" end, le.reptable.reps)
+        local imported = ext.first_or_nil(function(r) return r.row.url == settings["add_extract"] end, le.reptable.reps)
+        if imported == nil then
+            log.notify("Failed to get imported extract")
+        end
         le.reptable.subset[1] = imported
         le.reptable.fst = imported
         return le
@@ -75,26 +78,22 @@ end
 
 local function import_extract(args)
     local gtq = GlobalTopicQueue(nil)
-    local folder = ext.first_or_nil(function(r) return r.row.title == args["title"] and r.row.type == "local-oc" end,gtq.reptable.reps)
+    local folder = ext.first_or_nil(function(r) return r.row.title == args["title"] and r.row.type == "local-oc" end, gtq.reptable.reps)
     if folder == nil then
         local duration = ffmpeg.get_duration(args["path"])
         folder = repCreators.createTopic(args["title"], "local-oc", args["path"], args["priority"], duration, nil)
+        if not importer.add_topics_to_queue({ folder }) then
+            log.notify("Failed to import")
+            return false
+        end
     end
 
-    if folder == nil then
-        log.notify("Failed to import.")
-        return
-    end
-
-    if importer.add_topics_to_queue({ folder }) then
-        local extract = repCreators.createExtract(folder, folder.row.start, folder.row.stop, "", args["priority"])
-        local leq = LocalExtractQueue(nil)
-        leq.reptable:add_to_reps(extract)
-        leq:save_data()
-        return true
-    end
-
-    return false
+    local extract = repCreators.createExtract(folder, folder.row.start, folder.row.stop, "", args["priority"])
+    extract.row["url"] = settings["add_extract"]
+    local leq = LocalExtractQueue(nil)
+    leq.reptable:add_to_reps(extract)
+    leq:save_data()
+    return true
 end
 
 local function query_get_extract_priority(args)
