@@ -1,4 +1,5 @@
 local log = require("utils.log")
+local str = require("utils.str")
 local ffmpeg = require("systems.ffmpeg")
 local ydl = require("systems.ydl")
 local mpu = require("mp.utils")
@@ -33,7 +34,7 @@ function repCreators.createTopic(title, type, url, priority, stop, dependency)
         ["curtime"] = 0,
         ["priority"] = priority,
         ["interval"] = 1,
-        ["dependency"] = dependency,
+        ["dependency"] = dependency and dependency or "",
         ["nextrep"] = "1970-01-01",
         ["speed"] = 1
     }
@@ -50,7 +51,7 @@ function repCreators.copyCommon(parentRow, childRow, childHeader)
     return childRow
 end
 
-function repCreators.createExtract(parent, start, stop)
+function repCreators.createExtract(parent, start, stop, subText, priority)
     if not parent then 
         log.err("Failed to create extract because parent is nil")
         return nil
@@ -74,35 +75,64 @@ function repCreators.createExtract(parent, start, stop)
     extractRow["parent"] = parent.row["id"]
     extractRow["speed"] = 1
     extractRow["notes"] = ""
-    extractRow["subs"] = ""
+    extractRow["priority"] = priority and priority or parent.row.priority
+    extractRow["subs"] = subText and subText or ""
 
     return ExtractRep(extractRow)
+end
+
+local function get_audio_stream_path()
+    local stream = mp.get_property("stream-path")
+    local matches = stream:gmatch("https://[^;]+")
+    local audioUrl
+    local format
+    for v in matches do
+        format = v:gmatch("mime=audio%%2F([a-z0-9]+)&")()
+        if format then
+            audioUrl = v
+            break
+        end
+    end
+    return audioUrl, format
+end
+
+local function get_video_stream_path()
+    local stream = mp.get_property("stream-path")
+    local matches = stream:gmatch("https://[^;]+")
+    local videoUrl
+    local format
+    for v in x:gmatch("(https://[^;]+)") do
+        format = v:gmatch("mime=video%%2F([a-z0-9]+)&")()
+        if format then 
+            videoUrl = v
+            break
+        end
+    end
+    return videoUrl, format
 end
 
 function repCreators.download_yt_audio(fullUrl, start, stop)
     local audioFileNameNoExt = tostring(os.time())
 
-    -- Get direct link to audio stream.
-    local audioStreamUrl, format = ydl.get_audio_stream(fullUrl, false)
-    if ext.empty(audioStreamUrl) or ext.empty(format) then
+    local audioUrl, format = get_audio_stream_path()
+    if ext.empty(audioUrl) or ext.empty(format) then
         log.err("Failed to get youtube audio stream.")
         return nil
     end
 
-    local audioFileNameWithExt = audioFileNameNoExt..".".. format
-    local ret = ffmpeg.audio_extract(start, stop, audioStreamUrl, mpu.join_path(fs.media, audioFileNameWithExt))
+    local audioFileNameWithExt = audioFileNameNoExt.."."..format
+    local ret = ffmpeg.audio_extract(start, stop, audioUrl, mpu.join_path(fs.media, audioFileNameWithExt))
     return ret.status == 0 and audioFileNameWithExt or nil
 end
 
-function repCreators.download_media(parent, start, stop, type)
+function repCreators.extract_media(parent, start, stop, type)
     local vidStreamUrl
-    local vidFullUrl = player.get_full_url(parent)
     local mediaFileNameNoExt = tostring(os.time())
 
     if parent:is_yt() then
-        vidStreamUrl = ydl.get_video_stream(vidFullUrl, false)
+        vidStreamUrl = get_video_stream_path()
     elseif parent:is_local() then
-        vidStreamUrl = vidFullUrl
+        vidStreamUrl = player.get_full_url(parent)
     end
 
     local ret
@@ -130,15 +160,17 @@ function repCreators.createItem1(parent, sound, media, text, format)
 
     if sound ~= nil then
         if parent:is_local() then
-            -- sound["path"] = fullUrl -- TODO: audio extraction?
+            sound["path"] = fullUrl
         elseif parent:is_yt() then
 
             -- here, sound["path"] is relative to fs.media!
             sound["path"] = repCreators.download_yt_audio(fullUrl, sound["start"], sound["stop"])
 
             -- Adjust to relative times after extracting audio
-            format["cloze-start"] = format["cloze-start"] - sound["start"]
-            format["cloze-stop"] = format["cloze-stop"] - sound["start"]
+            if format["name"] == item_format.cloze or format["name"] == item_format.cloze_context then
+                format["cloze-start"] = format["cloze-start"] - sound["start"]
+                format["cloze-stop"] = format["cloze-stop"] - sound["start"]
+            end
             sound["stop"] = sound["stop"] - sound["start"]
             sound["start"] = 0
         end
@@ -149,17 +181,8 @@ function repCreators.createItem1(parent, sound, media, text, format)
         end
     end
 
-    log.debug("sound: ", sound)
-    
-    -- download / extract media
-    -- media["path"] always relative to fs.media
     if media ~= nil then
-        if parent:is_local() then
-            -- TODO
-        elseif parent:is_yt() then
-            media["path"] = repCreators.download_media(parent, media["start"], media["stop"], media["type"])
-        end
-
+        media["path"] = repCreators.extract_media(parent, media["start"], media["stop"], media["type"])
         if not media["path"] or not sys.exists(mpu.join_path(fs.media, media["path"])) then
             log.debug("Failed to get media.")
             return nil
@@ -189,8 +212,6 @@ function repCreators.createItem1(parent, sound, media, text, format)
     elseif format["name"] == item_format.cloze_context then
         log.debug("Creating cloze context edl.")
         local edl = ClozeContextEDL.new(edlFullPathWithExt)
-
-        -- TODO: relative or full start / stop
         ret = edl:write(sound, format, media)
     end
 
@@ -237,69 +258,9 @@ function repCreators.create_item_rep(parent, sound, text, format, edlFileNameWit
 
     -- Misc
     itemRow["speed"] = 1
+    itemRow["subs"] = parent.row.subs and parent.row.subs or ""
 
     return ItemRep(itemRow)
 end
-
--- function repCreators.createItem(parent, clozeStart, clozeStop, mediaType, question, answer, format)
---     local filename = tostring(os.time(os.date("!*t")))
---     local itemFileName = mpu.join_path(fs.media, filename)
---     local itemUrl, startTime, stopTime
-
---     local parentStart = tonumber(parent.row["start"])
---     local parentStop = tonumber(parent.row["stop"])
-
---     if parent:is_yt() then
---         itemUrl = repCreators.download_yt_audio(parent, itemFileName)
---         local parentLength = parentStop - parentStart
---         startTime = 0
---         stopTime = parentLength
---         clozeStart = clozeStart - parentStart
---         clozeStop = clozeStop - parentStart
---     elseif parent:is_local() then
---         itemUrl = parent.row["url"]
---         startTime = parentStart
---         stopTime = parentStop
---     end
-
---     if ext.empty(itemUrl) then
---         log.err("Failed to create item because url was nil.")
---         return nil
---     end
-
---     local edlOutputPath = mpu.join_path(fs.media, itemFileName .. ".edl")
-
---     local mediaName
---     if mediaType then
---         mediaName = repCreators.download_media(parent, clozeStart, clozeStop, mediaType)
---     end
-
---     if not repCreators.createItemEdl(startTime, stopTime, itemUrl, clozeStart, clozeStop, edlOutputPath, mediaName, format) then
---         log.err("Failed to create item EDL file.")
---         return nil
---     end
-
---     local itemRow = repCreators.copyCommon(parent.row, {}, itemHeader)
---     if not itemRow then
---         log.err("Failed to create item row")
---         return nil
---     end
-
---     local _, fname = mpu.split_path(edlOutputPath)
---     itemRow["id"] = sys.uuid()
---     itemRow["created"] = os.time()
---     itemRow["dismissed"] = 0
---     itemRow["toexport"] = 1
---     itemRow["url"] = fname
---     itemRow["parent"] = parent.row["id"]
---     itemRow["speed"] = 1
---     itemRow["start"] = parentStart
---     itemRow["stop"] = parentStop
---     itemRow["question"] = question and question or ""
---     itemRow["answer"] = answer and answer or ""
---     itemRow["format"] = format and format or ""
-
---     return ItemRep(itemRow)
--- end
 
 return repCreators

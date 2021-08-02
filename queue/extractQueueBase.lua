@@ -1,4 +1,5 @@
 local Base = require("queue.queueBase")
+local subs = require("systems.subs.subs")
 local repCreators = require("reps.rep.repCreators")
 local player = require("systems.player")
 local sounds = require("systems.sounds")
@@ -114,8 +115,10 @@ function ExtractQueueBase:adjust_extract(postpone, start, n)
     player.loop_timer.set_stop_time(newStop)
 
     if start_changed then
+        subs.set_timing('start', newStart)
         mp.commandv("seek", tostring(newStart), "absolute")
     elseif stop_changed then
+        subs.set_timing('end', newStop)
         mp.commandv("seek", tostring(newStop - 1), "absolute")
     end
 
@@ -291,11 +294,11 @@ function ExtractQueueBase:query_include_sound(args, chain, i)
         local cur = args.curRep
         args["sound"] = {}
 
-        if input == "n" or input == ""then
+        if input == "n" then
             args["sound"] = nil
-        elseif input == "y" then
+        elseif input == "y" or input == ""then
             args["sound"]["start"] = cur.row.start
-            args["sound"]["stop"] = cur.row.start
+            args["sound"]["stop"] = cur.row.stop
             args["sound"]["showat"] = "answer"
         else
             log.notify("Invalid input.")
@@ -440,7 +443,7 @@ function ExtractQueueBase:handle_extract_extract(start, stop, curRep)
         return
     end
 
-    local extract = repCreators.createExtract(parent, start, stop)
+    local extract = repCreators.createExtract(parent, start, stop, curRep.row.subs)
     if ext.empty(extract) then
         return false
     end

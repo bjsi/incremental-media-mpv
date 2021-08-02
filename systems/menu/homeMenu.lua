@@ -54,9 +54,11 @@ function HomeSubmenu:_init()
 
     self.extract_keybinds = {
         { key='Q', desc = "create Q/A", fn = function() active.queue:create_qa() end},
+        { key='Z', desc = "edit subs", fn = function() self:edit_current_field("subs") end },
     }
 
     self.item_keybinds = {
+        { key = 'Z', desc = "edit subs", fn = function() self:edit_current_field("subs") end },
         { key = "S", desc = "add screenshot", fn = function() self:item_add_media("screenshot") end },
         { key = "G", desc = "add gif", fn = function() self:item_add_media("gif") end },
         { key = "q", desc = "edit question", fn = function() self:edit_current_field("question") end },
@@ -122,10 +124,15 @@ function HomeSubmenu:add_question_osd(osd, cur)
     osd:item("format: "):text(cur.row["format"]):newline()
 end
 
+function HomeSubmenu:add_subs_osd(osd, cur)
+    osd:item("subs: "):text(cur.row["subs"]):newline()
+end
+
 function HomeSubmenu:add_item_osd(osd, cur)
     self:add_generic_info(osd, cur)
     osd:newline()
     self:add_question_osd(osd, cur)
+    self:add_subs_osd(osd, cur)
     self:add_keybinds(self.item_keybinds)
 end
 
@@ -172,6 +179,7 @@ end
 function HomeSubmenu:add_extract_osd(osd, cur)
     self:add_generic_info(osd, cur)
     self:add_scheduling_info(osd, cur)
+    self:add_subs_osd(osd, cur)
 
     LocalItemQueue = LocalItemQueue or require("queue.localItemQueue")
     local liq = LocalItemQueue(cur)
@@ -262,8 +270,8 @@ function HomeSubmenu:item_add_media(type)
         mediaStart = format["cloze-start"]
         mediaStop = format["cloze-stop"]
     elseif cur.row.format == item_format.cloze_context then
-        mediaStart = sound["start"]
-        mediaStop = sound["stop"]
+        mediaStart = sound["cloze-start"]
+        mediaStop = sound["cloze-stop"]
     elseif cur.row.format == item_format.qa then
         mediaStart = sound["start"]
         mediaStop = sound["stop"]

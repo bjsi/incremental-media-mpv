@@ -8,6 +8,7 @@ local TopicRepTable = require("reps.reptable.topics")
 local repCreators = require("reps.rep.repCreators")
 local ydl = require "systems.ydl"
 local importer = require "systems.importer"
+local subs = require("systems.subs.subs")
 
 local GlobalExtractQueue
 local GlobalItemQueue
@@ -179,7 +180,10 @@ function TopicQueueBase:handle_extract(start, stop, curRep)
         return false
     end
 
-    local extract = repCreators.createExtract(curRep, start, stop)
+    local sub = subs.get()
+    local subText = sub and sub.text or ""
+
+    local extract = repCreators.createExtract(curRep, start, stop, subText)
     if not extract then
         log.err("Failed to handle extract.")
         return false
@@ -190,6 +194,7 @@ function TopicQueueBase:handle_extract(start, stop, curRep)
     if geq.reptable:add_to_reps(extract) then
         sounds.play("echo")
         player.unset_abloop()
+        subs.clear()
         geq:save_data()
         return true
     else

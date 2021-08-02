@@ -8,11 +8,18 @@ local sys = require("systems.system")
 local GlobalTopicQueue = require("queue.globalTopicQueue")
 local GlobalExtractQueue = require("queue.globalExtractQueue")
 local GlobalItemQueue = require("queue.globalItemQueue")
+local LocalExtractQueue = require("queue.localExtractQueue")
 local player = require("systems.player")
 local ext = require("utils.ext")
 local sounds = require "systems.sounds"
 local fs = require "systems.fs"
 local menuBase = require "systems.menu.menuBase"
+local ffmpeg = require("systems.ffmpeg")
+local repCreators = require("reps.rep.repCreators")
+
+package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"})..package.path
+local ui = require "user-input-module"
+local get_user_input = ui.get_user_input
 
 local settings = {
     ["start"] = false,
@@ -20,6 +27,7 @@ local settings = {
     ["queue"] = "main",
     ["mode"] = "master",
     ["export"] = "",
+    ["add_extract"] = "",
 }
 
 mpopt.read_options(settings, "im")
@@ -27,16 +35,28 @@ mpopt.read_options(settings, "im")
 local loaded = false
 
 local function getInitialQueue()
-    local gt = GlobalTopicQueue(nil)
-    if gt and not ext.empty(gt.reptable.subset) then return gt end
-    local ge = GlobalExtractQueue(nil)
-    if ge and not ext.empty(ge.reptable.subset) then return ge end
-    local gi = GlobalItemQueue(nil)
-    if gi and not ext.empty(gi.reptable.subset) then return gi end
+    if not ext.empty(settings["add_extract"]) then
+        local le = LocalExtractQueue(nil)
+        local imported = ext.first_or_nil(function(r) return r.row.url == settings["add_extract"] end, le.reptable.reps)
+        if imported == nil then
+            log.notify("Failed to get imported extract")
+        end
+        le.reptable.subset[1] = imported
+        le.reptable.fst = imported
+        return le
+    else
+        local gt = GlobalTopicQueue(nil)
+        if gt and not ext.empty(gt.reptable.subset) then return gt end
+        local ge = GlobalExtractQueue(nil)
+        if ge and not ext.empty(ge.reptable.subset) then return ge end
+        local gi = GlobalItemQueue(nil)
+        if gi and not ext.empty(gi.reptable.subset) then return gi end
+    end
 end
 
 local function loadMedia()
     log.debug("Loading Media")
+    require("systems.keybinds")
 
     sys.set_ipc_socket()
     if not mp.get_property_bool("audio-only") then
@@ -55,6 +75,77 @@ local function loadMedia()
     if not active.change_queue(queue) then
         menuBase.open()
     end
+end
+
+local function import_extract(args)
+    local gtq = GlobalTopicQueue(nil)
+    local folder = ext.first_or_nil(function(r) return r.row.title == args["title"] and r.row.type == "local-oc" end, gtq.reptable.reps)
+    if folder == nil then
+        local duration = ffmpeg.get_duration(args["path"])
+        folder = repCreators.createTopic(args["title"], "local-oc", args["path"], args["priority"], duration, nil)
+        if not importer.add_topics_to_queue({ folder }) then
+            log.notify("Failed to import")
+            return false
+        end
+    end
+
+    local extract = repCreators.createExtract(folder, folder.row.start, folder.row.stop, "", args["priority"])
+    extract.row["url"] = settings["add_extract"]
+    local leq = LocalExtractQueue(nil)
+    leq.reptable:add_to_reps(extract)
+    leq:save_data()
+    return true
+end
+
+local function query_get_extract_priority(args)
+    local handler = function(input)
+        if input == nil then
+            log.notify("Cancelled.")
+            return
+        end
+
+        local pri = tonumber(input)
+        if input == nil or not ext.validate_priority(pri) then
+            log.notify("Invalid priority.")
+            query_get_extract_priority(args)
+            return
+        end
+
+        args["priority"] = pri
+        if import_extract(args) then
+            log.notify("Imported!")
+            sounds.play("positive")
+            loadMedia()
+        end
+    end
+
+    get_user_input(handler, {
+            text = "Priority: ",
+            replace = true,
+        })
+end
+
+local function query_get_extract_title(path)
+    local handler = function(input)
+        if input == nil then
+            log.notify("Cancelled.")
+            return
+        elseif input == "" then
+            log.notify("Invalid title.")
+            query_get_extract_title()
+            return
+        end
+
+        args = {}
+        args["path"] = path
+        args["title"] = input
+        query_get_extract_priority(args)
+    end
+
+    get_user_input(handler, {
+            text = "Title: ",
+            replace = true,
+        })
 end
 
 local function run()
@@ -79,6 +170,17 @@ local function run()
             sounds.play_sync(sound)
             mp.commandv("quit", ret and 0 or 1)
 
+        elseif not ext.empty(settings["add_extract"]) then
+            local toImport = settings["add_extract"]
+            if not sys.exists(toImport) then
+                log.debug("Failed to add extract because import file does not exist.")
+                mp.commandv("quit", 1)
+            end
+
+            mp.set_property("force-window", "yes")
+            query_get_extract_title(toImport)
+            return
+
         elseif not ext.empty(settings["export"]) then
             local exportFolder = settings["export"]
             local ret = exporter.as_sm_xml(exportFolder)
@@ -86,8 +188,9 @@ local function run()
             local sound = ret and "positive" or "negative"
             sounds.play_sync(sound)
             mp.commandv("quit", ret and 0 or 1)
-        else
-            require("systems.keybinds")
+        end
+        
+        if settings["start"] then
             loadMedia()
         end
     end
@@ -117,7 +220,6 @@ local delete_pid_file = function()
     log.debug("Removing PID file.")
     os.remove(pid_file)
 end
-
 
 if settings["start"] or not ext.empty(settings["import"]) or not ext.empty(settings["export"]) then
     local pid = read_pid_file()

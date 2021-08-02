@@ -25,11 +25,10 @@ function ClozeEDL:open(mode)
 end
 
 function ClozeEDL:format_pre_cloze(parentPath, parentStart, clozeStart)
-    local _, fname = mpu.split_path(parentPath)
     local preClozeLength = clozeStart - parentStart
     return table.concat(
         {
-            fname,
+            parentPath,
             parentStart,
             preClozeLength
         }, ",")
@@ -47,11 +46,10 @@ function ClozeEDL:format_cloze(clozeEnd, clozeStart)
 end
 
 function ClozeEDL:format_post_cloze(parentPath, clozeEnd, parentEnd)
-    local _, fname = mpu.split_path(parentPath)
     local postClozeLength = parentEnd - clozeEnd
     return table.concat(
         {
-            fname,
+            parentPath,
             clozeEnd,
             postClozeLength
         }, ",")

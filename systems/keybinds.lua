@@ -6,6 +6,11 @@ local item_format = require("reps.rep.item_format")
 
 local keys = {
 
+    ["iv-set-extract-boundary"] = {
+        ["key"] = "l",
+        ["callback"] = function() active.queue:set_extract_boundary() end
+    },
+
     ["iv-create-qa"] = {
         ["key"] = "Alt+q",
         ["callback"] = function() active.queue:extract(item_format.qa) end

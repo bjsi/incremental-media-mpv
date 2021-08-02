@@ -1,5 +1,6 @@
 local sounds = require("systems.sounds")
 local fs = require("systems.fs")
+local subs = require("systems.subs.subs")
 local mpu = require("mp.utils")
 local sys = require("systems.system")
 local log = require("utils.log")
@@ -123,6 +124,39 @@ function QueueBase:navigate_history(fwd)
     end
 
     return false
+end
+
+function QueueBase:clear_extract_boundaries()
+    player.unset_abloop()
+    subs.clear()
+    log.notify("Clearning extract boundaries.")
+end
+
+function QueueBase:set_extract_start()
+    subs.set_timing('start')
+    log.notify("Setting extract start boundary.")
+end
+
+function QueueBase:set_extract_stop()
+    subs.set_timing('end')
+    log.notify("Setting extract stop boundary.")
+end
+
+-- TODO: what if a >b 
+function QueueBase:set_extract_boundary()
+    local curTime = mp.get_property("time-pos")
+
+    mp.commandv("ab-loop")
+    local a = tonumber(mp.get_property("ab-loop-a"))
+    local b = tonumber(mp.get_property("ab-loop-b"))
+
+    if a == nil and b == nil then
+        self:clear_extract_boundaries()
+    elseif a ~= nil and b == nil then
+        self:set_extract_start()
+    elseif a ~= nil and b ~= nil then
+        self:set_extract_stop()    
+    end
 end
 
 function QueueBase:set_end_boundary_extract()

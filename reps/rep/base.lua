@@ -22,7 +22,7 @@ function Rep:is_deleted()
     if self:is_yt() then
         return false
     elseif self:is_local() then
-        return not ext.file_exists(player.get_full_url(self.row["url"]))
+        return not ext.file_exists(player.get_full_url(self))
     end
 end
 
@@ -36,7 +36,7 @@ end
 
 function Rep:is_yt() return self.row["type"] == "youtube" end
 
-function Rep:is_local() return self.row["type"] == "local" end
+function Rep:is_local() return self.row["type"]:find("local") end
 
 function Rep:valid_speed() 
     local speed = tonumber(self.row["speed"])

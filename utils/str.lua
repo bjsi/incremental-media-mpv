@@ -98,7 +98,7 @@ end
 function str.remove_all_spaces(s) return s:gsub('%s*', '') end
 
 function str.trim(s)
-    s = str.remove_spaces(s)
+    s = str.remove_leading_trailing_spaces(s)
     s = str.remove_text_in_parentheses(s)
     s = str.remove_newlines(s)
     return s
