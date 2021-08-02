@@ -8,6 +8,19 @@ local ext = require "utils.ext"
 
 local sys = {}
 
+function sys.set_ipc_socket()
+    local pid = tostring(mpu.getpid())
+    local serverPath
+    if sys.platform == "win" then
+        serverPath = [[\\.\pipe\mpv-socket-]]..pid
+    else
+        serverPath = "/tmp/mpv-socket-"..pid
+    end
+    log.debug("Setting input ipc server to " .. serverPath)
+    mp.register_event("shutdown", function() os.remove(serverPath) end)
+    mp.set_property("input-ipc-server", serverPath)
+end
+
 function sys.read_text(file)
     local h = io.open(file, "r")
     local data

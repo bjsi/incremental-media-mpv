@@ -64,6 +64,8 @@ function exporter.create_extract_export_data(v)
         url = player.get_full_url(v, v.row["start"]),
         start = v.row.start,
         stop = v.row.stop,
+        subs = v.row.subs,
+        notes = v.row.notes,
         priority = v.row.priority,
         items = {
             ["NULL"] = { id = "NULL"}, -- so mpu.format_json turns it into a dict

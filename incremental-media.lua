@@ -38,6 +38,7 @@ end
 local function loadMedia()
     log.debug("Loading Media")
 
+    sys.set_ipc_socket()
     if not mp.get_property_bool("audio-only") then
         mp.set_property("force-window", "yes")
     end
@@ -65,7 +66,7 @@ local function run()
         sys.verify_dependencies()
         sys.create_essential_files()
         sys.backup()
-        
+
         sounds.start_background_process()
         mp.register_script_message("export_to_sm", function(time) exporter.export_to_sm(time) end)
         mp.register_event("shutdown", active.on_shutdown)

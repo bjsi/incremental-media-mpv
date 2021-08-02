@@ -187,7 +187,7 @@ end
 
 function HomeSubmenu:add_element_osd(osd, queue)
     if queue == nil or queue.playing == nil then
-        osd:text("No current element.")
+        osd:text("No current element."):newline()
         return
     end
 
