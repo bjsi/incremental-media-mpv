@@ -46,9 +46,6 @@ function ffmpeg.generate_qa_item_files(soundPath, outputFullPathWithExt)
 
     local args = {
         "ffmpeg", 
-        "-reconnect", "1",
-        "-reconnect_streamed", "1",
-        "-reconnect_delay_max", "5",
         "-i", soundPath,
         outputFullPathWithExt
     }
@@ -66,9 +63,6 @@ function ffmpeg.generate_cloze_context_item_files(parentPath, sound, format, out
     
     local args = {
         "ffmpeg",
-        "-reconnect", "1",
-        "-reconnect_streamed", "1",
-        "-reconnect_delay_max", "5",
         "-i", parentPath,
         "-i", fs.silence,
         "-filter_complex",
@@ -101,9 +95,6 @@ function ffmpeg.generate_cloze_item_files(parentPath, sound, format, question_fp
 
     local args = {
         "ffmpeg",
-        "-reconnect", "1",
-        "-reconnect_streamed", "1",
-        "-reconnect_delay_max", "5",
         "-i", parentPath,
         "-i", fs.sine,
         "-filter_complex",

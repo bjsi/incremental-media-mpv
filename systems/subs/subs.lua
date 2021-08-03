@@ -110,8 +110,8 @@ subs.unobserve = function()
     subs.observed = false
 end
 
-subs.set_timing = function(position)
-    subs.user_timings.set(position)
+subs.set_timing = function(position, time)
+    subs.user_timings.set(position, time)
     log.notify(str.capitalize_first(position) .. " time has been set.")
     if not subs.observed then subs.observe() end
 end

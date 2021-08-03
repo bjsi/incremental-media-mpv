@@ -1,4 +1,5 @@
 local Base = require("queue.queueBase")
+local exporter = require("systems.exporter")
 local subs = require("systems.subs.subs")
 local repCreators = require("reps.rep.repCreators")
 local player = require("systems.player")
@@ -7,6 +8,7 @@ local ext = require("utils.ext")
 local log = require("utils.log")
 local active = require("systems.active")
 local item_format = require("reps.rep.item_format")
+local cfg = require("systems.config")
 
 package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"})..package.path
 local ui = require "user-input-module"
@@ -148,7 +150,7 @@ end
 
 function ExtractQueueBase:save_data()
     self:update_speed()
-    self.reptable:write(self.reptable)
+    return self.reptable:write(self.reptable)
 end
 
 function ExtractQueueBase:advance_start(n)
@@ -234,26 +236,33 @@ function ExtractQueueBase:query_confirm_qa(args, chain, i)
             return false
         end
 
-        -- TODO: Turn into a function and reuse
-        GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
-        local giq = GlobalItemQueue(nil)
-        local irt = giq.reptable
-        if irt:add_to_reps(itemRep) then
-            sounds.play("echo")
-            player.unset_abloop()
-            giq:save_data()
-            return true
-        else
-            sounds.play("negative")
-            log.err("Failed to add " .. format["name"] .. " item to the rep table.")
-            return false
-        end
+        return self:add_item(itemRep)
     end
 
     get_user_input(handle, {
             text = "Confirm? ([y]/n):",
             replace = true,
         })
+end
+
+function ExtractQueueBase:add_item(itemRep)
+    GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
+    local giq = GlobalItemQueue(nil)
+    local irt = giq.reptable
+    if irt:add_to_reps(itemRep) then
+        sounds.play("echo")
+        player.unset_abloop()
+        if giq:save_data() and cfg.auto_export then
+            log.debug("Exporting created item to SM.")
+            local time = exporter.get_last_export_time()
+            exporter.export_to_sm(time)
+        end
+        return true
+    else
+        sounds.play("negative")
+        log.err("Failed to add item to the rep table.")
+        return false
+    end
 end
 
 function ExtractQueueBase:query_flashcard_side(media, args, chain, i)
@@ -467,19 +476,7 @@ function ExtractQueueBase:handle_extract_cloze(curRep, sound, format)
         return false
     end
 
-    GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
-    local giq = GlobalItemQueue(nil)
-    local irt = giq.reptable
-    if irt:add_to_reps(itemRep) then
-        sounds.play("echo")
-        player.unset_abloop()
-        giq:save_data()
-        return true
-    else
-        sounds.play("negative")
-        log.err("Failed to add " .. format["name"] .. " item to the rep table.")
-        return false
-    end
+    return self:add_item(itemRep)
 end
 
 function ExtractQueueBase:handle_extract(loopStart, loopStop, curRep, extractType)

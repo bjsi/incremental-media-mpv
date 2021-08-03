@@ -2,7 +2,6 @@ local log = require("utils.log")
 local mpu = require("mp.utils")
 local exporter = require("systems.exporter")
 local importer = require("systems.importer")
-local mpopt = require("mp.options")
 local active = require("systems.active")
 local sys = require("systems.system")
 local GlobalTopicQueue = require("queue.globalTopicQueue")
@@ -16,28 +15,18 @@ local fs = require "systems.fs"
 local menuBase = require "systems.menu.menuBase"
 local ffmpeg = require("systems.ffmpeg")
 local repCreators = require("reps.rep.repCreators")
+local cfg = require("systems.config")
 
 package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"})..package.path
 local ui = require "user-input-module"
 local get_user_input = ui.get_user_input
 
-local settings = {
-    ["start"] = false,
-    ["import"] = "",
-    ["queue"] = "main",
-    ["mode"] = "master",
-    ["export"] = "",
-    ["add_extract"] = "",
-}
-
-mpopt.read_options(settings, "im")
-
 local loaded = false
 
 local function getInitialQueue()
-    if not ext.empty(settings["add_extract"]) then
+    if not ext.empty(cfg["add_extract"]) then
         local le = LocalExtractQueue(nil)
-        local imported = ext.first_or_nil(function(r) return r.row.url == settings["add_extract"] end, le.reptable.reps)
+        local imported = ext.first_or_nil(function(r) return r.row.url == cfg["add_extract"] end, le.reptable.reps)
         if imported == nil then
             log.notify("Failed to get imported extract")
         end
@@ -90,7 +79,7 @@ local function import_extract(args)
     end
 
     local extract = repCreators.createExtract(folder, folder.row.start, folder.row.stop, "", args["priority"])
-    extract.row["url"] = settings["add_extract"]
+    extract.row["url"] = cfg["add_extract"]
     local leq = LocalExtractQueue(nil)
     leq.reptable:add_to_reps(extract)
     leq:save_data()
@@ -136,7 +125,7 @@ local function query_get_extract_title(path)
             return
         end
 
-        args = {}
+        local args = {}
         args["path"] = path
         args["title"] = input
         query_get_extract_priority(args)
@@ -162,16 +151,16 @@ local function run()
         mp.register_script_message("export_to_sm", function(time) exporter.export_to_sm(time) end)
         mp.register_event("shutdown", active.on_shutdown)
 
-        if not ext.empty(settings["import"]) then
-            local importTarget = settings["import"]
+        if not ext.empty(cfg["import"]) then
+            local importTarget = cfg["import"]
             local ret = importer.import(importTarget)
             log.debug("Exiting after import....")
             local sound = ret and "positive" or "negative"
             sounds.play_sync(sound)
             mp.commandv("quit", ret and 0 or 1)
 
-        elseif not ext.empty(settings["add_extract"]) then
-            local toImport = settings["add_extract"]
+        elseif not ext.empty(cfg["add_extract"]) then
+            local toImport = cfg["add_extract"]
             if not sys.exists(toImport) then
                 log.debug("Failed to add extract because import file does not exist.")
                 mp.commandv("quit", 1)
@@ -181,8 +170,8 @@ local function run()
             query_get_extract_title(toImport)
             return
 
-        elseif not ext.empty(settings["export"]) then
-            local exportFolder = settings["export"]
+        elseif not ext.empty(cfg["export"]) then
+            local exportFolder = cfg["export"]
             local ret = exporter.as_sm_xml(exportFolder)
             log.debug("Exiting after export...")
             local sound = ret and "positive" or "negative"
@@ -190,7 +179,7 @@ local function run()
             mp.commandv("quit", ret and 0 or 1)
         end
         
-        if settings["start"] then
+        if cfg["start"] then
             loadMedia()
         end
     end
@@ -221,7 +210,7 @@ local delete_pid_file = function()
     os.remove(pid_file)
 end
 
-if settings["start"] or not ext.empty(settings["import"]) or not ext.empty(settings["export"]) then
+if cfg["start"] or not ext.empty(cfg["import"]) or not ext.empty(cfg["export"]) then
     local pid = read_pid_file()
     if pid ~= -1 and sys.pid_running(pid) then
         log.debug("Already running with PID: ", pid, ". Exiting.")

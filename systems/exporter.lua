@@ -1,4 +1,5 @@
 local ext = require("utils.ext")
+local cfg = require("systems.config")
 local b64 = require("utils.base64")
 local ClozeEDL = require("systems.edl.edl")
 local QAEDL = require("systems.edl.qaEdl")
@@ -33,17 +34,11 @@ local function getGrandparent(grandparents, parents, child)
 end
 
 local function read_as_b64(fp)
+    log.debug("Reading", fp, "as b64.")
     local h = io.open(fp, "rb")
     local data = h:read("*all")
     h:close()
     return b64.encode(data)
-end
-
-
-local function create_q_text(itemRep, title, question, edl)
-end
-
-local function encode_q_html_data(data)
 end
 
 function exporter.create_topic_export_data(v)
@@ -67,7 +62,6 @@ function exporter.create_extract_export_data(v)
     local extract = {
         id = v.row["id"],
         parent = v.row["parent"],
-        qtext = "",
         url = player.get_full_url(v, v.row["start"]),
         start = v.row.start,
         stop = v.row.stop,
@@ -143,8 +137,8 @@ end
 
 function exporter.add_cloze_data(itemRep, exportItem, sound, format)
     local soundFullPathWithExt = sound["path"]
-    if not itemRep:is_local() then
-        soundFullPathWithExt = mpu.join_path(fs.media, soundFullPathWithExt)
+    if not sys.is_absolute_path(soundFullPathWithExt) then
+        soundFullPathWithExt = mpu.join_path(fs.media, sound["path"])
     end
 
     -- Add stored media
@@ -195,7 +189,8 @@ function exporter.create_item_export_data(itemRep)
         priority = itemRep.row["priority"],
         start = itemRep.row["start"],
         stop = itemRep.row["stop"],
-        speed = itemRep.row["speed"]
+        speed = itemRep.row["speed"],
+        subs = itemRep.row["subs"],
     }
 
     local sound, format, media
@@ -235,7 +230,34 @@ function exporter.create_item_export_data(itemRep)
     return exportItem
 end
 
-function exporter.export_to_sm(time)
+function exporter.get_last_export_time()
+    log.debug("Getting last export time for queue:", cfg.queue, "from SMA.")
+    local ret = sys.json_rpc_request("GetLastImportTime", { cfg.queue })
+    if ret then
+        local jobj = mpu.parse_json(ret.stdout)
+        if jobj then return tonumber(jobj.result) end
+    end
+
+    return nil
+end
+
+function exporter.export_to_sm(lastExportTime)
+
+    if not sys.json_rpc_request("Ping") then
+        log.debug("Failed to ping SMA.")
+        return false
+    end
+
+    log.debug("Successfully pinged SMA.")
+
+    lastExportTime = tonumber(lastExportTime)
+    if lastExportTime == nil then
+        log.debug("Failed to get last export time from SMA.")
+        return false
+    end
+
+    log.debug("Successfully got last export time of", lastExportTime, "from SMA.")
+
     GlobalTopicQueue = GlobalTopicQueue or require("queue.globalTopicQueue")
     local gtq = GlobalTopicQueue(nil)
     local grandParents = ext.index_by_key(gtq.reptable.reps, "id")
@@ -246,7 +268,7 @@ function exporter.export_to_sm(time)
 
     GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
     local giq = GlobalItemQueue(nil)
-    local toExport = ext.list_filter(giq.reptable.reps, function(r) return r:to_export() end)
+    local toExport = ext.list_filter(giq.reptable.reps, function(r) return r:to_export() and tonumber(r.row.created) > lastExportTime end)
 
     local topics = {} -- id indexed
     for _, v in ipairs(toExport) do
@@ -266,7 +288,7 @@ function exporter.export_to_sm(time)
         topics[grandparent.row.id].extracts[parent.row.id].items[item.id] = item
     end
 
-    sys.json_rpc_request("ImportTopics", { topics })
+    sys.json_rpc_request("ImportTopics", { cfg.queue, topics })
 end
 
 -- TODO: Need to update to the latest version of EDL files and item creation

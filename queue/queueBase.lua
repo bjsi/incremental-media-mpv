@@ -456,6 +456,6 @@ function QueueBase:parent()
     log.debug("No parent element available.")
 end
 
-function QueueBase:save_data() self.reptable:write(self.reptable) end
+function QueueBase:save_data() return self.reptable:write(self.reptable) end
 
 return QueueBase

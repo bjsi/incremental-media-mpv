@@ -86,7 +86,7 @@ end
 
 function ItemQueueBase:save_data()
     self:update_speed()
-    self.reptable:write(self.reptable)
+    return self.reptable:write(self.reptable)
 end
 
 function ItemQueueBase:adjust_afactor(_)
