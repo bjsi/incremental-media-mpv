@@ -175,8 +175,10 @@ function ffmpeg.audio_extract(start, stop, audioUrl, outputPath)
         "-reconnect_streamed", "1",
         "-reconnect_delay_max", "5",
         "-nostats",
-        "-ss", tostring(start), "-to",
-        tostring(stop), "-i", audioUrl,
+        "-ss", tostring(start),
+        "-to", tostring(stop),
+        "-acodec", "copy",
+        "-i", audioUrl,
         outputPath
     }
     return sys.subprocess(args)

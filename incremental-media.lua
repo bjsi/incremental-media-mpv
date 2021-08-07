@@ -33,6 +33,10 @@ local function getInitialQueue()
         le.reptable.subset[1] = imported
         le.reptable.fst = imported
         return le
+    elseif not ext.empty(cfg["singleton_id"]) and not ext.empty(cfg["singleton_type"]) then
+        local type = cfg["singleton_type"]
+        local id = cfg["singleton_id"]
+        return active.get_singleton_queue(type, id)
     else
         local gt = GlobalTopicQueue(nil)
         if gt and not ext.empty(gt.reptable.subset) then return gt end
@@ -148,7 +152,8 @@ local function run()
         sys.backup()
 
         sounds.start_background_process()
-        mp.register_script_message("export_to_sm", function(time) exporter.export_to_sm(time) end)
+        mp.register_script_message("export_to_sm", function(time) exporter.export_new_items_to_sm(time) end)
+        mp.register_script_message("load_singleton_queue", function(type, id) active.load_singleton_queue(type, id) end)
         mp.register_event("shutdown", active.on_shutdown)
 
         if not ext.empty(cfg["import"]) then

@@ -150,9 +150,9 @@ function exporter.add_cloze_data(itemRep, exportItem, sound, format)
     )
 
     -- Add flashcard media
-    local qFpath = mpu.join_path(sys.tmp_dir, sys.uuid() .. ".mp3")
-    local aFpath = mpu.join_path(sys.tmp_dir, sys.uuid() .. ".mp3")
-    if not ffmpeg.generate_cloze_item_files(soundFullPathWithExt, sound, format, qFpath, aFpath) then
+    local questionFullWithExt = mpu.join_path(sys.tmp_dir, sys.uuid() .. cfg.audio_format)
+    local answerFullWithExt = mpu.join_path(sys.tmp_dir, sys.uuid() .. cfg.audio_format)
+    if not ffmpeg.generate_cloze_item_files(soundFullPathWithExt, sound, format, questionFullWithExt, answerFullWithExt) then
         log.err("Failed to generate item files.")
         return false
     end
@@ -160,17 +160,17 @@ function exporter.add_cloze_data(itemRep, exportItem, sound, format)
     table.insert(exportItem["flashcard_medias"], {
             type = "sound",
             showat = "question",
-            fname = str.basename(qFpath),
+            fname = str.basename(questionFullWithExt),
             text = "audio cloze question",
-            b64 = read_as_b64(qFpath)
+            b64 = read_as_b64(questionFullWithExt)
         })
 
     table.insert(exportItem["flashcard_medias"], {
             type = "sound",
             showat = "answer",
-            fname = str.basename(aFpath),
+            fname = str.basename(answerFullWithExt),
             text = "audio cloze answer",
-            b64 = read_as_b64(aFpath)
+            b64 = read_as_b64(answerFullWithExt)
         })
     return true
 end
@@ -241,22 +241,32 @@ function exporter.get_last_export_time()
     return nil
 end
 
-function exporter.export_to_sm(lastExportTime)
+function exporter.update_sm_item(itemRep)
+    local itemExportData = exporter.create_item_export_data(itemRep)
+    if itemExportData == nil then
+        log.debug("Failed to create item export data")
+        return false
+    end
+    return sys.json_rpc_request("UpdateItem", { cfg.queue, itemExportData }).status == 0
+end
 
+function exporter.export_new_items_to_sm(lastExportTime)
+    lastExportTime = tonumber(lastExportTime)
+    if lastExportTime == nil then
+        log.debug("Failed to get last export time from SMA.")
+        return false
+    end
+    local predicate = function(itemRep) return tonumber(itemRep.row.created) > lastExportTime end
+    return exporter.export_to_sm(predicate)
+end
+
+function exporter.export_to_sm(predicate)
     if not sys.json_rpc_request("Ping") then
         log.debug("Failed to ping SMA.")
         return false
     end
 
     log.debug("Successfully pinged SMA.")
-
-    lastExportTime = tonumber(lastExportTime)
-    if lastExportTime == nil then
-        log.debug("Failed to get last export time from SMA.")
-        return false
-    end
-
-    log.debug("Successfully got last export time of", lastExportTime, "from SMA.")
 
     GlobalTopicQueue = GlobalTopicQueue or require("queue.globalTopicQueue")
     local gtq = GlobalTopicQueue(nil)
@@ -268,7 +278,7 @@ function exporter.export_to_sm(lastExportTime)
 
     GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
     local giq = GlobalItemQueue(nil)
-    local toExport = ext.list_filter(giq.reptable.reps, function(r) return r:to_export() and tonumber(r.row.created) > lastExportTime end)
+    local toExport = ext.list_filter(giq.reptable.reps, predicate)
 
     local topics = {} -- id indexed
     for _, v in ipairs(toExport) do

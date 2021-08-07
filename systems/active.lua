@@ -1,8 +1,13 @@
 local log = require("utils.log")
+local cfg = require("systems.config")
 
 local GlobalExtractQueue
 local GlobalItemQueue
 local GlobalTopicQueue
+local SingletonItemQueue
+local SingletonTopicQueue
+local SingletonExtractQueue
+
 local menu
 
 local active = {}
@@ -15,6 +20,32 @@ function active.on_shutdown()
         log.debug("Saving reptable before exit.")
         active.queue:save_data()
     end
+end
+
+function active.get_singleton_queue(type, id)
+    local queue
+    if type == "Item" then
+        SingletonItemQueue = SingletonItemQueue or require("queue.singletons.singletonItemQueue")
+        queue = SingletonItemQueue(id)
+    elseif type == "Topic" then
+        SingletonTopicQueue = SingletonTopicQueue or require("queue.singletons.singletonTopicQueue")
+        queue = SingletonTopicQueue(id)
+    elseif type == "Extract" then
+        SingletonExtractQueue = SingletonExtractQueue or require("queue.singletons.singletonExtractQueue")
+        queue = SingletonExtractQueue(id)
+    end
+    return queue
+end
+
+function active.load_singleton_queue(type, id)
+    local queue = active.get_singleton_queue(type, id)
+    if queue == nil then
+        log.debug("Failed to get singleton queue: it was nil")
+        return false
+    end
+
+    log.debug("Changing to a singleton queue.")
+    return active.change_queue(queue)
 end
 
 function active.load_global_topics()
