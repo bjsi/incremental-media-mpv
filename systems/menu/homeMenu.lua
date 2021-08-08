@@ -12,6 +12,7 @@ local ffmpeg = require("systems.ffmpeg")
 local ydl    = require("systems.ydl")
 local fs     = require("systems.fs")
 local item_format = require("reps.rep.item_format")
+local exporter     = require("systems.exporter")
 
 package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"})..package.path
 local ui = require "user-input-module"
@@ -63,7 +64,18 @@ function HomeSubmenu:_init()
         { key = "G", desc = "add gif", fn = function() self:item_add_media("gif") end },
         { key = "q", desc = "edit question", fn = function() self:edit_current_field("question") end },
         { key = "a", desc = "edit answer", fn = function() self:edit_current_field("answer") end },
+        { key = "U", desc = "update sm item", fn = function() self:update_sm_item() end}
     }
+end
+
+function HomeSubmenu:update_sm_item()
+    local queue = active.queue
+    if queue == nil or queue.playing == nil then return end
+
+    local cur = queue.playing
+    if cur == nil then return end
+
+    exporter.update_sm_item(cur);
 end
 
 function HomeSubmenu:add_osd(osd)

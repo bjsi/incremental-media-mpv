@@ -255,7 +255,7 @@ function ExtractQueueBase:add_item(itemRep)
         if giq:save_data() and cfg.auto_export then
             log.debug("Exporting created item to SM.")
             local time = exporter.get_last_export_time()
-            exporter.export_to_sm(time)
+            exporter.export_new_items_to_sm(time)
         end
         return true
     else

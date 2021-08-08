@@ -177,8 +177,8 @@ function ffmpeg.audio_extract(start, stop, audioUrl, outputPath)
         "-nostats",
         "-ss", tostring(start),
         "-to", tostring(stop),
-        "-acodec", "copy",
         "-i", audioUrl,
+        "-acodec", "copy",
         outputPath
     }
     return sys.subprocess(args)

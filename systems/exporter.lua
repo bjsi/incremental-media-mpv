@@ -150,8 +150,8 @@ function exporter.add_cloze_data(itemRep, exportItem, sound, format)
     )
 
     -- Add flashcard media
-    local questionFullWithExt = mpu.join_path(sys.tmp_dir, sys.uuid() .. cfg.audio_format)
-    local answerFullWithExt = mpu.join_path(sys.tmp_dir, sys.uuid() .. cfg.audio_format)
+    local questionFullWithExt = mpu.join_path(sys.tmp_dir, sys.uuid() ..".".. cfg.audio_format)
+    local answerFullWithExt = mpu.join_path(sys.tmp_dir, sys.uuid() ..".".. cfg.audio_format)
     if not ffmpeg.generate_cloze_item_files(soundFullPathWithExt, sound, format, questionFullWithExt, answerFullWithExt) then
         log.err("Failed to generate item files.")
         return false
@@ -247,6 +247,13 @@ function exporter.update_sm_item(itemRep)
         log.debug("Failed to create item export data")
         return false
     end
+
+    if not sys.json_rpc_request("Ping") then
+        log.debug("Failed to ping SMA.")
+        return false
+    end
+
+    log.debug("Successfully pinged SMA")
     return sys.json_rpc_request("UpdateItem", { cfg.queue, itemExportData }).status == 0
 end
 
