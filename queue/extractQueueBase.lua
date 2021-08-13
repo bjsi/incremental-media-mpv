@@ -36,6 +36,11 @@ function ExtractQueueBase:_init(name, oldRep, repTable)
     Base._init(self, name, repTable, oldRep)
     self.bigSeek = 2.5
     self.smallSeek = 0.1
+    self.script_messages = {
+	    ["incmedia-create-qa"] = function() self:create_qa() end,
+	    ["incmedia-create-cloze-context"] = function() self:extract(item_format.cloze_context) end,
+	    ["incmedia-extract-extract"] = function() self:extract("extract") end
+    }
     self.create_qa_chain = {
         function(args, chain, i) self:query_qa_format(args, chain, i) end,
         function(args, chain, i) self:query_include_image(args, chain, i) end,
@@ -44,6 +49,32 @@ function ExtractQueueBase:_init(name, oldRep, repTable)
         function(args, chain, i) self:query_answer(args, chain, i) end,
         function(args, chain, i) self:query_confirm_qa(args, chain, i) end,
     }
+end
+
+function ExtractQueueBase:clean_up_events()
+	self:unregister_script_messages()
+end
+
+function ExtractQueueBase:register_script_messages()
+	log.debug("registering extract queue script messages")
+	for k, v in ipairs(self.script_messages) do
+		mp.register_script_message(k, v)
+	end
+end
+
+function ExtractQueueBase:unregister_script_messages()
+	log.debug("unregistering extract queue script messages")
+	for k, _ in pairs(self.script_messages) do
+		mp.unregister_script_message(k)
+	end
+end
+
+function ExtractQueueBase:activate()
+    if Base.activate(self) then
+	self:register_script_messages()
+        return true
+    end
+    return false
 end
 
 function ExtractQueueBase:call_chain(args, chain, i)
@@ -129,31 +160,13 @@ function ExtractQueueBase:adjust_extract(postpone, start, n)
             curRep.row["stop"])
 end
 
-function ExtractQueueBase:has_children()
-    local curRep = self.reptable:current_scheduled()
-    if curRep == nil then
-        log.debug("Failed to load child queue because current rep is nil.")
-        sounds.play("negative")
-        return
-    end
-
-    LocalItemQueue = LocalItemQueue or require("queue.localItemQueue")
-    local queue = LocalItemQueue(self.playing)
-    if ext.empty(queue.reptable.subset) then
-        log.debug("No children available for extract")
-        sounds.play("negative")
-        return
-    end
-
-    sounds.play("click2")
-end
-
 function ExtractQueueBase:save_data()
     self:update_speed()
     return self.reptable:write(self.reptable)
 end
 
 function ExtractQueueBase:advance_start(n)
+    n = tonumber(n)
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
@@ -164,6 +177,7 @@ function ExtractQueueBase:advance_start(n)
 end
 
 function ExtractQueueBase:advance_stop(n)
+    n = tonumber(n)
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
@@ -174,6 +188,7 @@ function ExtractQueueBase:advance_stop(n)
 end
 
 function ExtractQueueBase:postpone_start(n)
+    n = tonumber(n)
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
@@ -184,6 +199,7 @@ function ExtractQueueBase:postpone_start(n)
 end
 
 function ExtractQueueBase:postpone_stop(n)
+    n = tonumber(n)
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
@@ -498,8 +514,6 @@ function ExtractQueueBase:handle_extract(loopStart, loopStop, curRep, extractTyp
         local sound = { path=curRep.row.url, start=curRep.row.start, stop=curRep.row.stop }
         local format = { name=extractType, ["cloze-start"]=loopStart, ["cloze-stop"]=loopStop }
         return self:handle_extract_cloze(curRep, sound, format)
-    elseif extractType == item_format.qa then
-        
     else
         log.err("Unrecognised extract type.")
     end

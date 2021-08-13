@@ -152,26 +152,6 @@ function TopicQueueBase:split_chapters()
     end
 
     -- if importer.split_and_import_chapters() then
-        
-end
-
-function TopicQueueBase:has_children()
-    local cur = self.playing
-    if cur == nil then
-        sounds.play("negative")
-        log.debug("No children because cur is nil")
-        return
-    end
-
-    LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
-    local extractQueue = LocalExtractQueue(cur)
-    if ext.empty(extractQueue.reptable.subset) then
-        log.debug("No children available for topic: " .. cur.row["title"])
-        sounds.play("negative")
-        return
-    end
-
-    sounds.play("click2")
 end
 
 function TopicQueueBase:handle_extract(start, stop, curRep)

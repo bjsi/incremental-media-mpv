@@ -46,10 +46,6 @@ function QueueBase:localize(_)
     sounds.play("negative")
 end
 
-function QueueBase:has_children()
-    sounds.play("negative")
-end
-
 function QueueBase:update_speed()
     local speed = mp.get_property_number("speed")
     if not speed then return end
