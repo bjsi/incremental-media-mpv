@@ -1,4 +1,6 @@
 data/
+merge.py
+requirements.py
 fix_items.py
 *.wav
 *.edl

@@ -3,6 +3,7 @@ local str = require 'utils.str'
 local log = require 'utils.log'
 local fs = require 'systems.fs'
 local ext = require 'utils.ext'
+local mp = require 'mp'
 
 local sys = {}
 
@@ -73,11 +74,11 @@ function sys.json_rpc_request(method, params)
     local args = {"localhost", "9898", jsonFile}
 
     if sys.platform == "win" then
-        local bat = mpu.join_path(mp.get_script_directory(), "curl_telnet.bat")
+        local bat = mpu.join_path(fs.scripts, "curl_telnet.bat")
         table.insert(args, 1, bat)
         return sys.subprocess(args)
     elseif sys.platform == "lnx" or sys.platform == "mac" then
-        local sh = mpu.join_path(mp.get_script_directory(), "curl_telnet.sh")
+        local sh = mpu.join_path(fs.scripts, "curl_telnet.sh")
         table.insert(args, 1, sh)
         return sys.subprocess(args)
     end

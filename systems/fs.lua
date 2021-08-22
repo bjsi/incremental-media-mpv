@@ -1,26 +1,24 @@
-local mpu = require("mp.utils")
-local cfg = require("systems.config")
-local log = require("utils.log")
+local mpu = require 'mp.utils'
+local cfg = require 'systems.config'
+local mp = require 'mp'
 
 local fs = {}
 
 fs.base = mp.get_script_directory()
-fs.data_base = mpu.join_path(fs.base, "data")
-fs.data = mpu.join_path(fs.data_base, cfg["queue"])
-fs.media = mpu.join_path(fs.data, "media")
-fs.bkp = mpu.join_path(fs.data, "bkp")
-fs.topics_data = mpu.join_path(fs.data, "topics.csv")
-fs.extracts_data = mpu.join_path(fs.data, "extracts.csv")
-fs.items_data = mpu.join_path(fs.data, "items.csv")
-fs.sounds = mpu.join_path(fs.base, "sounds")
-fs.sine = mpu.join_path(fs.media, "sine.mp3")
-fs.sine_base = mpu.join_path(fs.sounds, "sine.mp3")
-fs.meaning_zh_base = mpu.join_path(fs.sounds, "meaning_zh.mp3")
-fs.meaning_zh = mpu.join_path(fs.media, "meaning_zh.mp3")
-fs.silence_base = mpu.join_path(fs.sounds, "silence.mp3")
-fs.silence = mpu.join_path(fs.media, "silence.mp3")
-
-log.debug("fs.data", fs.data)
-log.debug("fs.media", fs.media)
+fs.scripts = mpu.join_path(fs.base, 'scripts')
+fs.data_base = mpu.join_path(fs.base, 'data')
+fs.data = mpu.join_path(fs.data_base, cfg['queue'])
+fs.media = mpu.join_path(fs.data, 'media')
+fs.bkp = mpu.join_path(fs.data, 'bkp')
+fs.topics_data = mpu.join_path(fs.data, 'topics.csv')
+fs.extracts_data = mpu.join_path(fs.data, 'extracts.csv')
+fs.items_data = mpu.join_path(fs.data, 'items.csv')
+fs.sounds = mpu.join_path(fs.base, 'sounds')
+fs.sine = mpu.join_path(fs.media, 'sine.mp3')
+fs.sine_base = mpu.join_path(fs.sounds, 'sine.mp3')
+fs.meaning_zh_base = mpu.join_path(fs.sounds, 'meaning_zh.mp3')
+fs.meaning_zh = mpu.join_path(fs.media, 'meaning_zh.mp3')
+fs.silence_base = mpu.join_path(fs.sounds, 'silence.mp3')
+fs.silence = mpu.join_path(fs.media, 'silence.mp3')
 
 return fs
