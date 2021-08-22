@@ -96,9 +96,7 @@ subs.get = function()
     return sub
 end
 
-subs.append = function()
-    subs.dialogs.insert(subs.get_current())
-end
+subs.append = function() subs.dialogs.insert(subs.get_current()) end
 
 subs.observe = function()
     mp.observe_property("sub-text", "string", subs.append)

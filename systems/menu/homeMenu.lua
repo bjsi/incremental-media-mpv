@@ -1,22 +1,19 @@
-local active = require("systems.active")
-local mpu = require('mp.utils')
-local Base = require("systems.menu.submenuBase")
-local ext  = require("utils.ext")
-local str  = require("utils.str")
-local log  = require("utils.log")
-local player = require("systems.player")
-local ClozeEDL    = require("systems.edl.edl")
-local QAEDL = require("systems.edl.qaEdl")
-local ClozeContextEDL = require("systems.edl.clozeContextEdl")
-local ffmpeg = require("systems.ffmpeg")
-local ydl    = require("systems.ydl")
-local fs     = require("systems.fs")
-local item_format = require("reps.rep.item_format")
-local exporter     = require("systems.exporter")
-
-package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"})..package.path
-local ui = require "user-input-module"
-local get_user_input = ui.get_user_input
+local active = require 'systems.active'
+local mpu = require 'mp.utils'
+local Base = require 'systems.menu.submenuBase'
+local ext = require 'utils.ext'
+local str = require 'utils.str'
+local log = require 'utils.log'
+local player = require 'systems.player'
+local ClozeEDL = require 'systems.edl.edl'
+local QAEDL = require 'systems.edl.qaEdl'
+local ClozeContextEDL = require 'systems.edl.clozeContextEdl'
+local ffmpeg = require 'systems.ffmpeg'
+local ydl = require 'systems.ydl'
+local fs = require 'systems.fs'
+local item_format = require 'reps.rep.item_format'
+local exporter = require 'systems.exporter'
+local get_user_input = require 'systems.get_user_input'
 
 local LocalItemQueue
 local LocalExtractQueue
@@ -44,27 +41,66 @@ function HomeSubmenu:_init()
     self.base_binds = {}
 
     self.topic_keybinds = {
-        { key = "t", desc = "edit title", fn = function() self:edit_title() end },
-        { key = "c", desc = "extract chapter", fn = function() self:extract_chapter() end },
-        { key = "C", desc = "extract all chapters", fn = function() self:extract_all_chapters() end },
+        {key = "t", desc = "edit title", fn = function()
+            self:edit_title()
+        end}, {
+            key = "c",
+            desc = "extract chapter",
+            fn = function() self:extract_chapter() end
+        }, {
+            key = "C",
+            desc = "extract all chapters",
+            fn = function() self:extract_all_chapters() end
+        }
     }
 
     self.media_keybinds = {
-        { key = "r", desc = "remove media", fn = function() self:remove_media() end },
+        {
+            key = "r",
+            desc = "remove media",
+            fn = function() self:remove_media() end
+        }
     }
 
     self.extract_keybinds = {
-        { key='Q', desc = "create Q/A", fn = function() active.queue:create_qa() end},
-        { key='Z', desc = "edit subs", fn = function() self:edit_current_field("subs") end },
+        {
+            key = 'Q',
+            desc = "create Q/A",
+            fn = function() active.queue:create_qa() end
+        }, {
+            key = 'Z',
+            desc = "edit subs",
+            fn = function() self:edit_current_field("subs") end
+        }
     }
 
     self.item_keybinds = {
-        { key = 'Z', desc = "edit subs", fn = function() self:edit_current_field("subs") end },
-        { key = "S", desc = "add screenshot", fn = function() self:item_add_media("screenshot") end },
-        { key = "G", desc = "add gif", fn = function() self:item_add_media("gif") end },
-        { key = "q", desc = "edit question", fn = function() self:edit_current_field("question") end },
-        { key = "a", desc = "edit answer", fn = function() self:edit_current_field("answer") end },
-        { key = "U", desc = "update sm item", fn = function() self:update_sm_item() end}
+        {
+            key = 'Z',
+            desc = "edit subs",
+            fn = function() self:edit_current_field("subs") end
+        }, {
+            key = "S",
+            desc = "add screenshot",
+            fn = function() self:item_add_media("screenshot") end
+        },
+        {
+            key = "G",
+            desc = "add gif",
+            fn = function() self:item_add_media("gif") end
+        }, {
+            key = "q",
+            desc = "edit question",
+            fn = function() self:edit_current_field("question") end
+        }, {
+            key = "a",
+            desc = "edit answer",
+            fn = function() self:edit_current_field("answer") end
+        }, {
+            key = "U",
+            desc = "update sm item",
+            fn = function() self:update_sm_item() end
+        }
     }
 end
 
@@ -86,9 +122,7 @@ function HomeSubmenu:add_osd(osd)
 end
 
 function HomeSubmenu:add_keybinds(tbl)
-    for _, v in pairs(tbl) do
-        table.insert(self.keybinds, v)
-    end
+    for _, v in pairs(tbl) do table.insert(self.keybinds, v) end
 end
 
 --
@@ -99,7 +133,10 @@ function HomeSubmenu:add_queue_osd(osd, queue)
     if queue ~= nil then
         osd:text(queue.name):newline()
         osd:item("reps: "):text(#queue.reptable.subset):newline()
-        local toexport = #ext.list_filter(queue.reptable.reps, function(r) return r:to_export() end)
+        local toexport = #ext.list_filter(queue.reptable.reps,
+                                          function(r)
+            return r:to_export()
+        end)
         osd:item("to export: "):text(tostring(toexport)):newline():newline()
     else
         osd:text("No queue loaded."):newline()
@@ -166,12 +203,11 @@ function HomeSubmenu:edit_title()
         menuBase.update()
     end
 
-    get_user_input(function(input) handler(input) end,
-        {
-            text = "Edit title: ",
-            replace = true,
-            default_input = cur.row["title"]
-        })
+    get_user_input(function(input) handler(input) end, {
+        text = "Edit title: ",
+        replace = true,
+        default_input = cur.row["title"]
+    })
 end
 
 function HomeSubmenu:add_topic_osd(osd, cur)
@@ -182,11 +218,11 @@ function HomeSubmenu:add_topic_osd(osd, cur)
 
     LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
     local leq = LocalExtractQueue(cur)
-    osd:item("children: "):text(#leq.reptable.subset):newline():newline():newline()
+    osd:item("children: "):text(#leq.reptable.subset):newline():newline()
+        :newline()
 
     self:add_keybinds(self.topic_keybinds)
 end
-
 
 function HomeSubmenu:add_extract_osd(osd, cur)
     self:add_generic_info(osd, cur)
@@ -226,7 +262,7 @@ function HomeSubmenu:remove_media()
     local queue = active.queue
     if queue == nil or queue.playing == nil then return end
     local cur = queue.playing
-    
+
     local handler = function(input)
         if input == nil or input == "n" or input == "" then
             log.notify("Cancelling")
@@ -241,10 +277,7 @@ function HomeSubmenu:remove_media()
     end
 
     get_user_input(function(input) handler(input) end,
-        {
-            text = "Remove media? (y/[n]): ",
-            replace = true,
-        })
+                   {text = "Remove media? (y/[n]): ", replace = true})
 end
 
 function HomeSubmenu:item_add_media(type)
@@ -266,9 +299,11 @@ function HomeSubmenu:item_add_media(type)
 
     local sound, format, media = edl:read()
 
-    GlobalExtractQueue = GlobalExtractQueue or require("queue.globalExtractQueue")
+    GlobalExtractQueue = GlobalExtractQueue or
+                             require("queue.globalExtractQueue")
     local geq = GlobalExtractQueue(nil)
-    local parent = ext.first_or_nil(function(r) return r:is_parent_of(cur) end, geq.reptable.reps)
+    local parent = ext.first_or_nil(function(r) return r:is_parent_of(cur) end,
+                                    geq.reptable.reps)
     if not parent then return end
 
     local vidUrl = player.get_full_url(parent)
@@ -305,13 +340,14 @@ function HomeSubmenu:item_add_media(type)
         fp = fp .. ".png" -- TODO: GDI errors on SM side
         ret = ffmpeg.screenshot(vidstream, mediaStop, fp)
     end
-    
+
     if ret then
         local _, filename = mpu.split_path(fp)
-        edl:write(sound, format, { path = filename, showat="answer" })
+        edl:write(sound, format, {path = filename, showat = "answer"})
         log.notify("Added " .. type)
         local curtime = mp.get_property("time-pos")
-        mp.commandv("loadfile", edlFullPathWithExt, "replace", "start=" .. curtime)
+        mp.commandv("loadfile", edlFullPathWithExt, "replace",
+                    "start=" .. curtime)
     else
         log.notify("Failed to add " .. type)
     end
@@ -337,12 +373,11 @@ function HomeSubmenu:edit_current_field(field)
         menuBase.update()
     end
 
-    get_user_input(function(input) handler(input) end,
-        {
-            text = "Edit " .. field .. ": ",
-            replace = true,
-            default_input = cur.row[field]
-        })
+    get_user_input(function(input) handler(input) end, {
+        text = "Edit " .. field .. ": ",
+        replace = true,
+        default_input = cur.row[field]
+    })
 end
 
 return HomeSubmenu

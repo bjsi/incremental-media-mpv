@@ -10,7 +10,8 @@ local active = require("systems.active")
 local item_format = require("reps.rep.item_format")
 local cfg = require("systems.config")
 
-package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"})..package.path
+package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"}) ..
+                   package.path
 local ui = require "user-input-module"
 local get_user_input = ui.get_user_input
 
@@ -21,7 +22,6 @@ local GlobalTopicQueue
 
 local ExtractQueueBase = {}
 ExtractQueueBase.__index = ExtractQueueBase
-
 
 setmetatable(ExtractQueueBase, {
     __index = Base, -- this is what makes the inheritance work
@@ -37,9 +37,11 @@ function ExtractQueueBase:_init(name, oldRep, repTable)
     self.bigSeek = 2.5
     self.smallSeek = 0.1
     self.script_messages = {
-	    ["incmedia-create-qa"] = function() self:create_qa() end,
-	    ["incmedia-create-cloze-context"] = function() self:extract(item_format.cloze_context) end,
-	    ["incmedia-extract-extract"] = function() self:extract("extract") end
+        ["incmedia-create-qa"] = function() self:create_qa() end,
+        ["incmedia-create-cloze-context"] = function()
+            self:extract(item_format.cloze_context)
+        end,
+        ["incmedia-extract-extract"] = function() self:extract("extract") end
     }
     self.create_qa_chain = {
         function(args, chain, i) self:query_qa_format(args, chain, i) end,
@@ -47,31 +49,29 @@ function ExtractQueueBase:_init(name, oldRep, repTable)
         function(args, chain, i) self:query_include_sound(args, chain, i) end,
         function(args, chain, i) self:query_question(args, chain, i) end,
         function(args, chain, i) self:query_answer(args, chain, i) end,
-        function(args, chain, i) self:query_confirm_qa(args, chain, i) end,
+        function(args, chain, i) self:query_confirm_qa(args, chain, i) end
     }
 end
 
-function ExtractQueueBase:clean_up_events()
-	self:unregister_script_messages()
-end
+function ExtractQueueBase:clean_up_events() self:unregister_script_messages() end
 
 function ExtractQueueBase:register_script_messages()
-	log.debug("registering extract queue script messages")
-	for k, v in ipairs(self.script_messages) do
-		mp.register_script_message(k, v)
-	end
+    log.debug("registering extract queue script messages")
+    for k, v in ipairs(self.script_messages) do
+        mp.register_script_message(k, v)
+    end
 end
 
 function ExtractQueueBase:unregister_script_messages()
-	log.debug("unregistering extract queue script messages")
-	for k, _ in pairs(self.script_messages) do
-		mp.unregister_script_message(k)
-	end
+    log.debug("unregistering extract queue script messages")
+    for k, _ in pairs(self.script_messages) do
+        mp.unregister_script_message(k)
+    end
 end
 
 function ExtractQueueBase:activate()
     if Base.activate(self) then
-	self:register_script_messages()
+        self:register_script_messages()
         return true
     end
     return false
@@ -229,23 +229,19 @@ function ExtractQueueBase:query_confirm_qa(args, chain, i)
         local format = args.format
 
         -- if no question, answer, media... just cancel.
-        if not args.text.question and not args.text.answer and not media and not sound then
+        if not args.text.question and not args.text.answer and not media and
+            not sound then
             log.debug("No content!")
             return false
         end
 
-        local text = { 
+        local text = {
             question = args.text.question and args.text.question or "",
-            answer = args.text.answer and args.text.answer or "",
+            answer = args.text.answer and args.text.answer or ""
         }
 
-        local itemRep = repCreators.createItem1(
-            parent,
-            sound,
-            media,
-            text,
-            format
-        )
+        local itemRep = repCreators.createItem1(parent, sound, media, text,
+                                                format)
 
         if itemRep == nil then
             log.notify("Failed to create item.")
@@ -255,10 +251,7 @@ function ExtractQueueBase:query_confirm_qa(args, chain, i)
         return self:add_item(itemRep)
     end
 
-    get_user_input(handle, {
-            text = "Confirm? ([y]/n):",
-            replace = true,
-        })
+    get_user_input(handle, {text = "Confirm? ([y]/n):", replace = true})
 end
 
 function ExtractQueueBase:add_item(itemRep)
@@ -282,17 +275,17 @@ function ExtractQueueBase:add_item(itemRep)
 end
 
 function ExtractQueueBase:query_flashcard_side(media, args, chain, i)
-    local handler = function (input)
+    local handler = function(input)
         if input == nil then
             log.notify("Cancelling")
             return
         end
 
-        if input == "a" or input == ""then
-            args[media.."-side"] = "answer"
+        if input == "a" or input == "" then
+            args[media .. "-side"] = "answer"
             i = i + 1
-        elseif input == "q"  then
-            args[media.."-side"] = "question"
+        elseif input == "q" then
+            args[media .. "-side"] = "question"
             i = i + 1
         else
             log.notify("Invalid input.")
@@ -303,14 +296,11 @@ function ExtractQueueBase:query_flashcard_side(media, args, chain, i)
         self:call_chain(args, chain, i)
     end
 
-    get_user_input(handler, {
-            text = media .. " side? (a/[q]):",
-            replace = true,
-        })
+    get_user_input(handler, {text = media .. " side? (a/[q]):", replace = true})
 end
 
 function ExtractQueueBase:query_include_sound(args, chain, i)
-    local handler = function (input)
+    local handler = function(input)
         if input == nil then
             log.notify("Cancelling")
             return
@@ -321,7 +311,7 @@ function ExtractQueueBase:query_include_sound(args, chain, i)
 
         if input == "n" then
             args["sound"] = nil
-        elseif input == "y" or input == ""then
+        elseif input == "y" or input == "" then
             args["sound"]["start"] = cur.row.start
             args["sound"]["stop"] = cur.row.stop
             args["sound"]["showat"] = "answer"
@@ -334,10 +324,7 @@ function ExtractQueueBase:query_include_sound(args, chain, i)
         self:call_chain(args, chain, i + 1)
     end
 
-    get_user_input(handler, {
-            text = "Include sound? (n/[y]):",
-            replace = true,
-        })
+    get_user_input(handler, {text = "Include sound? (n/[y]):", replace = true})
 end
 
 function ExtractQueueBase:query_sound_side(args, chain, i)
@@ -349,7 +336,7 @@ function ExtractQueueBase:query_image_side(args, chain, i)
 end
 
 function ExtractQueueBase:query_include_image(args, chain, i)
-    local handler = function (input)
+    local handler = function(input)
         if input == nil then
             log.notify("Cancelling")
             return
@@ -359,12 +346,12 @@ function ExtractQueueBase:query_include_image(args, chain, i)
         local cur = args.curRep
         if input == "n" or input == "" then
             args["media"] = nil
-        elseif input == "s"  then
+        elseif input == "s" then
             args["media"]["type"] = "screenshot"
             args["media"]["showat"] = "answer"
             args["media"]["start"] = cur.row.start
             args["media"]["stop"] = cur.row.stop
-        elseif input == "g"  then
+        elseif input == "g" then
             args["media"]["type"] = "gif"
             args["media"]["showat"] = "answer"
             args["media"]["start"] = cur.row.start
@@ -378,10 +365,7 @@ function ExtractQueueBase:query_include_image(args, chain, i)
         self:call_chain(args, chain, i + 1)
     end
 
-    get_user_input(handler, {
-            text = "Include image? (s/g/[n]):",
-            replace = true,
-        })
+    get_user_input(handler, {text = "Include image? (s/g/[n]):", replace = true})
 end
 
 function ExtractQueueBase:query_answer(args, chain, i)
@@ -395,10 +379,7 @@ function ExtractQueueBase:query_answer(args, chain, i)
         self:call_chain(args, chain, i + 1)
     end
 
-    get_user_input(handler, {
-            text = "Answer: ",
-            replace = true,
-        })
+    get_user_input(handler, {text = "Answer: ", replace = true})
 end
 
 function ExtractQueueBase:query_question(args, chain, i)
@@ -413,17 +394,12 @@ function ExtractQueueBase:query_question(args, chain, i)
         self:call_chain(args, chain, i + 1)
     end
 
-    get_user_input(handler, {
-            text = "Question: ",
-            replace = true,
-        })
+    get_user_input(handler, {text = "Question: ", replace = true})
 end
 
 function ExtractQueueBase:query_qa_format(args, chain, i)
 
-    local choices = {
-        [1] = item_format.qa,
-    }
+    local choices = {[1] = item_format.qa}
 
     local handler = function(input)
         local choice = tonumber(input)
@@ -438,21 +414,23 @@ function ExtractQueueBase:query_qa_format(args, chain, i)
             return
         end
 
-        args["format"] = { name = choices[choice] }
+        args["format"] = {name = choices[choice]}
         self:call_chain(args, chain, i + 1)
     end
 
-    get_user_input(handler, {
-            text = "QA format:\n1) classic Q/A\n",
-            replace = true,
-        })
+    get_user_input(handler,
+                   {text = "QA format:\n1) classic Q/A\n", replace = true})
 end
 
 function ExtractQueueBase:create_qa()
     local queue = active.queue
     if queue == nil or queue.playing == nil then return end
     local curRep = queue.playing
-    self:call_chain({start = curRep.row.start, stop = curRep.row.stop, curRep = curRep}, self.create_qa_chain, 1)
+    self:call_chain({
+        start = curRep.row.start,
+        stop = curRep.row.stop,
+        curRep = curRep
+    }, self.create_qa_chain, 1)
 end
 
 function ExtractQueueBase:handle_extract_extract(start, stop, curRep)
@@ -462,16 +440,17 @@ function ExtractQueueBase:handle_extract_extract(start, stop, curRep)
 
     GlobalTopicQueue = GlobalTopicQueue or require("queue.globalTopicQueue")
     local gtq = GlobalTopicQueue(nil)
-    local parent = ext.first_or_nil(function(r) return r:is_parent_of(curRep) end, gtq.reptable.reps)
+    local parent = ext.first_or_nil(
+                       function(r) return r:is_parent_of(curRep) end,
+                       gtq.reptable.reps)
     if parent == nil then
         log.debug("Failed to find parent element.")
         return
     end
 
-    local extract = repCreators.createExtract(parent, start, stop, curRep.row.subs)
-    if ext.empty(extract) then
-        return false
-    end
+    local extract = repCreators.createExtract(parent, start, stop,
+                                              curRep.row.subs)
+    if ext.empty(extract) then return false end
 
     if queue.reptable:add_to_reps(extract) then
         sounds.play("echo")
@@ -495,7 +474,8 @@ function ExtractQueueBase:handle_extract_cloze(curRep, sound, format)
     return self:add_item(itemRep)
 end
 
-function ExtractQueueBase:handle_extract(loopStart, loopStop, curRep, extractType)
+function ExtractQueueBase:handle_extract(loopStart, loopStop, curRep,
+                                         extractType)
     if curRep == nil then
         log.debug("Failed to create item because current rep was nil.")
         return false
@@ -510,9 +490,18 @@ function ExtractQueueBase:handle_extract(loopStart, loopStop, curRep, extractTyp
 
     if extractType == "extract" then
         return self:handle_extract_extract(loopStart, loopStop, curRep)
-    elseif extractType == item_format.cloze_context or extractType == item_format.cloze then
-        local sound = { path=curRep.row.url, start=curRep.row.start, stop=curRep.row.stop }
-        local format = { name=extractType, ["cloze-start"]=loopStart, ["cloze-stop"]=loopStop }
+    elseif extractType == item_format.cloze_context or extractType ==
+        item_format.cloze then
+        local sound = {
+            path = curRep.row.url,
+            start = curRep.row.start,
+            stop = curRep.row.stop
+        }
+        local format = {
+            name = extractType,
+            ["cloze-start"] = loopStart,
+            ["cloze-stop"] = loopStop
+        }
         return self:handle_extract_cloze(curRep, sound, format)
     else
         log.err("Unrecognised extract type.")

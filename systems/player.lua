@@ -15,12 +15,7 @@ function player.get_full_url(rep, timestamp)
         url = ydl.url_prefix .. url
         timestamp = tonumber(timestamp)
         if not ext.empty(timestamp) and timestamp > 0 then
-            url = table.concat(
-                {
-                    url,
-                    "&t=",
-                    tostring(ext.round(timestamp, 0))
-                })
+            url = table.concat({url, "&t=", tostring(ext.round(timestamp, 0))})
         end
     elseif rep:is_local() or rep:type() == "item" then
         if not sys.is_absolute_path(url) then
@@ -40,8 +35,7 @@ function player.load(newRep, oldRep, start)
     if oldRep ~= nil and oldRep.row["url"] == newRep.row["url"] then
         mp.commandv("seek", tostring(start), "absolute")
     else
-        mp.commandv("loadfile", url, "replace",
-                    "start=" .. tostring(start))
+        mp.commandv("loadfile", url, "replace", "start=" .. tostring(start))
     end
 end
 
@@ -80,7 +74,8 @@ function player.play(newRep, oldRep, createLoopBoundaries)
         if newRep:type() == "topic" then stop = stop - 2 end
     end
 
-    log.debug("Setting loop boundaries - start: " .. tostring(start) .. " stop: " .. tostring(stop))
+    log.debug("Setting loop boundaries - start: " .. tostring(start) ..
+                  " stop: " .. tostring(stop))
     player.loop_timer.set_start_time(start)
     player.loop_timer.set_stop_time(stop)
 

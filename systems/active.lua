@@ -25,13 +25,17 @@ end
 function active.get_singleton_queue(type, id)
     local queue
     if type == "Item" then
-        SingletonItemQueue = SingletonItemQueue or require("queue.singletons.singletonItemQueue")
+        SingletonItemQueue = SingletonItemQueue or
+                                 require("queue.singletons.singletonItemQueue")
         queue = SingletonItemQueue(id)
     elseif type == "Topic" then
-        SingletonTopicQueue = SingletonTopicQueue or require("queue.singletons.singletonTopicQueue")
+        SingletonTopicQueue = SingletonTopicQueue or
+                                  require("queue.singletons.singletonTopicQueue")
         queue = SingletonTopicQueue(id)
     elseif type == "Extract" then
-        SingletonExtractQueue = SingletonExtractQueue or require("queue.singletons.singletonExtractQueue")
+        SingletonExtractQueue = SingletonExtractQueue or
+                                    require(
+                                        "queue.singletons.singletonExtractQueue")
         queue = SingletonExtractQueue(id)
     end
     return queue
@@ -55,7 +59,8 @@ function active.load_global_topics()
 end
 
 function active.load_global_extracts()
-    GlobalExtractQueue = GlobalExtractQueue or require("queue.globalExtractQueue")
+    GlobalExtractQueue = GlobalExtractQueue or
+                             require("queue.globalExtractQueue")
     local geq = GlobalExtractQueue(nil)
     active.change_queue(geq)
 end
@@ -66,13 +71,9 @@ function active.load_global_items()
     active.change_queue(giq)
 end
 
-function active.enter_update_lock()
-    active.locked = true
-end
+function active.enter_update_lock() active.locked = true end
 
-function active.exit_update_lock()
-    active.locked = false
-end
+function active.exit_update_lock() active.locked = false end
 
 function active.change_queue(newQueue)
     if active.queue then

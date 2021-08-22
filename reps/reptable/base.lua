@@ -43,27 +43,23 @@ function RepTableBase:update_dependencies()
         end
     end
 
-    if updated then
-        self:write()
-    end
+    if updated then self:write() end
     return true
 end
 
 function RepTableBase:exists(element)
     for _, v in ipairs(self.reps) do
-        if v.row["url"] == element.row["url"] then
-            return true
-        end
+        if v.row["url"] == element.row["url"] then return true end
     end
     return false
 end
 
 function RepTableBase:update_subset()
     local updated = self:update_dependencies()
-    self.subset, self.fst  = self.subsetter(self.reps)
+    self.subset, self.fst = self.subsetter(self.reps)
     if not updated then
         self:update_dependencies()
-        self.subset, self.fst  = self.subsetter(self.reps)
+        self.subset, self.fst = self.subsetter(self.reps)
     end
 end
 
@@ -100,7 +96,7 @@ end
 --- @param rep Rep
 ---@return boolean
 function RepTableBase:add_to_subset(rep)
-    self.subset[#self.subset+1] = rep
+    self.subset[#self.subset + 1] = rep
     self:update_subset()
     return true
 end
@@ -122,7 +118,7 @@ end
 function RepTableBase:sort() sort.by_priority(self.subset) end
 
 function RepTableBase:read_reps()
-    local repFunc =  function(row) return self:as_rep(row) end
+    local repFunc = function(row) return self:as_rep(row) end
     local header, reps = self.db:read_reps(repFunc)
     self.reps = reps and reps or {}
     self.header = header and header or self.defaultHeader

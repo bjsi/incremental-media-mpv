@@ -19,8 +19,6 @@ function TopicRepTable:_init(subsetter)
     ScheduledRepTable._init(self, fs.topics_data, defaultHeader, subsetter)
 end
 
-function TopicRepTable:as_rep(row)
-    return TopicRep(row)
-end
+function TopicRepTable:as_rep(row) return TopicRep(row) end
 
 return TopicRepTable

@@ -1,8 +1,8 @@
 local ext = require "utils.ext"
 local str = require "utils.str"
 
-local element  = {}
-element .__index = element
+local element = {}
+element.__index = element
 
 function element.new(tag, content)
     local self = setmetatable({}, element)
@@ -19,32 +19,25 @@ function element:as_content_string()
 end
 
 function element:as_has_children_string()
-    return table.concat({
-        self.open_tag,
-        self:children_string(),
-        self.close_tag,
-    }, "\n")
+    return table.concat({self.open_tag, self:children_string(), self.close_tag},
+                        "\n")
 end
 
 function element:as_string()
     if ext.empty(self.content) then
         return self:as_has_children_string()
-    else 
+    else
         return self:as_content_string()
     end
 end
 
 function element:children_string()
     local data = {}
-    for _, el in ipairs(self.children) do
-        table.insert(data, el:as_string())
-    end
+    for _, el in ipairs(self.children) do table.insert(data, el:as_string()) end
     return table.concat(data, "\n")
 end
 
-function element:add_child(el)
-    table.insert(self.children, el)
-end
+function element:add_child(el) table.insert(self.children, el) end
 
 function element:with_title(title)
     self:add_child(element.new("Title", title))
@@ -86,7 +79,8 @@ end
 function element:add_sound(question, url, name)
     local text = question and "Question" or "Answer"
     local sound = element.new("Sound")
-    sound:add_child(element.new("Text", table.concat({"Audio Cloze", text}, " ")))
+    sound:add_child(
+        element.new("Text", table.concat({"Audio Cloze", text}, " ")))
     sound:add_child(element.new("URL", url))
     sound:add_child(element.new("Name", name))
     self:add_child(sound)
@@ -94,7 +88,8 @@ end
 
 function element:add_question(content, refs)
     local question = element.new("Question", content)
-    question.content = question.content .. "\n" .. str.escape_special_chars(refs:as_string())
+    question.content = question.content .. "\n" ..
+                           str.escape_special_chars(refs:as_string())
     self:add_child(question)
 end
 

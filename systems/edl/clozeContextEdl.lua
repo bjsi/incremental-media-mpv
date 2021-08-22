@@ -3,7 +3,7 @@ local item_format = require("reps.rep.item_format")
 local mpu = require("mp.utils")
 local ext = require("utils.ext")
 local fs = require("systems.fs")
-local str= require("utils.str")
+local str = require("utils.str")
 
 local ClozeContextEDL = {}
 ClozeContextEDL.__index = ClozeContextEDL
@@ -27,34 +27,24 @@ end
 function ClozeContextEDL:format_cloze(parentPath, clozeStart, clozeEnd)
     local _, fname = mpu.split_path(parentPath)
     local clozeLength = clozeEnd - clozeStart
-    return table.concat(
-        {
-            fname,
-            clozeStart, -- TODO - parentStart ?
-            clozeLength,
-        }, ",")
+    return table.concat({
+        fname, clozeStart, -- TODO - parentStart ?
+        clozeLength
+    }, ",")
 end
 
 function ClozeContextEDL:format_silence()
     local silenceLength = 0.8
-    return table.concat({
-        "silence.mp3",
-        0,
-        silenceLength
-    }, ",")
+    return table.concat({"silence.mp3", 0, silenceLength}, ",")
 end
 
 function ClozeContextEDL:format_context(parentPath, parentStart, parentEnd)
     local contextLength = parentEnd - parentStart
-    return table.concat({
-        parentPath,
-        parentStart,
-        contextLength
-    }, ",")
+    return table.concat({parentPath, parentStart, contextLength}, ",")
 end
 
 function ClozeContextEDL:format_media(mediaPath, showat)
-    return "!new_stream\n" .. table.concat({ mediaPath, "title="..showat }, ",")
+    return "!new_stream\n" .. table.concat({mediaPath, "title=" .. showat}, ",")
 end
 
 function ClozeContextEDL:write(sound, format, media)
@@ -66,9 +56,11 @@ function ClozeContextEDL:write(sound, format, media)
     end
 
     handle:write(self.header)
-    handle:write(self:format_cloze(sound["path"], format["cloze-start"], format["cloze-stop"]) .. "\n")
+    handle:write(self:format_cloze(sound["path"], format["cloze-start"],
+                                   format["cloze-stop"]) .. "\n")
     handle:write(self:format_silence() .. "\n")
-    handle:write(self:format_context(sound["path"], sound["start"], sound["stop"]) .. "\n")
+    handle:write(self:format_context(sound["path"], sound["start"],
+                                     sound["stop"]) .. "\n")
 
     if media then
         handle:write(self:format_media(media["path"], media["showat"]) .. "\n")
@@ -82,7 +74,7 @@ end
 
 function ClozeContextEDL:read()
     local handle = self:open("r")
-    if handle == nil then 
+    if handle == nil then
         log.err("Failed to open EDL file: " .. self.outputPath)
         return
     end
@@ -106,7 +98,7 @@ function ClozeContextEDL:read()
     local media
     if mediaLine then
         local mediaData = self:parse_line(mediaLine)
-        media = { path = mediaData[1], showat = "answer" } -- TODO: mixup between showat= and title=
+        media = {path = mediaData[1], showat = "answer"} -- TODO: mixup between showat= and title=
         log.debug("Context cloze media: ", media)
     end
 
@@ -117,7 +109,7 @@ function ClozeContextEDL:read()
     end
 
     local parentPath = cloze[1]
-    
+
     local parentStart = tonumber(context[2])
     local parentLength = tonumber(context[3]) - parentStart
     local parentEnd = parentStart + parentLength
@@ -127,8 +119,12 @@ function ClozeContextEDL:read()
     local clozeEnd = clozeStart + clozeLength
 
     log.debug("Successfully parsed EDL file: " .. self.outputPath)
-    local sound = { path=parentPath, start=parentStart, stop=parentEnd }
-    local format = { name=item_format.cloze_context, ["cloze-start"]=clozeStart, ["cloze-stop"] = clozeEnd }
+    local sound = {path = parentPath, start = parentStart, stop = parentEnd}
+    local format = {
+        name = item_format.cloze_context,
+        ["cloze-start"] = clozeStart,
+        ["cloze-stop"] = clozeEnd
+    }
 
     return sound, format, media
 end
@@ -136,9 +132,7 @@ end
 function ClozeContextEDL:parse_line(line)
     local ret = {}
     for v in string.gmatch(line, "[^,]*") do
-        if not ext.empty(v) then
-            ret[#ret+1] = v
-        end
+        if not ext.empty(v) then ret[#ret + 1] = v end
     end
     return ret
 end

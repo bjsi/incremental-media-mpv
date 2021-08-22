@@ -2,8 +2,14 @@ local active = require("systems.active")
 local cfg = require("systems.config")
 local Base = require("systems.menu.submenuBase")
 local OSD = require("systems.osd_styler")
-local log = require("utils.log")local ext = require("utils.ext")local sounds = require("systems.sounds")local str = require("utils.str")local date= require("utils.date")
-local list = dofile(mp.command_native({"expand-path", "~~/script-modules/scroll-list.lua"}))
+local log = require("utils.log")
+local ext = require("utils.ext")
+local sounds = require("systems.sounds")
+local str = require("utils.str")
+local date = require("utils.date")
+local list = dofile(mp.command_native({
+    "expand-path", "~~/script-modules/scroll-list.lua"
+}))
 
 local LocalTopicQueue
 local LocalExtractQueue
@@ -26,17 +32,32 @@ function QueueMenu:_init()
     Base._init(self)
     self.keybinds = {}
     list.keybinds = {
-        {'DOWN', 'scroll_down', function() list:scroll_down() end, {repeatable = true}},
-        {'UP', 'scroll_up', function() list:scroll_up() end, {repeatable = true}},
-        {'j', 'scroll_down_j', function() list:scroll_down() end, {repeatable = true}},
-        {'k', 'scroll_up_k', function() list:scroll_up() end, {repeatable = true}},
-        {'Shift+UP', 'priority_up', function() self:adjust_priority(list.__current, 5) end, {}},
-        {'Shift+DOWN', 'priority_down', function() self:adjust_priority(list.__current, -5) end, {}},
-        {'ESC', 'close_browser', function() list:close() end, {}},
+        {
+            'DOWN', 'scroll_down', function() list:scroll_down() end,
+            {repeatable = true}
+        },
+        {
+            'UP', 'scroll_up', function() list:scroll_up() end,
+            {repeatable = true}
+        },
+        {
+            'j', 'scroll_down_j', function() list:scroll_down() end,
+            {repeatable = true}
+        },
+        {
+            'k', 'scroll_up_k', function() list:scroll_up() end,
+            {repeatable = true}
+        }, {
+            'Shift+UP', 'priority_up',
+            function() self:adjust_priority(list.__current, 5) end, {}
+        }, {
+            'Shift+DOWN', 'priority_down',
+            function() self:adjust_priority(list.__current, -5) end, {}
+        }, {'ESC', 'close_browser', function() list:close() end, {}},
         {'H', 'home_menu', function() self:home() end, {}},
         {'w', 'parent_queue', function() self:home() end, {}},
         {'s', 'child_queue', function() self:home() end, {}},
-        {'ENTER', 'toggle_children', function() self:toggle_children() end, {}},
+        {'ENTER', 'toggle_children', function() self:toggle_children() end, {}}
     }
     self:add_osd()
 end
@@ -54,7 +75,8 @@ function QueueMenu:add_osd()
         local itemOsd = OSD:new():size(cfg.menu_font_size - 1):align(4)
         local title
         if v.row.title then
-            title = tostring(i) .. ". " .. list.ass_escape(str.limit_length(v.row.title, 40))
+            title = tostring(i) .. ". " ..
+                        list.ass_escape(str.limit_length(v.row.title, 40))
         else
             title = tostring(i) .. ". " .. str.capitalize_first(v:type())
         end
@@ -71,7 +93,7 @@ function QueueMenu:add_osd()
 
     self:add_header_osd(queue)
     -- self:add_binds_osd()
-    
+
     list:update()
     list:open()
 end
@@ -139,7 +161,8 @@ function QueueMenu:toggle_children()
 
     local children
     if curRep:type() == "topic" then
-        LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
+        LocalExtractQueue = LocalExtractQueue or
+                                require("queue.localExtractQueue")
         local leq = LocalExtractQueue(curRep)
         children = leq.reptable.subset
     elseif curRep:type() == "extract" then
@@ -158,7 +181,8 @@ function QueueMenu:toggle_children()
         local itemOsd = OSD:new():size(cfg.menu_font_size - 1):align(4)
         local start = date.human_readable_time(tonumber(v.row.start)):sub(0, 6)
         local stop = date.human_readable_time(tonumber(v.row.stop)):sub(0, 6)
-        local title = str.capitalize_first(v:type()) .. " " .. start .. " -> " .. stop
+        local title =
+            str.capitalize_first(v:type()) .. " " .. start .. " -> " .. stop
         itemOsd:tab():text("╚═ " .. title)
 
         item.ass = itemOsd:get_text()
@@ -179,7 +203,7 @@ function QueueMenu:local_queue(selected)
     if queue.name:find("Topic") then
         LocalTopicQueue = LocalTopicQueue or require("queue.localTopicQueue")
         local ltq = LocalTopicQueue()
-        
+
     elseif queue.name:find("Extract") then
 
     end

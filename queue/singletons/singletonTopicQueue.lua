@@ -14,12 +14,14 @@ setmetatable(SingletonTopicQueue, {
 })
 
 function SingletonTopicQueue:_init(repId)
-    Base._init(self, "Singleton Topic Queue", nil, function(reps) return self:subsetter(reps, repId) end)
+    Base._init(self, "Singleton Topic Queue", nil,
+               function(reps) return self:subsetter(reps, repId) end)
 end
 
 function SingletonTopicQueue:subsetter(reps, repId)
-    local theRep = ext.first_or_nil(function(rep) return rep.row.id == repId end, reps)
-    return {[1]=theRep}, theRep
+    local theRep = ext.first_or_nil(
+                       function(rep) return rep.row.id == repId end, reps)
+    return {[1] = theRep}, theRep
 end
 
 return SingletonTopicQueue

@@ -6,38 +6,33 @@ function ext.randomWithinInterval(min, max)
 end
 
 function ext.table_copy(from, to)
-    for _, v in ipairs(from) do
-        table.insert(to, v)
-    end
+    for _, v in ipairs(from) do table.insert(to, v) end
 end
 
 function ext.list_slice(list, start, length)
-	local slice = {}
-	for i = start, start + length do
-		table.insert(slice, list[i])
-	end
-	return slice
+    local slice = {}
+    for i = start, start + length do table.insert(slice, list[i]) end
+    return slice
 end
 
 function ext.list_range(list, from, to)
-	if not to then to = #list
-	elseif to < 0 then to = #list + to + 1 end
-	return ext.list_slice(list, from, to - from)
+    if not to then
+        to = #list
+    elseif to < 0 then
+        to = #list + to + 1
+    end
+    return ext.list_slice(list, from, to - from)
 end
 
 function ext.list_reverse(list)
-	local res = {}
-	for i = #list, 1, -1 do
-		table.insert(res, list[i])
-	end
-	return res
+    local res = {}
+    for i = #list, 1, -1 do table.insert(res, list[i]) end
+    return res
 end
 
 function ext.index_by_key(tbl, key)
     local ret = {}
-    for _, v in ipairs(tbl) do
-        ret[v.row[key]] = v
-    end
+    for _, v in ipairs(tbl) do ret[v.row[key]] = v end
     return ret
 end
 
@@ -58,18 +53,12 @@ end
 
 function ext.list_copy(list)
     local ret = {}
-    for i, v in ipairs(list) do
-        ret[i] = v
-    end
+    for i, v in ipairs(list) do ret[i] = v end
     return ret
 end
 
 function ext.list_any(pred, list)
-    for _, v in pairs(list) do
-        if pred(v) then
-            return true
-        end
-    end
+    for _, v in pairs(list) do if pred(v) then return true end end
     return false
 end
 
@@ -77,9 +66,7 @@ function ext.stack_first(pred, stack)
     local ret
     while true do
         ret = stack:pop()
-        if pred(ret) or ret == nil then
-            return ret
-        end
+        if pred(ret) or ret == nil then return ret end
     end
 end
 

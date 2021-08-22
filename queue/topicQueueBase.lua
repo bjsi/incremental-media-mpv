@@ -59,35 +59,31 @@ function TopicQueueBase:localize(video)
         extract.row["url"] = file
         extract.row["type"] = "local"
     end
-    
+
     self:save_data()
-    if saved then
-        leq:save_data()
-    end
+    if saved then leq:save_data() end
 
     -- Reload the current file
     self:loadRep(cur, nil)
 end
 
-function TopicQueueBase:localize_video()
-    self:localize(true)
-end
+function TopicQueueBase:localize_video() self:localize(true) end
 
-function TopicQueueBase:localize_audio()
-    self:localize(false)
-end
+function TopicQueueBase:localize_audio() self:localize(false) end
 
 function TopicQueueBase:load_grand_queue()
     local topicParent = self.playing
     if not topicParent then
-        log.debug("Failed to load grandchild queue because currently playing is nil.")
+        log.debug(
+            "Failed to load grandchild queue because currently playing is nil.")
         return
     end
 
     LocalExtractQueue = LocalExtractQueue or require("queue.globalExtractQueue")
     local leq = LocalExtractQueue(topicParent)
     local extractReps = leq.reptable.reps
-    local extractParentIds = ext.list_map(extractReps, function(r) return r.row["id"] end)
+    local extractParentIds = ext.list_map(extractReps,
+                                          function(r) return r.row["id"] end)
     if ext.empty(extractParentIds) then
         log.debug("No available grandchild repetitions.")
         return
@@ -169,7 +165,8 @@ function TopicQueueBase:handle_extract(start, stop, curRep)
         return false
     end
 
-    GlobalExtractQueue = GlobalExtractQueue or require("queue.globalExtractQueue")
+    GlobalExtractQueue = GlobalExtractQueue or
+                             require("queue.globalExtractQueue")
     local geq = GlobalExtractQueue(nil)
     if geq.reptable:add_to_reps(extract) then
         sounds.play("echo")
@@ -184,9 +181,7 @@ function TopicQueueBase:handle_extract(start, stop, curRep)
     end
 end
 
-function TopicQueueBase:to_export()
-    sounds.play("negative")
-end
+function TopicQueueBase:to_export() sounds.play("negative") end
 
 function TopicQueueBase:child()
     local cur = self.playing

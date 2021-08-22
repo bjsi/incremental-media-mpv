@@ -19,7 +19,7 @@ setmetatable(GlobalItemQueue, {
 --- @param oldRep Rep last playing Rep object.
 function GlobalItemQueue:_init(oldRep)
     ItemQueueBase._init(self, "Global Item Queue", oldRep,
-                         function(reps) return self:subsetter(reps) end)
+                        function(reps) return self:subsetter(reps) end)
 end
 
 function GlobalItemQueue:activate()
@@ -31,15 +31,15 @@ function GlobalItemQueue:activate()
 end
 
 function GlobalItemQueue:subsetter(reps)
-    local subset = ext.list_filter(reps, function(r) return r:is_outstanding(true) end)
+    local subset = ext.list_filter(reps, function(r)
+        return r:is_outstanding(true)
+    end)
     self:sort(subset)
     return subset, subset[1]
 end
 
 function GlobalItemQueue:sort(reps)
-    if not self.sorted then
-        sort.by_priority(reps)
-    end
+    if not self.sorted then sort.by_priority(reps) end
     self.sorted = true
 end
 

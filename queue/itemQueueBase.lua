@@ -7,7 +7,7 @@ local log = require("utils.log")
 local active = require("systems.active")
 local UnscheduledItemRepTable = require("reps.reptable.unscheduledItems")
 local sounds = require "systems.sounds"
-local ext    = require "utils.ext"
+local ext = require "utils.ext"
 local item_format = require "reps.rep.item_format"
 
 local LocalExtractQueue
@@ -34,16 +34,14 @@ function ItemQueueBase:_init(name, oldRep, subsetter)
 end
 
 local function showChapterTitle(_, n)
-    if n == nil then return end 
+    if n == nil then return end
     local chapter_list = mp.get_property_native('chapter-list', {})
     log.debug(chapter_list)
     local chapter = chapter_list[n]
     log.debug(chapter)
 end
 
-function ItemQueueBase:clean_up_events()
-    mp.unobserve_property(showChapterTitle)
-end
+function ItemQueueBase:clean_up_events() mp.unobserve_property(showChapterTitle) end
 
 function ItemQueueBase:subscribe_to_events()
     mp.observe_property("chapter", "number", showChapterTitle)
@@ -52,7 +50,8 @@ end
 function ItemQueueBase:load_grand_queue()
     local itemGrandChild = self.playing
     if not itemGrandChild then
-        log.debug("Failed to load grandparent queue because current playing is nil.")
+        log.debug(
+            "Failed to load grandparent queue because current playing is nil.")
         sounds.play("negative")
         return
     end
@@ -63,12 +62,12 @@ function ItemQueueBase:load_grand_queue()
     if extract == nil then
         log.debug("Failed to load grandparent queue.")
         sounds.play("negative")
-        return 
+        return
     end
 
     LocalTopicQueue = LocalTopicQueue or require("queue.localTopicQueue")
     local ltq = LocalTopicQueue(extract)
-    
+
     active.change_queue(ltq)
 end
 
@@ -89,13 +88,11 @@ function ItemQueueBase:save_data()
     return self.reptable:write(self.reptable)
 end
 
-function ItemQueueBase:adjust_afactor(_)
-    sounds.play("negative")
-end
+function ItemQueueBase:adjust_afactor(_) sounds.play("negative") end
 
 function ItemQueueBase:adjust_cloze(postpone, start)
     local cur = self.playing
-    if cur == nil then 
+    if cur == nil then
         log.err("Failed to adjust cloze because current rep is nil.")
         return
     end
@@ -109,7 +106,8 @@ function ItemQueueBase:adjust_cloze(postpone, start)
 
     mp.set_property("pause", "yes")
     local fullUrl = player.get_full_url(cur)
-    local newStart, newStop = ClozeEDL.new(fullUrl):adjust_cloze(postpone, start)
+    local newStart, newStop =
+        ClozeEDL.new(fullUrl):adjust_cloze(postpone, start)
     if newStart == nil or newStop == nil then
         log.err("Failed to adjust cloze.")
         return
@@ -121,31 +119,26 @@ function ItemQueueBase:adjust_cloze(postpone, start)
     -- TODO: validate
 
     if start then
-        mp.commandv("loadfile", fullUrl, "replace", "start=" .. tostring(newStart - 0.4))
-    else 
-        mp.commandv("loadfile", fullUrl, "replace", "start=" .. tostring(newStop - 0.05))
+        mp.commandv("loadfile", fullUrl, "replace",
+                    "start=" .. tostring(newStart - 0.4))
+    else
+        mp.commandv("loadfile", fullUrl, "replace",
+                    "start=" .. tostring(newStop - 0.05))
     end
 
-    log.debug("Cloze boundaries updated to: " .. tostring(newStart) .. " -> " .. tostring(newStop))
+    log.debug("Cloze boundaries updated to: " .. tostring(newStart) .. " -> " ..
+                  tostring(newStop))
     player.loop_timer.set_start_time(0)
     player.loop_timer.set_stop_time(-1)
     mp.set_property("pause", "no")
 end
 
-function ItemQueueBase:advance_start()
-    self:adjust_cloze(false, true)
-end
+function ItemQueueBase:advance_start() self:adjust_cloze(false, true) end
 
-function ItemQueueBase:postpone_start()
-    self:adjust_cloze(true, true)
-end
+function ItemQueueBase:postpone_start() self:adjust_cloze(true, true) end
 
-function ItemQueueBase:advance_stop()
-    self:adjust_cloze(false, false)
-end
+function ItemQueueBase:advance_stop() self:adjust_cloze(false, false) end
 
-function ItemQueueBase:postpone_stop()
-    self:adjust_cloze(true, false)
-end
+function ItemQueueBase:postpone_stop() self:adjust_cloze(true, false) end
 
 return ItemQueueBase

@@ -15,7 +15,6 @@ setmetatable(ItemRep, {
     end
 })
 
-
 function ItemRep:_init(row) Base._init(self, row) end
 
 function ItemRep:is_outstanding()
@@ -28,13 +27,11 @@ function ItemRep:is_yt() return false end
 
 function ItemRep:is_local() return true end
 
-function ItemRep:is_child_of(extract) 
+function ItemRep:is_child_of(extract)
     return (self.row["parent"] == extract.row["id"])
 end
 
-function ItemRep:is_parent_of(_)
-    return false
-end
+function ItemRep:is_parent_of(_) return false end
 
 -- TODO: dirty hack
 function ItemRep:duration()
@@ -43,7 +40,8 @@ function ItemRep:duration()
     else
         local edl = ClozeContextEDL.new(player.get_full_url(self))
         local sound, format, _ = edl:read()
-        return 0.8 + (sound["stop"] - sound["start"]) + (format["cloze-stop"] - format["cloze-start"])
+        return 0.8 + (sound["stop"] - sound["start"]) +
+                   (format["cloze-stop"] - format["cloze-start"])
     end
 end
 

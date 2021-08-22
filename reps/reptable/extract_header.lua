@@ -14,7 +14,7 @@ local extract_header = {
     [13] = "nextrep",
     [14] = "speed",
     [15] = "notes",
-    [16] = "subs",
+    [16] = "subs"
 }
 
 return extract_header

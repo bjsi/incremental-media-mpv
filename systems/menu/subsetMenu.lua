@@ -1,9 +1,10 @@
 local active = require("systems.active")
 local log = require("utils.log")
 local Base = require("systems.menu.submenuBase")
-local ext  = require("utils.ext")
-local str  = require("utils.str")
-package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"})..package.path
+local ext = require("utils.ext")
+local str = require("utils.str")
+package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"}) ..
+                   package.path
 local ui = require "user-input-module"
 local get_user_input = ui.get_user_input
 
@@ -23,14 +24,11 @@ function SubsetMenu:_init()
     Base._init(self)
 
     self.keybinds = {
-        { key = 'S', desc = "search", fn = function() self:search() end },
+        {key = 'S', desc = "search", fn = function() self:search() end}
     }
 end
 
-function SubsetMenu:show_results(res)
-    for _, v in ipairs(res) do
-    end
-end
+function SubsetMenu:show_results(res) for _, v in ipairs(res) do end end
 
 function SubsetMenu:call_chain(args, chain, i)
     if chain ~= nil and i <= #chain then
@@ -42,16 +40,13 @@ end
 
 function SubsetMenu:query_title()
     local handle = function(input)
-        if ext.empty(input) then 
+        if ext.empty(input) then
             log.notify("Cancelling.")
             return
         end
 
-        if not active.queue then
-            return
-            
-        end
-        
+        if not active.queue then return end
+
         if active.queue.name:find("Topic") then
         elseif active.queue.name:find("Extract") then
         elseif active.queue.name:find("Item") then
@@ -59,11 +54,7 @@ function SubsetMenu:query_title()
         self:call_chain(args, chain, i + 1)
     end
 
-    get_user_input(handle,
-        {
-            text = "Search: ",
-            replace = true,
-        })
+    get_user_input(handle, {text = "Search: ", replace = true})
 end
 
 function SubsetMenu:add_osd(osd)

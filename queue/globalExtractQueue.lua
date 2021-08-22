@@ -20,8 +20,8 @@ setmetatable(GlobalExtractQueue, {
 --- @param oldRep Rep last playing Rep object.
 function GlobalExtractQueue:_init(oldRep)
     ExtractQueueBase._init(self, "Global Extract Queue", oldRep,
-                           ScheduledExtractRepTable(function(reps) return self:subsetter(reps) end)
-                         )
+                           ScheduledExtractRepTable(
+                               function(reps) return self:subsetter(reps) end))
 end
 
 function GlobalExtractQueue:activate()
@@ -33,7 +33,9 @@ function GlobalExtractQueue:activate()
 end
 
 function GlobalExtractQueue:subsetter(reps)
-    local subset = ext.list_filter(reps, function(r) return r:is_outstanding(true) end)
+    local subset = ext.list_filter(reps, function(r)
+        return r:is_outstanding(true)
+    end)
     sort.by_priority(subset)
     return subset, subset[1]
 end

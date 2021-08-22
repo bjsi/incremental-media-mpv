@@ -21,15 +21,13 @@ local sounds = {
 }
 
 local pid = tostring(mpu.getpid())
-local pipeOrSock = sys.platform == "win" and [[\\.\pipe\background-sounds]]..pid or "/tmp/background-sounds"..pid..".sock"
+local pipeOrSock = sys.platform == "win" and [[\\.\pipe\background-sounds]] ..
+                       pid or "/tmp/background-sounds" .. pid .. ".sock"
 
 sounds.start_background_process = function()
     local args = {
-        "mpv",
-        "--no-video",
-        "--really-quiet",
-        "--idle=yes", -- keeps it running after playing files.
-        "--input-ipc-server=" .. pipeOrSock,
+        "mpv", "--no-video", "--really-quiet", "--idle=yes", -- keeps it running after playing files.
+        "--input-ipc-server=" .. pipeOrSock
     }
 
     log.debug("Starting background sounds process.")

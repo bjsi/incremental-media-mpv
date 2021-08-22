@@ -5,7 +5,6 @@ local sys = require("systems.system")
 local fs = require "systems.fs"
 local ext = require "utils.ext"
 
-
 local ydl = {}
 
 ydl.url_prefix = "https://www.youtube.com/watch?v="
@@ -13,10 +12,7 @@ ydl.url_prefix = "https://www.youtube.com/watch?v="
 function ydl.download_audio(url, goodQuality)
     local quality = goodQuality and "bestaudio" or "worstaudio"
     local args = {
-        "youtube-dl",
-        "--no-check-certificate",
-        "-x",
-        "-f", quality,
+        "youtube-dl", "--no-check-certificate", "-x", "-f", quality,
         mpu.join_path(fs.media, "%(id)s.%(ext)s")
     }
 
@@ -28,21 +24,20 @@ function ydl.handle_download(args, url)
     local ret = sys.subprocess(args)
     if ret.status == 0 then
         local mediaFiles = mpu.readdir(fs.media)
-        local theFile = ext.first_or_nil(function(f) return str.remove_ext(f) == url end, mediaFiles)
+        local theFile = ext.first_or_nil(function(f)
+            return str.remove_ext(f) == url
+        end, mediaFiles)
         return mpu.join_path(fs.media, theFile)
     end
-    
+
     return nil
 end
 
 function ydl.download_video(url)
     local format = mp.get_property("ytdl-format")
     local args = {
-        "youtube-dl",
-        "--no-check-certificate",
-        "-f", format,
-        "-o", "%(id)s.%(ext)s",
-        url
+        "youtube-dl", "--no-check-certificate", "-f", format, "-o",
+        "%(id)s.%(ext)s", url
     }
 
     return ydl.handle_download(args, url)
@@ -50,11 +45,7 @@ end
 
 function ydl.get_info(url)
     local args = {
-        "youtube-dl",
-        "--no-check-certificate",
-        "-j",
-        "--flat-playlist",
-        url
+        "youtube-dl", "--no-check-certificate", "-j", "--flat-playlist", url
     }
 
     local ret = sys.subprocess(args)
@@ -73,12 +64,8 @@ end
 
 function ydl.get_streams(url, quality)
     local args = {
-        "youtube-dl",
-        "--no-check-certificate",
-        "-f", quality,
-        "--youtube-skip-dash-manifest",
-        "-g",
-        url
+        "youtube-dl", "--no-check-certificate", "-f", quality,
+        "--youtube-skip-dash-manifest", "-g", url
     }
     return sys.subprocess(args)
 end

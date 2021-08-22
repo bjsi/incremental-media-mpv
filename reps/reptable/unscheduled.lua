@@ -4,7 +4,6 @@ local sounds = require("systems.sounds")
 local active = require("systems.active")
 local log = require("utils.log")
 
-
 local UnscheduledRepTable = {}
 UnscheduledRepTable.__index = UnscheduledRepTable
 
@@ -22,8 +21,7 @@ function UnscheduledRepTable:_init(dbPath, defaultHeader, subsetter)
 end
 
 -- noop
-function UnscheduledRepTable:sort(reps)
-end
+function UnscheduledRepTable:sort(reps) end
 
 function UnscheduledRepTable:next_repetition()
     -- Base:next_repetition(self)
@@ -37,7 +35,8 @@ function UnscheduledRepTable:next_repetition()
 
     local curRep = self:current_scheduled()
     if active.queue.playing ~= curRep then
-        log.debug("Currently playing is not currently scheduled. Loading currently scheduled.")
+        log.debug(
+            "Currently playing is not currently scheduled. Loading currently scheduled.")
         return curRep
     end
 

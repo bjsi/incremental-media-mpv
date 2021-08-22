@@ -26,37 +26,22 @@ end
 
 function ClozeEDL:format_pre_cloze(parentPath, parentStart, clozeStart)
     local preClozeLength = clozeStart - parentStart
-    return table.concat(
-        {
-            parentPath,
-            parentStart,
-            preClozeLength
-        }, ",")
+    return table.concat({parentPath, parentStart, preClozeLength}, ",")
 end
 
 function ClozeEDL:format_cloze(clozeEnd, clozeStart)
     local _, fname = mpu.split_path(fs.sine)
     local clozeLength = clozeEnd - clozeStart
-    return table.concat(
-        {
-            fname,
-            0,
-            clozeLength
-        }, ",")
+    return table.concat({fname, 0, clozeLength}, ",")
 end
 
 function ClozeEDL:format_post_cloze(parentPath, clozeEnd, parentEnd)
     local postClozeLength = parentEnd - clozeEnd
-    return table.concat(
-        {
-            parentPath,
-            clozeEnd,
-            postClozeLength
-        }, ",")
+    return table.concat({parentPath, clozeEnd, postClozeLength}, ",")
 end
 
 function ClozeEDL:media(mediaPath, showat)
-    return "!new_stream\n" .. table.concat({ mediaPath, "title="..showat }, ",")
+    return "!new_stream\n" .. table.concat({mediaPath, "title=" .. showat}, ",")
 end
 
 -- sound, format, media
@@ -73,9 +58,12 @@ function ClozeEDL:write(sound, format, media)
     end
 
     handle:write(self.header)
-    handle:write(self:format_pre_cloze(sound["path"], sound["start"], format["cloze-start"]) .. "\n")
-    handle:write(self:format_cloze(format["cloze-stop"], format["cloze-start"]) .. "\n")
-    handle:write(self:format_post_cloze(sound["path"], format["cloze-stop"], sound["stop"]) .. "\n")
+    handle:write(self:format_pre_cloze(sound["path"], sound["start"],
+                                       format["cloze-start"]) .. "\n")
+    handle:write(
+        self:format_cloze(format["cloze-stop"], format["cloze-start"]) .. "\n")
+    handle:write(self:format_post_cloze(sound["path"], format["cloze-stop"],
+                                        sound["stop"]) .. "\n")
 
     if media then
         handle:write(self:media(media["path"], media["showat"]) .. "\n")
@@ -89,7 +77,7 @@ end
 
 function ClozeEDL:read()
     local handle = self:open("r")
-    if handle == nil then 
+    if handle == nil then
         log.err("Failed to open EDL file: " .. self.outputPath)
         return
     end
@@ -112,7 +100,10 @@ function ClozeEDL:read()
     local media
     if mediaLine then
         local mediaData = self:parse_line(mediaLine)
-        media = { path = mediaData[1], showat = str.remove_newlines(mediaData[2]:sub(7)) }
+        media = {
+            path = mediaData[1],
+            showat = str.remove_newlines(mediaData[2]:sub(7))
+        }
     end
 
     local function pred(arr) return arr == nil or #arr ~= 3 end
@@ -134,8 +125,12 @@ function ClozeEDL:read()
     local parentEnd = clozeEnd + postClozeLength
 
     log.debug("Successfully parsed EDL file: " .. self.outputPath)
-    local sound = { path=parentPath, start=parentStart, stop=parentEnd }
-    local format = { name=item_format.cloze, ["cloze-start"]=clozeStart, ["cloze-stop"] = clozeEnd }
+    local sound = {path = parentPath, start = parentStart, stop = parentEnd}
+    local format = {
+        name = item_format.cloze,
+        ["cloze-start"] = clozeStart,
+        ["cloze-stop"] = clozeEnd
+    }
     return sound, format, media
 end
 
@@ -159,15 +154,14 @@ function ClozeEDL:adjust_cloze(postpone, start)
     -- TODO: validate!!!
 
     local succ = self:write(sound, format, media)
-    return succ and format["cloze-start"] - sound["start"], format["cloze-stop"] - sound["start"] or nil, nil
+    return succ and format["cloze-start"] - sound["start"],
+           format["cloze-stop"] - sound["start"] or nil, nil
 end
 
 function ClozeEDL:parse_line(line)
     local ret = {}
     for v in string.gmatch(line, "[^,]*") do
-        if not ext.empty(v) then
-            ret[#ret+1] = v
-        end
+        if not ext.empty(v) then ret[#ret + 1] = v end
     end
     return ret
 end

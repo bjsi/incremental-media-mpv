@@ -9,7 +9,8 @@ collection.__index = collection
 
 function collection.create_root()
     local root = element.new("SuperMemoElement")
-    local title = table.concat({"IM Export", "::", dt.date_today(), dt.time()}, " ")
+    local title = table.concat({"IM Export", "::", dt.date_today(), dt.time()},
+                               " ")
     root:with_id("1"):with_title(title):with_type("Topic")
     return root
 end
@@ -19,7 +20,7 @@ function collection.new(outputPath)
     self.open_tag = "<SuperMemoCollection>"
     self.close_tag = "</SuperMemoCollection>"
     self.outputFolder = outputPath
-    self.children = { element.new("Count"), self:create_root() }
+    self.children = {element.new("Count"), self:create_root()}
     self.count = self.children[1]
     self.root = self.children[2]
     return self
@@ -34,11 +35,8 @@ function collection:children_string()
 end
 
 function collection:as_string()
-    return table.concat({
-        self.open_tag,
-        self:children_string(),
-        self.close_tag,
-    }, "\n")
+    return table.concat({self.open_tag, self:children_string(), self.close_tag},
+                        "\n")
 end
 
 function collection:write(n)

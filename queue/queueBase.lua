@@ -8,7 +8,7 @@ local player = require("systems.player")
 local Stack = require("queue.stack")
 local ext = require "utils.ext"
 local active = require "systems.active"
-local menu   = require "systems.menu.menuBase"
+local menu = require "systems.menu.menuBase"
 
 local QueueBase = {}
 QueueBase.__index = QueueBase
@@ -35,7 +35,10 @@ function QueueBase:_init(name, reptable, oldRep)
 end
 
 function QueueBase:activate()
-    log.debug(table.concat({"Activating:", self.name, "with", tostring(#self.reptable.subset), "reps."}, " "))
+    log.debug(table.concat({
+        "Activating:", self.name, "with", tostring(#self.reptable.subset),
+        "reps."
+    }, " "))
     player.on_overrun = nil
     player.on_underrun = nil
     return self:loadRep(self.reptable.fst, self.oldRep)
@@ -59,7 +62,7 @@ function QueueBase:next_repetition()
     local toLoad = self.reptable:next_repetition()
     if not toLoad then
         log.debug("No rep to load. Returning.")
-        return 
+        return
     end
 
     self:save_data()
@@ -74,13 +77,11 @@ end
 function QueueBase:validate_abloop(a, b)
     if not a or not b then return false end
     if a == b then return false end
-    if a == "no" or b == "no" then
-        return false
-    end
+    if a == "no" or b == "no" then return false end
     a = tonumber(a)
     b = tonumber(b)
     local dur = tonumber(mp.get_property("duration"))
-    return (a >=0 and b >= 0) and (a <= dur and b <= dur)
+    return (a >= 0 and b >= 0) and (a <= dur and b <= dur)
 end
 
 function QueueBase:navigate_history(fwd)
@@ -88,13 +89,11 @@ function QueueBase:navigate_history(fwd)
 
     local oldRep = self.playing
 
-    local exists = function(r)
-        return r ~= nil and not r:is_deleted()
-    end
+    local exists = function(r) return r ~= nil and not r:is_deleted() end
 
     local toload
-    
-    if fwd then 
+
+    if fwd then
         toload = ext.stack_first(exists, self.fwd_history)
     else
         toload = ext.stack_first(exists, self.bwd_history)
@@ -151,7 +150,7 @@ function QueueBase:set_extract_boundary()
     elseif a ~= nil and b == nil then
         self:set_extract_start()
     elseif a ~= nil and b ~= nil then
-        self:set_extract_stop()    
+        self:set_extract_stop()
     end
 end
 
@@ -165,9 +164,7 @@ function QueueBase:set_end_boundary_extract()
 
     if a ~= "no" and b == "no" then
         mp.set_property("ab-loop-b", curTime)
-        if self:extract() then
-            mp.commandv("seek", curTime, "absolute")
-        end
+        if self:extract() then mp.commandv("seek", curTime, "absolute") end
     end
 end
 
@@ -175,7 +172,9 @@ function QueueBase:copy_url(includeTimestamp)
     local cur = self.playing
     if cur == nil then return end
 
-    local url = includeTimestamp and player.get_full_url(cur, mp.get_property("time-pos")) or player.get_full_url(cur)
+    local url = includeTimestamp and
+                    player.get_full_url(cur, mp.get_property("time-pos")) or
+                    player.get_full_url(cur)
     if ext.empty(url) then
         log.err("Failed to get full url for current rep")
         return
@@ -183,9 +182,7 @@ function QueueBase:copy_url(includeTimestamp)
     sys.clipboard_write(url)
 end
 
-function QueueBase:advance_start(n)
-    self:adjust_abloop(false, true, n)
-end
+function QueueBase:advance_start(n) self:adjust_abloop(false, true, n) end
 
 function QueueBase:adjust_interval(n)
     local cur = self.playing
@@ -222,21 +219,13 @@ function QueueBase:adjust_priority(n)
     return false
 end
 
-function QueueBase:split_chapters()
-    sounds.play("negative")
-end
+function QueueBase:split_chapters() sounds.play("negative") end
 
-function QueueBase:postpone_start(n)
-    self:adjust_abloop(true, true, n)
-end
+function QueueBase:postpone_start(n) self:adjust_abloop(true, true, n) end
 
-function QueueBase:advance_stop(n)
-    self:adjust_abloop(false, false, n)
-end
+function QueueBase:advance_stop(n) self:adjust_abloop(false, false, n) end
 
-function QueueBase:postpone_stop(n)
-    self:adjust_abloop(true, false, n)
-end
+function QueueBase:postpone_stop(n) self:adjust_abloop(true, false, n) end
 
 function QueueBase:adjust_abloop(postpone, start, n)
     local adj = postpone and n or -n
@@ -257,11 +246,13 @@ function QueueBase:adjust_abloop(postpone, start, n)
 
     if start then
         newStart = oldStart + adj
-        log.debug("Adjusting start from: ", tostring(oldStart), " to: ", tostring(newStart))
+        log.debug("Adjusting start from: ", tostring(oldStart), " to: ",
+                  tostring(newStart))
     else
         newStop = oldStop + adj
-        log.debug("Adjusting stop from: ", tostring(oldStop), " to: ", tostring(newStop))
-    end 
+        log.debug("Adjusting stop from: ", tostring(oldStop), " to: ",
+                  tostring(newStop))
+    end
 
     local start_changed = newStart ~= oldStart
     local stop_changed = newStop ~= oldStop
@@ -290,7 +281,7 @@ function QueueBase:adjust_afactor(n)
     local curAF = tonumber(cur.row["afactor"])
     local adj = tonumber(n)
     if curAF == nil or adj == nil then return end
-        
+
     local newAF = curAF + adj
     if ext.validate_afactor(newAF) then
         cur.row["afactor"] = newAF
@@ -314,9 +305,7 @@ function QueueBase:toggle_export()
     self:save_data()
 end
 
-function QueueBase:clear_abloop()
-    player.unset_abloop()
-end
+function QueueBase:clear_abloop() player.unset_abloop() end
 
 function QueueBase:set_speed(num)
     if num < 0 or num > 5 then return end
@@ -422,14 +411,11 @@ function QueueBase:dismiss()
     menu.update()
 end
 
-function QueueBase:load_grand_queue()
-end
+function QueueBase:load_grand_queue() end
 
-function QueueBase:subscribe_to_events()
-end
+function QueueBase:subscribe_to_events() end
 
-function QueueBase:clean_up_events()
-end
+function QueueBase:clean_up_events() end
 
 function QueueBase:loadRep(newRep, oldRep)
     if player.play(newRep, oldRep, self.createLoopBoundaries, self.useStartStop) then

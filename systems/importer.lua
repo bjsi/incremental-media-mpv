@@ -25,7 +25,7 @@ function importer.split_and_import_chapters(info, cur)
         log.debug("Chapters are nil.")
         return false
     end
- 
+
     local topics = {}
     local prevId = ""
     for _, chapter in ipairs(chapters) do
@@ -35,8 +35,8 @@ function importer.split_and_import_chapters(info, cur)
         topic.row["stop"] = chapter["stop"]
         table.insert(topics, topic)
     end
-    
-    local duplicateIds = { cur.row["id"] }
+
+    local duplicateIds = {cur.row["id"]}
     return importer.add_topics_to_queue(topics, duplicateIds)
 end
 
@@ -88,9 +88,7 @@ function importer.add_topics_to_queue(topics, allowedDuplicateIds)
         end
     end
 
-    if imported then
-        queue:save_data()
-    end
+    if imported then queue:save_data() end
 
     return imported
 end
@@ -101,7 +99,8 @@ function importer.create_local_topics(url)
     local title = str.remove_db_delimiters(str.remove_ext(fn))
     local priority = 30
     local duration = ffmpeg.get_duration(url)
-    local topic = repCreators.createTopic(title, "local", url, priority, duration)
+    local topic = repCreators.createTopic(title, "local", url, priority,
+                                          duration)
     return {topic}
 end
 
@@ -109,13 +108,13 @@ function importer.create_yt_topic(info, prevId, priority)
     local title = str.remove_db_delimiters(info["title"])
     local ytId = info["id"]
     local duration = info["duration"]
-    return repCreators.createTopic(title, "youtube", ytId, priority, duration, prevId)
+    return repCreators.createTopic(title, "youtube", ytId, priority, duration,
+                                   prevId)
 end
 
-function importer.create_yt_topics(infos, splitChaps, download, priMin, priMax, dependencyImport) 
-    if infos == nil then
-        return {}
-    end
+function importer.create_yt_topics(infos, splitChaps, download, priMin, priMax,
+                                   dependencyImport)
+    if infos == nil then return {} end
 
     if tonumber(priMin) == nil or tonumber(priMax) == nil then
         priMin = cfg.default_priority_min

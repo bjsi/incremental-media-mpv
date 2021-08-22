@@ -18,7 +18,6 @@ function SuperMemo:_init()
     Base._init()
 end
 
-function SuperMemo:get_concepts()
-end
+function SuperMemo:get_concepts() end
 
 return SuperMemo

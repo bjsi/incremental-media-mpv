@@ -25,7 +25,7 @@ end
 
 function ExtractRep:type() return "extract" end
 
-function ExtractRep:is_child_of(topic) 
+function ExtractRep:is_child_of(topic)
     return (self.row["parent"] == topic.row["id"])
 end
 

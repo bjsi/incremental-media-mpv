@@ -1,50 +1,43 @@
-local mpu = require("mp.utils")
-local str = require("utils.str")
-local log = require("utils.log")
-local fs = require("systems.fs")
-local ext = require "utils.ext"
-
--- mostly from: https://github.com/Ben-Kerman/immersive/blob/master/systems/system.lua
+local mpu = require 'mp.utils'
+local str = require 'utils.str'
+local log = require 'utils.log'
+local fs = require 'systems.fs'
+local ext = require 'utils.ext'
 
 local sys = {}
 
-function sys.set_ipc_socket()
+local function nix_ipc_socket(pid) return "/tmp/mpv-socket-" .. pid end
+
+local function windows_ipc_pipe(pid) return [[\\.\pipe\mpv-socket-]] .. pid end
+
+function sys.setup_ipc()
     local pid = tostring(mpu.getpid())
-    local serverPath
+    local path
     if sys.platform == "win" then
-        serverPath = [[\\.\pipe\mpv-socket-]]..pid
+        path = windows_ipc_pipe(pid)
     else
-        serverPath = "/tmp/mpv-socket-"..pid
+        path = nix_ipc_socket(pid)
     end
-    log.debug("Setting input ipc server to " .. serverPath)
-    mp.register_event("shutdown", function() os.remove(serverPath) end)
-    mp.set_property("input-ipc-server", serverPath)
+    mp.set_property("input-ipc-server", path)
+    mp.register_event("shutdown", function() os.remove(path) end)
 end
 
 function sys.read_text(file)
     local h = io.open(file, "r")
     local data
-    if h ~= nil then
-        data = h:read("*all")
-    end
+    if h ~= nil then data = h:read("*all") end
     return data
 end
 
 function sys.write_to_ipc(pipeOrSock, data)
     local args
     if sys.platform == "win" then
-        args = {
-            "cmd", "/c",
-            table.concat({
-                "echo",
-                data, ">", pipeOrSock
-            }, " ")
-        }
+        args = {"cmd", "/c", table.concat({"echo", data, ">", pipeOrSock}, " ")}
     elseif sys.platform == "mac" or sys.platform == "lnx" then
-        data = { command = str.split(data) }
+        data = {command = str.split(data)}
         args = {
             "sh", "-c",
-            "echo '" .. mpu.format_json(data) .."' | socat - " .. pipeOrSock
+            "echo '" .. mpu.format_json(data) .. "' | socat - " .. pipeOrSock
         }
     end
     sys.background_process(args)
@@ -54,21 +47,17 @@ function sys.pid_running(pid)
     pid = tostring(pid)
     local args
     if sys.platform == "lnx" or sys.platform == "max" then
-        args = {
-            "ps", "-p", pid
-        }
+        args = {"ps", "-p", pid}
     elseif sys.platform == "win" then
-        args = {"powershell", "-NoProfile", "-Command", "Get-Process -Id " .. pid}
+        args = {
+            "powershell", "-NoProfile", "-Command", "Get-Process -Id " .. pid
+        }
     end
     return sys.subprocess(args).status == 0
 end
 
 function sys.json_rpc_request(method, params)
-    local req = {
-        id = 1,
-        method = method,
-        params = params,
-    }
+    local req = {id = 1, method = method, params = params}
 
     local json = mpu.format_json(req)
     if not json then
@@ -81,11 +70,7 @@ function sys.json_rpc_request(method, params)
     h:write(json .. "\n")
     h:close()
 
-    local args = {
-        "localhost",
-        "9898",
-        jsonFile
-    }
+    local args = {"localhost", "9898", jsonFile}
 
     if sys.platform == "win" then
         local bat = mpu.join_path(mp.get_script_directory(), "curl_telnet.bat")
@@ -111,9 +96,7 @@ function sys.create_essential_files()
         end
     end
 
-    if not ext.file_exists(fs.sine) then
-        sys.copy(fs.sine_base, fs.sine)
-    end
+    if not ext.file_exists(fs.sine) then sys.copy(fs.sine_base, fs.sine) end
 
     if not ext.file_exists(fs.meaning_zh) then
         sys.copy(fs.meaning_zh_base, fs.meaning_zh)
@@ -174,19 +157,19 @@ end
 
 function sys.copy(from, to)
     local fromFile = io.open(from, "r")
-    if fromFile == nil then 
+    if fromFile == nil then
         log.debug("Failed to read " .. to)
         return false
     end
 
     local fromData = fromFile:read("*a")
     fromFile:close()
-    
+
     local toFile = io.open(to, "w")
-    if toFile == nil then 
+    if toFile == nil then
         log.debug("Failed to write to " .. to)
         return false
-     end
+    end
 
     toFile:write(fromData)
     toFile:close()
@@ -264,9 +247,7 @@ function sys.file2base64(fp)
 end
 
 -- TODO: test: join_path should return url if it is absolute
-function sys.is_absolute_path(url)
-    return mpu.join_path("testing", url) == url
-end
+function sys.is_absolute_path(url) return mpu.join_path("testing", url) == url end
 
 function sys.background_process(args, callback)
     return mp.command_native_async({
@@ -346,14 +327,20 @@ end
 function sys.uuid()
     local args
     if sys.platform == "lnx" or sys.platform == "mac" then
-        args = { "sh", "-c", "cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-zA-Z0-9' | head -c 32" }
+        args = {
+            "sh", "-c",
+            "cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-zA-Z0-9' | head -c 32"
+        }
     elseif sys.platform == "win" then
-        args = {"powershell", "-NoProfile", "-Command", "[guid]::NewGuid().ToString()"}
+        args = {
+            "powershell", "-NoProfile", "-Command",
+            "[guid]::NewGuid().ToString()"
+        }
     end
     local ret = sys.subprocess(args)
     if ret.status == 0 then
         return str.remove_leading_trailing_spaces(ret.stdout)
-    else 
+    else
         error("Failed to generate uuid with error: " .. ret.error)
     end
 end

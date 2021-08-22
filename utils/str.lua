@@ -3,14 +3,12 @@ local mpu = require("mp.utils")
 local str = {}
 
 function str.split(inputstr, sep)
-        if sep == nil then
-                sep = "%s"
-        end
-        local t={}
-        for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
-                table.insert(t, str)
-        end
-        return t
+    if sep == nil then sep = "%s" end
+    local t = {}
+    for str in string.gmatch(inputstr, "([^" .. sep .. "]+)") do
+        table.insert(t, str)
+    end
+    return t
 end
 
 function str.basename(fp)
@@ -18,14 +16,10 @@ function str.basename(fp)
     return fn
 end
 
-function str.only_alphanumeric(s)
-    return s:gsub('%W','')
-end
+function str.only_alphanumeric(s) return s:gsub('%W', '') end
 
 function str.limit_length(s, n)
-    if #s >= n then
-        return s:sub(0, n) .. "..."
-    end
+    if #s >= n then return s:sub(0, n) .. "..." end
     return s
 end
 

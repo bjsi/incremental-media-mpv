@@ -14,7 +14,7 @@ local menu = {
     active = false,
     state = 'home',
     show_bindings = false,
-    overlay = mp.create_osd_overlay and mp.create_osd_overlay('ass-events'),
+    overlay = mp.create_osd_overlay and mp.create_osd_overlay('ass-events')
 }
 
 menu.overlay_draw = function(text)
@@ -23,10 +23,22 @@ menu.overlay_draw = function(text)
 end
 
 menu.base_binds = {
-    { key = 'ESC', desc = "close menu", fn = function() menu.close() end },
-    { key = 'H', showif = function() return menu.state ~= "home" end, desc = "home menu", fn = function() menu.activate_menu("home") end },
-    { key = "I", showif = function() return menu.state ~= "import" end, desc = "import menu", fn = function() menu.activate_menu("import") end},
-    { key = "Alt+c", showif = function() return menu.start ~= "queue" end, desc = "queue menu", fn = function() menu.activate_menu("queue") end},
+    {key = 'ESC', desc = "close menu", fn = function() menu.close() end}, {
+        key = 'H',
+        showif = function() return menu.state ~= "home" end,
+        desc = "home menu",
+        fn = function() menu.activate_menu("home") end
+    }, {
+        key = "I",
+        showif = function() return menu.state ~= "import" end,
+        desc = "import menu",
+        fn = function() menu.activate_menu("import") end
+    }, {
+        key = "Alt+c",
+        showif = function() return menu.start ~= "queue" end,
+        desc = "queue menu",
+        fn = function() menu.activate_menu("queue") end
+    }
 }
 
 menu.active_binds = {}
@@ -35,9 +47,7 @@ ext.table_copy(menu.base_binds, menu.active_binds)
 
 menu.update = function()
 
-    if menu.active == false then
-        return
-    end
+    if menu.active == false then return end
 
     local osd = OSD:new():size(cfg.menu_font_size):align(4)
 
@@ -75,7 +85,8 @@ end
 
 menu.open = function()
     if menu.overlay == nil then
-        log.notify("OSD overlay is not supported in " .. mp.get_property("mpv-version"), "error", 5)
+        log.notify("OSD overlay is not supported in " ..
+                       mp.get_property("mpv-version"), "error", 5)
         return
     end
 
@@ -99,9 +110,7 @@ menu.add_binds_osd = function(osd)
 end
 
 menu.remove_binds = function()
-    for _, val in pairs(menu.active_binds) do
-        mp.remove_key_binding(val.key)
-    end
+    for _, val in pairs(menu.active_binds) do mp.remove_key_binding(val.key) end
 end
 
 menu.reset_binds_to_base = function()
@@ -118,9 +127,7 @@ menu.add_binds = function()
 end
 
 menu.close = function()
-    if menu.active == false then
-        return
-    end
+    if menu.active == false then return end
 
     menu.state = "home"
     menu.remove_binds()

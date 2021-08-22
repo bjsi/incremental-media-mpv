@@ -16,7 +16,8 @@ setmetatable(LocalItemQueue, {
 })
 
 function LocalItemQueue:_init(oldRep)
-    ItemQueueBase._init(self, "Local Item Queue", oldRep, function(reps) return self:subsetter(oldRep, reps) end)
+    ItemQueueBase._init(self, "Local Item Queue", oldRep,
+                        function(reps) return self:subsetter(oldRep, reps) end)
 end
 
 function LocalItemQueue:activate()
@@ -28,7 +29,9 @@ function LocalItemQueue:activate()
 end
 
 function LocalItemQueue:subsetter(oldRep, reps)
-    local subset = ext.list_filter(reps, function(r) return not r:is_deleted() and r:is_child_of(oldRep) end)
+    local subset = ext.list_filter(reps, function(r)
+        return not r:is_deleted() and r:is_child_of(oldRep)
+    end)
 
     -- Sorting subset
     self:sort(subset)
@@ -37,9 +40,7 @@ function LocalItemQueue:subsetter(oldRep, reps)
 end
 
 function LocalItemQueue:sort(reps)
-    if not self.sorted then
-        sort.by_created(reps)
-    end
+    if not self.sorted then sort.by_created(reps) end
     self.sorted = true
 end
 

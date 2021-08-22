@@ -15,12 +15,16 @@ function sort.by_due(reps)
 end
 
 function sort.by_created(reps)
-    local srt = function(a, b) return tonumber(a.row["created"]) > tonumber(b.row["created"]) end
+    local srt = function(a, b)
+        return tonumber(a.row["created"]) > tonumber(b.row["created"])
+    end
     table.sort(reps, srt)
 end
 
 function sort.by_start_time(reps)
-    local srt = function(a, b) return tonumber(a.row["start"]) < tonumber(b.row["start"]) end
+    local srt = function(a, b)
+        return tonumber(a.row["start"]) < tonumber(b.row["start"])
+    end
     table.sort(reps, srt)
 end
 

@@ -20,8 +20,6 @@ function UnscheduledExtractRepTable:_init(subsetter)
     self:read_reps()
 end
 
-function UnscheduledExtractRepTable:as_rep(row)
-    return ExtractRep(row)
-end
+function UnscheduledExtractRepTable:as_rep(row) return ExtractRep(row) end
 
 return UnscheduledExtractRepTable

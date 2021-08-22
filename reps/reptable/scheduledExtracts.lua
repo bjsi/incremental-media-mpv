@@ -19,8 +19,6 @@ function ScheduledExtractRepTable:_init(subsetter)
     ScheduledRepTable._init(self, fs.extracts_data, defaultHeader, subsetter)
 end
 
-function ScheduledRepTable:as_rep(row)
-    return ExtractRep(row)
-end
+function ScheduledRepTable:as_rep(row) return ExtractRep(row) end
 
 return ScheduledExtractRepTable

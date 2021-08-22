@@ -13,9 +13,7 @@ function Stack:Create()
     t._et = {}
 
     -- push a value on to the stack
-    function t:push(x)
-        table.insert(self._et, x)
-    end
+    function t:push(x) table.insert(self._et, x) end
 
     -- pop a value from the stack
     function t:pop(num)

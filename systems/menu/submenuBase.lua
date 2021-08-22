@@ -1,6 +1,5 @@
 local menuBase = require("systems.menu.menuBase")
 
-
 local SubmenuBase = {}
 SubmenuBase.__index = SubmenuBase
 
@@ -12,8 +11,7 @@ setmetatable(SubmenuBase, {
     end
 })
 
-function SubmenuBase:_init()
-end
+function SubmenuBase:_init() end
 
 function SubmenuBase:activate_menu(m)
     menuBase.state = m

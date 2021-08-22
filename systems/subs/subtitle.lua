@@ -3,11 +3,7 @@ local Subtitle
 ------------------------------------------------------------
 -- Subtitle class provides methods for comparing subtitle lines
 
-Subtitle = {
-    ['text'] = '',
-    ['start'] = -1,
-    ['end'] = -1,
-}
+Subtitle = {['text'] = '', ['start'] = -1, ['end'] = -1}
 
 function Subtitle:new(o)
     o = o or {}
@@ -16,12 +12,8 @@ function Subtitle:new(o)
     return o
 end
 
-Subtitle.__eq = function(lhs, rhs)
-    return lhs['text'] == rhs['text']
-end
+Subtitle.__eq = function(lhs, rhs) return lhs['text'] == rhs['text'] end
 
-Subtitle.__lt = function(lhs, rhs)
-    return lhs['start'] < rhs['start']
-end
+Subtitle.__lt = function(lhs, rhs) return lhs['start'] < rhs['start'] end
 
 return Subtitle

@@ -47,7 +47,8 @@ function ScheduledRepTable:next_repetition()
     end
 
     if curPlayRep.row["id"] ~= curSchedRep.row["id"] then
-        log.debug("Currently playing is not currently scheduled. Loading currently scheduled.")
+        log.debug(
+            "Currently playing is not currently scheduled. Loading currently scheduled.")
         return curSchedRep
     end
 
@@ -90,8 +91,6 @@ end
 --- Takes a row and returns a Rep object. Override me!
 --- @param row table
 --- @return Rep
-function ScheduledRepTable:as_rep(row)
-    error("Need to override as_rep(row)!")
-end
+function ScheduledRepTable:as_rep(row) error("Need to override as_rep(row)!") end
 
 return ScheduledRepTable

@@ -1,5 +1,5 @@
-local references  = {}
-references .__index = references
+local references = {}
+references.__index = references
 
 function references.new()
     local self = setmetatable({}, references)
@@ -11,9 +11,7 @@ function references.new()
 <Font size="1" style="color: transparent">#SuperMemo Reference:</font>
 <br><FONT class=reference>]]
 
-    self.content = {
-        "#Source: Incremental Media Player",
-    }
+    self.content = {"#Source: Incremental Media Player"}
 
     self.template_end = [[</FONT>
 </SuperMemoReference>]]
@@ -22,7 +20,8 @@ function references.new()
 end
 
 function references:with_link(link)
-    table.insert(self.content, ([[#Link: <a href="%s">%s</a>]]):format(link, link))
+    table.insert(self.content,
+                 ([[#Link: <a href="%s">%s</a>]]):format(link, link))
     return self
 end
 
@@ -33,9 +32,8 @@ end
 
 function references:as_string()
     return table.concat({
-        self.template_start,
-        table.concat(self.content, "<br>"),
-        self.template_end,
+        self.template_start, table.concat(self.content, "<br>"),
+        self.template_end
     }, "")
 end
 

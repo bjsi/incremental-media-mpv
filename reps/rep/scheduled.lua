@@ -22,7 +22,7 @@ function ScheduledRep:is_due()
     local repY, repM, repD = dt.parse_hhmmss(nextRepDate)
     return (os.time {year = todayY, month = todayM, day = todayD} >=
                os.time {year = repY, month = repM, day = repD})
-               
+
 end
 
 -- TODO:
@@ -31,6 +31,8 @@ function ScheduledRep:set_interval(interval)
     return true
 end
 
-function ScheduledRep:valid_interval() return self.row["interval"] ~= nil and self.row["interval"] > 0 end
+function ScheduledRep:valid_interval()
+    return self.row["interval"] ~= nil and self.row["interval"] > 0
+end
 
 return ScheduledRep

@@ -1,7 +1,6 @@
 local Base = require("queue.itemQueueBase")
 local ext = require("utils.ext")
 
-
 local SingletonItemQueue = {}
 SingletonItemQueue.__index = SingletonItemQueue
 
@@ -15,7 +14,8 @@ setmetatable(SingletonItemQueue, {
 })
 
 function SingletonItemQueue:_init(repId)
-    Base._init(self, "Singleton Item Queue", nil, function(reps) return self:subsetter(reps, repId) end)
+    Base._init(self, "Singleton Item Queue", nil,
+               function(reps) return self:subsetter(reps, repId) end)
 end
 
 function SingletonItemQueue:save_updates_to_sm()
@@ -24,8 +24,9 @@ function SingletonItemQueue:save_updates_to_sm()
 end
 
 function SingletonItemQueue:subsetter(reps, repId)
-    local theRep = ext.first_or_nil(function(rep) return rep.row.id == repId end, reps)
-    return {[1]=theRep}, theRep
+    local theRep = ext.first_or_nil(
+                       function(rep) return rep.row.id == repId end, reps)
+    return {[1] = theRep}, theRep
 end
 
 return SingletonItemQueue

@@ -44,15 +44,13 @@ end
 --- Copy common kv pairs
 function repCreators.copyCommon(parentRow, childRow, childHeader)
     for k, v in pairs(parentRow) do
-        if ext.list_contains(childHeader, k) then
-            childRow[k] = v
-        end
+        if ext.list_contains(childHeader, k) then childRow[k] = v end
     end
     return childRow
 end
 
 function repCreators.createExtract(parent, start, stop, subText, priority)
-    if not parent then 
+    if not parent then
         log.err("Failed to create extract because parent is nil")
         return nil
     end
@@ -103,7 +101,7 @@ local function get_video_stream_path()
     local format
     for v in x:gmatch("(https://[^;]+)") do
         format = v:gmatch("mime=video%%2F([a-z0-9]+)&")()
-        if format then 
+        if format then
             videoUrl = v
             break
         end
@@ -120,8 +118,9 @@ function repCreators.download_yt_audio(fullUrl, start, stop)
         return nil
     end
 
-    local audioFileNameWithExt = audioFileNameNoExt.."."..format
-    local ret = ffmpeg.audio_extract(start, stop, audioUrl, mpu.join_path(fs.media, audioFileNameWithExt))
+    local audioFileNameWithExt = audioFileNameNoExt .. "." .. format
+    local ret = ffmpeg.audio_extract(start, stop, audioUrl, mpu.join_path(
+                                         fs.media, audioFileNameWithExt))
     return ret.status == 0 and audioFileNameWithExt or nil
 end
 
@@ -139,11 +138,13 @@ function repCreators.extract_media(parent, start, stop, type)
     local mediaFileNameWithExt
 
     if type == "screenshot" then
-        mediaFileNameWithExt = mediaFileNameNoExt..".jpg"
-        ret = ffmpeg.screenshot(vidStreamUrl, start, mpu.join_path(fs.media, mediaFileNameWithExt))
+        mediaFileNameWithExt = mediaFileNameNoExt .. ".jpg"
+        ret = ffmpeg.screenshot(vidStreamUrl, start,
+                                mpu.join_path(fs.media, mediaFileNameWithExt))
     elseif type == "gif" then
-        mediaFileNameWithExt = mediaFileNameNoExt..".gif"
-        ret = ffmpeg.extract_gif(vidStreamUrl, start, stop, mpu.join_path(fs.media, mediaFileNameWithExt))
+        mediaFileNameWithExt = mediaFileNameNoExt .. ".gif"
+        ret = ffmpeg.extract_gif(vidStreamUrl, start, stop,
+                                 mpu.join_path(fs.media, mediaFileNameWithExt))
     end
 
     if ret then
@@ -164,10 +165,13 @@ function repCreators.createItem1(parent, sound, media, text, format)
         elseif parent:is_yt() then
 
             -- here, sound["path"] is relative to fs.media!
-            sound["path"] = repCreators.download_yt_audio(fullUrl, sound["start"], sound["stop"])
+            sound["path"] = repCreators.download_yt_audio(fullUrl,
+                                                          sound["start"],
+                                                          sound["stop"])
 
             -- Adjust to relative times after extracting audio
-            if format["name"] == item_format.cloze or format["name"] == item_format.cloze_context then
+            if format["name"] == item_format.cloze or format["name"] ==
+                item_format.cloze_context then
                 format["cloze-start"] = format["cloze-start"] - sound["start"]
                 format["cloze-stop"] = format["cloze-stop"] - sound["start"]
             end
@@ -175,15 +179,18 @@ function repCreators.createItem1(parent, sound, media, text, format)
             sound["start"] = 0
         end
 
-        if not sound["path"] or not sys.exists(mpu.join_path(fs.media, sound["path"])) then
+        if not sound["path"] or
+            not sys.exists(mpu.join_path(fs.media, sound["path"])) then
             log.debug("Failed to get audio.")
             return nil
         end
     end
 
     if media ~= nil then
-        media["path"] = repCreators.extract_media(parent, media["start"], media["stop"], media["type"])
-        if not media["path"] or not sys.exists(mpu.join_path(fs.media, media["path"])) then
+        media["path"] = repCreators.extract_media(parent, media["start"],
+                                                  media["stop"], media["type"])
+        if not media["path"] or
+            not sys.exists(mpu.join_path(fs.media, media["path"])) then
             log.debug("Failed to get media.")
             return nil
         end
@@ -191,7 +198,7 @@ function repCreators.createItem1(parent, sound, media, text, format)
 
     log.debug("media: ", media)
 
-    local edlFileNameWithExt = tostring(os.time())..".edl"
+    local edlFileNameWithExt = tostring(os.time()) .. ".edl"
     local edlFullPathWithExt = mpu.join_path(fs.media, edlFileNameWithExt)
 
     local ret
@@ -202,13 +209,13 @@ function repCreators.createItem1(parent, sound, media, text, format)
         local edl = ClozeEDL.new(edlFullPathWithExt)
         ret = edl:write(sound, format, media)
 
-    -- QA
+        -- QA
     elseif format["name"] == item_format.qa then
         log.debug("Creating qa edl.")
         local edl = QAEDL.new(edlFullPathWithExt)
         ret = edl:write(sound, format, media)
 
-    -- Cloze context
+        -- Cloze context
     elseif format["name"] == item_format.cloze_context then
         log.debug("Creating cloze context edl.")
         local edl = ClozeContextEDL.new(edlFullPathWithExt)
@@ -221,7 +228,8 @@ function repCreators.createItem1(parent, sound, media, text, format)
     end
 
     -- Create item row
-    local itemRep = repCreators.create_item_rep(parent, sound, text, format, edlFileNameWithExt)
+    local itemRep = repCreators.create_item_rep(parent, sound, text, format,
+                                                edlFileNameWithExt)
     if not itemRep then
         log.debug("Failed to create item: item rep was nil.")
         return false
@@ -231,7 +239,8 @@ function repCreators.createItem1(parent, sound, media, text, format)
     return itemRep
 end
 
-function repCreators.create_item_rep(parent, sound, text, format, edlFileNameWithExt)
+function repCreators.create_item_rep(parent, sound, text, format,
+                                     edlFileNameWithExt)
     local itemRow = repCreators.copyCommon(parent.row, {}, itemHeader)
     if not itemRow then
         log.err("Failed to create item row.")

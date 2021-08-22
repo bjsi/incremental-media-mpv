@@ -12,9 +12,9 @@ local log = require "utils.log"
 local collection = require "systems.sm.xml.collection"
 local element = require "systems.sm.xml.element"
 local references = require "systems.sm.xml.references"
-local fs         = require "systems.fs"
-local str        = require "utils.str"
-local item_format= require "reps.rep.item_format"
+local fs = require "systems.fs"
+local str = require "utils.str"
+local item_format = require "reps.rep.item_format"
 
 local GlobalItemQueue
 local GlobalExtractQueue
@@ -22,15 +22,11 @@ local GlobalTopicQueue
 
 local exporter = {}
 
-local function getParent(parents, child)
-    return parents[child.row["parent"]]
-end
+local function getParent(parents, child) return parents[child.row["parent"]] end
 
 local function getGrandparent(grandparents, parents, child)
     local parent = getParent(parents, child)
-    if parent then
-        return grandparents[parent.row["parent"]]
-    end
+    if parent then return grandparents[parent.row["parent"]] end
 end
 
 local function read_as_b64(fp)
@@ -51,7 +47,7 @@ function exporter.create_topic_export_data(v)
         stop = v.row.stop,
         priority = v.row.priority,
         extracts = {
-            ["NULL"] = { id = "NULL"}, -- so mpu.format_json turns it into a dict
+            ["NULL"] = {id = "NULL"} -- so mpu.format_json turns it into a dict
         }
     }
 
@@ -69,7 +65,7 @@ function exporter.create_extract_export_data(v)
         notes = v.row.notes,
         priority = v.row.priority,
         items = {
-            ["NULL"] = { id = "NULL"}, -- so mpu.format_json turns it into a dict
+            ["NULL"] = {id = "NULL"} -- so mpu.format_json turns it into a dict
         }
     }
     return extract
@@ -84,19 +80,20 @@ function exporter.add_qa_data(itemRep, exportItem, sound)
         end
 
         -- Add flashcard media
-        local mediaFullPathWithExt = mpu.join_path(sys.tmp_dir, sys.uuid() .. ".mp3")
+        local mediaFullPathWithExt = mpu.join_path(sys.tmp_dir,
+                                                   sys.uuid() .. ".mp3")
         if not ffmpeg.generate_qa_item_files(soundPath, mediaFullPathWithExt) then
             log.err("Failed to generate cloze context item files.")
             return false
         end
 
         table.insert(exportItem["flashcard_medias"], {
-                type = "sound",
-                showat = "answer",
-                fname = str.basename(mediaFullPathWithExt),
-                text = "audio cloze context answer",
-                b64 = read_as_b64(mediaFullPathWithExt)
-            })
+            type = "sound",
+            showat = "answer",
+            fname = str.basename(mediaFullPathWithExt),
+            text = "audio cloze context answer",
+            b64 = read_as_b64(mediaFullPathWithExt)
+        })
     end
 
     return true
@@ -109,28 +106,26 @@ function exporter.add_cloze_context_data(itemRep, exportItem, sound, format)
     end
 
     -- Add stored media
-    table.insert(exportItem["stored_medias"], 
-        {
-            fname = str.basename(soundFullPathWithExt),
-            b64 = read_as_b64(soundFullPathWithExt),
-        }
-    )
+    table.insert(exportItem["stored_medias"], {
+        fname = str.basename(soundFullPathWithExt),
+        b64 = read_as_b64(soundFullPathWithExt)
+    })
 
     -- Add flashcard media
     local aFpath = mpu.join_path(sys.tmp_dir, sys.uuid() .. ".mp3")
-    if not ffmpeg.generate_cloze_context_item_files(soundFullPathWithExt, sound, format,aFpath) then
+    if not ffmpeg.generate_cloze_context_item_files(soundFullPathWithExt, sound,
+                                                    format, aFpath) then
         log.err("Failed to generate cloze context item files.")
         return false
     end
 
-    table.insert(exportItem["flashcard_medias"], 
-        {
-            type = "sound",
-            showat = "answer",
-            fname = str.basename(aFpath),
-            text = "audio cloze context answer",
-            b64 = read_as_b64(aFpath)
-        })
+    table.insert(exportItem["flashcard_medias"], {
+        type = "sound",
+        showat = "answer",
+        fname = str.basename(aFpath),
+        text = "audio cloze context answer",
+        b64 = read_as_b64(aFpath)
+    })
 
     return true
 end
@@ -142,36 +137,38 @@ function exporter.add_cloze_data(itemRep, exportItem, sound, format)
     end
 
     -- Add stored media
-    table.insert(exportItem["stored_medias"], 
-        {
-            fname = str.basename(soundFullPathWithExt),
-            b64 = read_as_b64(soundFullPathWithExt),
-        }
-    )
+    table.insert(exportItem["stored_medias"], {
+        fname = str.basename(soundFullPathWithExt),
+        b64 = read_as_b64(soundFullPathWithExt)
+    })
 
     -- Add flashcard media
-    local questionFullWithExt = mpu.join_path(sys.tmp_dir, sys.uuid() ..".".. cfg.audio_format)
-    local answerFullWithExt = mpu.join_path(sys.tmp_dir, sys.uuid() ..".".. cfg.audio_format)
-    if not ffmpeg.generate_cloze_item_files(soundFullPathWithExt, sound, format, questionFullWithExt, answerFullWithExt) then
+    local questionFullWithExt = mpu.join_path(sys.tmp_dir, sys.uuid() .. "." ..
+                                                  cfg.audio_format)
+    local answerFullWithExt = mpu.join_path(sys.tmp_dir, sys.uuid() .. "." ..
+                                                cfg.audio_format)
+    if not ffmpeg.generate_cloze_item_files(soundFullPathWithExt, sound, format,
+                                            questionFullWithExt,
+                                            answerFullWithExt) then
         log.err("Failed to generate item files.")
         return false
     end
 
     table.insert(exportItem["flashcard_medias"], {
-            type = "sound",
-            showat = "question",
-            fname = str.basename(questionFullWithExt),
-            text = "audio cloze question",
-            b64 = read_as_b64(questionFullWithExt)
-        })
+        type = "sound",
+        showat = "question",
+        fname = str.basename(questionFullWithExt),
+        text = "audio cloze question",
+        b64 = read_as_b64(questionFullWithExt)
+    })
 
     table.insert(exportItem["flashcard_medias"], {
-            type = "sound",
-            showat = "answer",
-            fname = str.basename(answerFullWithExt),
-            text = "audio cloze answer",
-            b64 = read_as_b64(answerFullWithExt)
-        })
+        type = "sound",
+        showat = "answer",
+        fname = str.basename(answerFullWithExt),
+        text = "audio cloze answer",
+        b64 = read_as_b64(answerFullWithExt)
+    })
     return true
 end
 
@@ -190,7 +187,7 @@ function exporter.create_item_export_data(itemRep)
         start = itemRep.row["start"],
         stop = itemRep.row["stop"],
         speed = itemRep.row["speed"],
-        subs = itemRep.row["subs"],
+        subs = itemRep.row["subs"]
     }
 
     local sound, format, media
@@ -204,7 +201,8 @@ function exporter.create_item_export_data(itemRep)
     elseif itemRep.row.format == item_format.cloze_context then
         local edl = ClozeContextEDL.new(edlFullPathWithExt)
         sound, format, media = edl:read()
-        ret = exporter.add_cloze_context_data(itemRep, exportItem, sound, format)
+        ret =
+            exporter.add_cloze_context_data(itemRep, exportItem, sound, format)
     elseif itemRep.row.format == item_format.qa then
         local edl = QAEDL.new(edlFullPathWithExt)
         sound, format, media = edl:read()
@@ -212,19 +210,20 @@ function exporter.create_item_export_data(itemRep)
     end
 
     if not ret then
-        log.debug("Failed to add data to " .. itemRep.row["format"] .. " export item")
+        log.debug("Failed to add data to " .. itemRep.row["format"] ..
+                      " export item")
         return nil
     end
 
     if media ~= nil then
         local mediaFullPathWithExt = mpu.join_path(fs.media, media["path"])
         table.insert(exportItem["flashcard_medias"], {
-                type = "image",
-                showat = media["showat"],
-                fname = media["path"],
-                text = "",
-                b64 = read_as_b64(mediaFullPathWithExt)
-            })
+            type = "image",
+            showat = media["showat"],
+            fname = media["path"],
+            text = "",
+            b64 = read_as_b64(mediaFullPathWithExt)
+        })
     end
 
     return exportItem
@@ -232,7 +231,7 @@ end
 
 function exporter.get_last_export_time()
     log.debug("Getting last export time for queue:", cfg.queue, "from SMA.")
-    local ret = sys.json_rpc_request("GetLastImportTime", { cfg.queue })
+    local ret = sys.json_rpc_request("GetLastImportTime", {cfg.queue})
     if ret then
         local jobj = mpu.parse_json(ret.stdout)
         if jobj then return tonumber(jobj.result) end
@@ -254,7 +253,8 @@ function exporter.update_sm_item(itemRep)
     end
 
     log.debug("Successfully pinged SMA")
-    return sys.json_rpc_request("UpdateItem", { cfg.queue, itemExportData }).status == 0
+    return sys.json_rpc_request("UpdateItem", {cfg.queue, itemExportData})
+               .status == 0
 end
 
 function exporter.export_new_items_to_sm(lastExportTime)
@@ -263,7 +263,9 @@ function exporter.export_new_items_to_sm(lastExportTime)
         log.debug("Failed to get last export time from SMA.")
         return false
     end
-    local predicate = function(itemRep) return tonumber(itemRep.row.created) > lastExportTime end
+    local predicate = function(itemRep)
+        return tonumber(itemRep.row.created) > lastExportTime
+    end
     return exporter.export_to_sm(predicate)
 end
 
@@ -279,7 +281,8 @@ function exporter.export_to_sm(predicate)
     local gtq = GlobalTopicQueue(nil)
     local grandParents = ext.index_by_key(gtq.reptable.reps, "id")
 
-    GlobalExtractQueue = GlobalExtractQueue or require("queue.globalExtractQueue")
+    GlobalExtractQueue = GlobalExtractQueue or
+                             require("queue.globalExtractQueue")
     local geq = GlobalExtractQueue(nil)
     local parents = ext.index_by_key(geq.reptable.reps, "id")
 
@@ -305,7 +308,7 @@ function exporter.export_to_sm(predicate)
         topics[grandparent.row.id].extracts[parent.row.id].items[item.id] = item
     end
 
-    sys.json_rpc_request("ImportTopics", { cfg.queue, topics })
+    sys.json_rpc_request("ImportTopics", {cfg.queue, topics})
 end
 
 -- TODO: Need to update to the latest version of EDL files and item creation
@@ -334,7 +337,7 @@ end
 --         log.debug("Invalid outputFolder path or already exists.")
 --         return false
 --     end
-    
+
 --     if not sys.create_dir(outputFolder) then
 --         log.debug("Failed to create export output folder: " .. outputFolder)
 --         return false
@@ -391,7 +394,7 @@ end
 
 --                 local audioEl = element.new("SuperMemoElement")
 --                 audioEl:with_id(tostring(ct + 1)):with_title(title):with_type("Item")
-                
+
 --                 local content = element.new("Content")
 --                 audioEl:add_child(content)
 

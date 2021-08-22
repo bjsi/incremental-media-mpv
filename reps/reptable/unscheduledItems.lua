@@ -20,8 +20,6 @@ function ItemRepTable:_init(subsetter)
     self:read_reps()
 end
 
-function ItemRepTable:as_rep(row)
-    return ItemRep(row)
-end
+function ItemRepTable:as_rep(row) return ItemRep(row) end
 
 return ItemRepTable

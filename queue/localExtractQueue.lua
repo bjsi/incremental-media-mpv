@@ -21,8 +21,9 @@ setmetatable(LocalExtractQueue, {
 function LocalExtractQueue:_init(oldRep)
     self.sorted = false
     ExtractQueueBase._init(self, "Local Extract Queue", oldRep,
-                           UnscheduledExtractRepTable(function(reps) return self:subsetter(oldRep, reps) end)
-                         )
+                           UnscheduledExtractRepTable(function(reps)
+        return self:subsetter(oldRep, reps)
+    end))
 end
 
 function LocalExtractQueue:activate()
@@ -34,25 +35,29 @@ function LocalExtractQueue:activate()
 end
 
 function LocalExtractQueue:subsetter(oldRep, reps)
-    local subset = ext.list_filter(reps, function(r) return r:is_outstanding(false) end)
+    local subset = ext.list_filter(reps, function(r)
+        return r:is_outstanding(false)
+    end)
     local from_topics = (oldRep ~= nil) and (oldRep:type() == "topic")
     local from_items = (oldRep ~= nil) and (oldRep:type() == "item")
     local from_nil = oldRep == nil
     local filter
-    
+
     -- Filtering subset
 
     if from_topics then
 
         -- Get all extracts that are children of the current topic
-        filter = function (r) return r:is_child_of(oldRep) end
-        
+        filter = function(r) return r:is_child_of(oldRep) end
+
     elseif from_items then
 
         -- Get all extracts where the topic == the item's grandparent
         -- TODO: what if nil
-        local parent = ext.first_or_nil(function(r) return r:is_parent_of(oldRep) end, reps)
-        filter = function (r)
+        local parent = ext.first_or_nil(function(r)
+            return r:is_parent_of(oldRep)
+        end, reps)
+        filter = function(r)
             return r.row["parent"] == parent.row["parent"]
         end
 
@@ -75,9 +80,7 @@ function LocalExtractQueue:subsetter(oldRep, reps)
 end
 
 function LocalExtractQueue:sort(reps)
-    if not self.sorted then
-        sort.by_created(reps)
-    end
+    if not self.sorted then sort.by_created(reps) end
     self.sorted = true
 end
 
