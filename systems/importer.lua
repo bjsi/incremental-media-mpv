@@ -1,27 +1,58 @@
-local sys = require("systems.system")
-local cfg = require("systems.config")
-local ext = require("utils.ext")
-local ffmpeg = require("systems.ffmpeg")
-local active = require("systems.active")
-local str = require("utils.str")
-local repCreators = require("reps.rep.repCreators")
-local mpu = require("mp.utils")
-local ydl = require("systems.ydl")
-local log = require "utils.log"
+local sys = require 'systems.system'
+local cfg = require 'systems.config'
+local ffmpeg = require 'systems.ffmpeg'
+local active = require 'systems.active'
+local str = require 'utils.str'
+local repCreators = require 'reps.rep.repCreators'
+local mpu = require 'mp.utils'
+local ydl = require 'systems.ydl'
+local log = require 'utils.log'
+local rep_factory = require 'reps.rep.repCreators' -- TODO
+local tbl = require 'utils.table'
+local obj = require 'utils.object'
+local num = require 'utils.number'
 
-local GlobalTopicQueue
+local GlobalTopics
+local LocalExtracts
 
 local importer = {}
 
+function importer.import_extract(args)
+    GlobalTopics = GlobalTopics or require('queues.global.topics')
+    local topics = GlobalTopics(nil)
+    local predicate = function(r) return r.row.title == args["title"] and r.row.type == "local-oc" end
+    local folder = tbl.first(predicate, topics.reptable.reps)
+    if folder == nil then
+        local duration = ffmpeg.get_duration(args["path"])
+        folder = rep_factory.createTopic(args["title"], "local-oc",
+                                         args["path"], args["priority"],
+                                         duration, nil)
+        if not importer.add_topics_to_queue({folder}) then
+            log.notify("Failed to import extract.")
+            return false
+        end
+    end
+
+    local extract = rep_factory.createExtract(folder, folder.row.start,
+                                              folder.row.stop, "",
+                                              args["priority"])
+    extract.row["url"] = cfg["add_extract"]
+    LocalExtracts = LocalExtracts or require('queues.local.extracts')
+    local extracts = LocalExtracts(nil)
+    extracts.reptable:add_to_reps(extract)
+    extracts:save_data()
+    return extract
+end
+
 function importer.split_and_import_chapters(info, cur)
 
-    if ext.empty(info) then
+    if obj.empty(info) then
         log.debug("Youtube info is nil.")
         return false
     end
 
     local chapters = info["chapters"]
-    if ext.empty(chapters) then
+    if obj.empty(chapters) then
         log.debug("Chapters are nil.")
         return false
     end
@@ -42,7 +73,7 @@ end
 
 function importer.import_from_clipboard()
     local url, _ = sys.clipboard_read()
-    if ext.empty(url) then
+    if obj.empty(url) then
         log.debug("Url is nil.")
         return
     end
@@ -73,8 +104,8 @@ function importer.add_topics_to_queue(topics, allowedDuplicateIds)
     if active.queue ~= nil and active.queue.name:find("Topic") then
         queue = active.queue
     else
-        GlobalTopicQueue = GlobalTopicQueue or require("queue.globalTopicQueue")
-        queue = GlobalTopicQueue(nil)
+        GlobalTopics = GlobalTopics or require("queues.global.topics")
+        queue = GlobalTopics(nil)
     end
 
     local imported = false
@@ -133,7 +164,7 @@ function importer.create_yt_topics(infos, splitChaps, download, priMin, priMax,
             local topic = importer.create_yt_topic(info, prevId, curPriority)
             table.insert(topics, topic)
             prevId = dependencyImport and topic.row["id"] or ""
-            curPriority = ext.round(curPriority + priStep, 2);
+            curPriority = num.round(curPriority + priStep, 2);
         end
     end
     return topics

@@ -1,6 +1,6 @@
 -- from: https://github.com/Ben-Kerman/immersive/blob/master/utility/base64.lua
 local bit_conv = require("utils.bit_compat")[2]
-local ext = require "utils.ext"
+local tbl = require 'utils.table'
 
 local char_lookup = {
     "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
@@ -13,13 +13,13 @@ local char_lookup = {
 local bit_lookup = (function()
     local res = {}
     for i, digit in ipairs(char_lookup) do
-        res[digit:byte()] = ext.list_reverse(bit_conv.to_bits(i - 1, 6))
+        res[digit:byte()] = tbl.reverse(bit_conv.to_bits(i - 1, 6))
     end
     return res
 end)()
 
 local function insert_digit(list, bits)
-    local pos = bit_conv.to_num(ext.list_reverse(bits))
+    local pos = bit_conv.to_num(tbl.reverse(bits))
     table.insert(list, char_lookup[pos + 1])
 end
 
@@ -28,7 +28,7 @@ local base64 = {}
 function base64.encode(str)
     local bits = {}
     for i = 1, #str do
-        for _, bit in ipairs(ext.list_reverse(bit_conv.to_bits(str:byte(i), 8))) do
+        for _, bit in ipairs(tbl.reverse(bit_conv.to_bits(str:byte(i), 8))) do
             table.insert(bits, bit)
         end
     end
@@ -44,11 +44,11 @@ function base64.encode(str)
             break
         end
 
-        insert_digit(b64, ext.list_range(bits, from, to))
+        insert_digit(b64, tbl.range(bits, from, to))
         from = from + 6
     end
     if rem_bits_start then
-        local rem_bits = ext.list_range(bits, rem_bits_start)
+        local rem_bits = tbl.range(bits, rem_bits_start)
         for i = 1, 6 - #rem_bits do table.insert(rem_bits, false) end
         insert_digit(b64, rem_bits)
     end
@@ -74,8 +74,7 @@ function base64.decode(b64)
         local to = from + 7
         if to > #bits then break end
 
-        local byte = bit_conv.to_num(ext.list_reverse(
-                                         ext.list_range(bits, from, to)))
+        local byte = bit_conv.to_num(tbl.reverse( tbl.range(bits, from, to)))
         table.insert(str, string.char(byte))
 
         from = from + 8

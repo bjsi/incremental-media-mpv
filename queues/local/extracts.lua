@@ -1,8 +1,8 @@
-local ExtractQueueBase = require("queue.extractQueueBase")
-local sort = require("reps.reptable.sort")
-local UnscheduledExtractRepTable = require("reps.reptable.unscheduledExtracts")
-local sounds = require("systems.sounds")
-local ext = require("utils.ext")
+local ExtractQueueBase = require 'queues.base.extracts'
+local tbl = require 'utils.table'
+local sort = require 'reps.reptable.sort'
+local UnscheduledExtractRepTable = require 'reps.reptable.unscheduledExtracts'
+local sounds = require 'systems.sounds'
 
 local LocalExtractQueue = {}
 LocalExtractQueue.__index = LocalExtractQueue
@@ -35,7 +35,7 @@ function LocalExtractQueue:activate()
 end
 
 function LocalExtractQueue:subsetter(oldRep, reps)
-    local subset = ext.list_filter(reps, function(r)
+    local subset = tbl.filter(reps, function(r)
         return r:is_outstanding(false)
     end)
     local from_topics = (oldRep ~= nil) and (oldRep:type() == "topic")
@@ -54,9 +54,8 @@ function LocalExtractQueue:subsetter(oldRep, reps)
 
         -- Get all extracts where the topic == the item's grandparent
         -- TODO: what if nil
-        local parent = ext.first_or_nil(function(r)
-            return r:is_parent_of(oldRep)
-        end, reps)
+	local predicate = function(r) return r:is_parent_of(oldRep) end
+        local parent = tbl.first(predicate, reps)
         filter = function(r)
             return r.row["parent"] == parent.row["parent"]
         end
@@ -65,7 +64,7 @@ function LocalExtractQueue:subsetter(oldRep, reps)
         filter = function(r) return r end
     end
 
-    subset = ext.list_filter(subset, filter)
+    subset = tbl.filter(subset, filter)
 
     -- Sorting subset
     self:sort(subset)
@@ -73,7 +72,7 @@ function LocalExtractQueue:subsetter(oldRep, reps)
     -- Determining first element
     if from_items then
         local pred = function(extract) return oldRep:is_child_of(extract) end
-        ext.move_to_first_where(pred, subset)
+        tbl.move_to_first_where(pred, subset)
     end
 
     return subset, subset[1]

@@ -1,6 +1,8 @@
-local ext = require("utils.ext")
-local msg = ext.prequire('mp.msg')
-local dt = require("utils.date")
+local msg = require 'mp.msg'
+local dt = require 'utils.date'
+local mp = require 'mp'
+local tbl = require 'utils.table'
+local obj = require 'utils.object'
 
 local log = {}
 
@@ -15,16 +17,16 @@ end
 
 function log.debug(...)
     if log.level == "DEBUG" then
-        local tbl = ext.list_map({...}, ext.dump)
-        local joined = table.concat(tbl, " ")
+        local t = tbl.map({...}, obj.dump)
+        local joined = table.concat(t, " ")
         local message = "[DBG] " .. dt.time() .. ": " .. joined
         msg.info(message)
     end
 end
 
 function log.err(...)
-    local tbl = ext.list_map({...}, ext.dump)
-    local joined = table.concat(tbl, " ")
+    local t = tbl.map({...}, obj.dump)
+    local joined = table.concat(t, " ")
     local x = "[ERR] " .. dt.time() .. ": " .. joined
     msg.info(x)
 end

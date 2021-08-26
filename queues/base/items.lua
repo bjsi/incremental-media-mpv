@@ -1,23 +1,21 @@
-local Base = require("queue.queueBase")
-local player = require("systems.player")
-local ClozeEDL = require("systems.edl.edl")
-local ClozeContextEDL = require("systems.edl.clozeContextEdl")
-local QAEDL = require("systems.edl.qaEdl")
-local log = require("utils.log")
-local active = require("systems.active")
-local UnscheduledItemRepTable = require("reps.reptable.unscheduledItems")
-local sounds = require "systems.sounds"
-local ext = require "utils.ext"
-local item_format = require "reps.rep.item_format"
+local QueueBase = require 'queues.base.base'
+local player = require 'systems.player'
+local ClozeEDL = require 'systems.edl.edl'
+local log = require 'utils.log'
+local active = require 'systems.active'
+local UnscheduledItemRepTable = require 'reps.reptable.unscheduledItems'
+local sounds = require 'systems.sounds'
+local item_format = require 'reps.rep.item_format'
+local mp = require 'mp'
 
-local LocalExtractQueue
-local LocalTopicQueue
+local LocalExtracts
+local LocalTopics
 
 local ItemQueueBase = {}
 ItemQueueBase.__index = ItemQueueBase
 
 setmetatable(ItemQueueBase, {
-    __index = Base, -- this is what makes the inheritance work
+    __index = QueueBase, -- this is what makes the inheritance work
     __call = function(cls, ...)
         local self = setmetatable({}, cls)
         self:_init(...)
@@ -26,11 +24,9 @@ setmetatable(ItemQueueBase, {
 })
 
 function ItemQueueBase:_init(name, oldRep, subsetter)
-    Base._init(self, name, UnscheduledItemRepTable(subsetter), oldRep)
-    self.bigSeek = 2
-    self.smallSeek = 0.1
-    self.createLoopBoundaries = false
-    self.useStartStop = false
+    QueueBase._init(self, name, UnscheduledItemRepTable(subsetter), oldRep)
+    self.create_loop_boundaries = false
+    self.use_start_start = false
 end
 
 local function showChapterTitle(_, n)
@@ -56,8 +52,8 @@ function ItemQueueBase:load_grand_queue()
         return
     end
 
-    LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
-    local leq = LocalExtractQueue(itemGrandChild)
+    LocalExtracts = LocalExtracts or require("queues.local.extracts")
+    local leq = LocalExtracts(itemGrandChild)
     local extract = leq.reptable.subset[1]
     if extract == nil then
         log.debug("Failed to load grandparent queue.")
@@ -65,8 +61,8 @@ function ItemQueueBase:load_grand_queue()
         return
     end
 
-    LocalTopicQueue = LocalTopicQueue or require("queue.localTopicQueue")
-    local ltq = LocalTopicQueue(extract)
+    LocalTopics = LocalTopics or require("queues.local.topics")
+    local ltq = LocalTopics(extract)
 
     active.change_queue(ltq)
 end
@@ -78,8 +74,8 @@ function ItemQueueBase:parent()
         return false
     end
 
-    LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
-    local queue = LocalExtractQueue(self.playing)
+    LocalExtracts = LocalExtracts or require("queues.local.extracts")
+    local queue = LocalExtracts(self.playing)
     active.change_queue(queue)
 end
 

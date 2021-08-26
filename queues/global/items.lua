@@ -1,12 +1,12 @@
-local ItemQueueBase = require("queue.itemQueueBase")
-local sort = require("reps.reptable.sort")
-local sounds = require("systems.sounds")
-local ext = require("utils.ext")
+local ItemQueueBase = require 'queues.base.items'
+local sort = require 'reps.reptable.sort'
+local sounds = require 'systems.sounds'
+local tbl = require 'utils.table'
 
-local GlobalItemQueue = {}
-GlobalItemQueue.__index = GlobalItemQueue
+local GlobalItems = {}
+GlobalItems.__index = GlobalItems
 
-setmetatable(GlobalItemQueue, {
+setmetatable(GlobalItems, {
     __index = ItemQueueBase,
     __call = function(cls, ...)
         local self = setmetatable({}, cls)
@@ -17,12 +17,12 @@ setmetatable(GlobalItemQueue, {
 
 --- Create a new GlobalTopicQueue.
 --- @param oldRep Rep last playing Rep object.
-function GlobalItemQueue:_init(oldRep)
+function GlobalItems:_init(oldRep)
     ItemQueueBase._init(self, "Global Item Queue", oldRep,
                         function(reps) return self:subsetter(reps) end)
 end
 
-function GlobalItemQueue:activate()
+function GlobalItems:activate()
     if ItemQueueBase.activate(self) then
         sounds.play("global_item_queue")
         return true
@@ -30,17 +30,17 @@ function GlobalItemQueue:activate()
     return false
 end
 
-function GlobalItemQueue:subsetter(reps)
-    local subset = ext.list_filter(reps, function(r)
+function GlobalItems:subsetter(reps)
+    local subset = tbl.filter(reps, function(r)
         return r:is_outstanding(true)
     end)
     self:sort(subset)
     return subset, subset[1]
 end
 
-function GlobalItemQueue:sort(reps)
+function GlobalItems:sort(reps)
     if not self.sorted then sort.by_priority(reps) end
     self.sorted = true
 end
 
-return GlobalItemQueue
+return GlobalItems

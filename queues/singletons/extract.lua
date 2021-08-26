@@ -1,6 +1,6 @@
-local ExtractQueueBase = require "queue.extractQueueBase"
-local UnscheduledExtractRepTable = require "reps.reptable.unscheduledExtracts"
-local ext = require "utils.ext"
+local ExtractQueueBase = require 'queues.base.extracts'
+local UnscheduledExtractRepTable = require 'reps.reptable.unscheduledExtracts'
+local tbl = require 'utils.table'
 
 local SingletonExtract = {}
 SingletonExtract.__index = SingletonExtract
@@ -25,7 +25,7 @@ end
 
 function SingletonExtract:subsetter(reps, repId)
     local predicate = function(r) return r.row.id == repId end
-    local extract = ext.first_or_nil(predicate, reps)
+    local extract = tbl.first(predicate, reps)
     return {[1] = extract}, extract
 end
 

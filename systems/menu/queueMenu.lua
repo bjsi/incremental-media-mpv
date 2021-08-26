@@ -1,19 +1,22 @@
 local active = require("systems.active")
+local pri = require 'utils.priority'
+local obj = require 'utils.object'
 local cfg = require("systems.config")
 local Base = require("systems.menu.submenuBase")
 local OSD = require("systems.osd_styler")
 local log = require("utils.log")
-local ext = require("utils.ext")
 local sounds = require("systems.sounds")
 local str = require("utils.str")
 local date = require("utils.date")
+local mp = require 'mp'
+
 local list = dofile(mp.command_native({
     "expand-path", "~~/script-modules/scroll-list.lua"
 }))
 
-local LocalTopicQueue
-local LocalExtractQueue
-local LocalItemQueue
+local LocalTopics
+local LocalExtracts
+local LocalItems
 local menuBase
 
 local QueueMenu = {}
@@ -132,7 +135,7 @@ function QueueMenu:adjust_priority(selected, adj)
 
     local curPri = tonumber(rep.row["priority"])
     local newPri = curPri + adj
-    if not ext.validate_priority(newPri) then
+    if not pri.validate(newPri) then
         sounds.play("negative")
         return
     end
@@ -161,17 +164,16 @@ function QueueMenu:toggle_children()
 
     local children
     if curRep:type() == "topic" then
-        LocalExtractQueue = LocalExtractQueue or
-                                require("queue.localExtractQueue")
-        local leq = LocalExtractQueue(curRep)
+        LocalExtracts = LocalExtracts or require("queues.local.extracts")
+        local leq = LocalExtracts(curRep)
         children = leq.reptable.subset
     elseif curRep:type() == "extract" then
-        LocalItemQueue = LocalItemQueue or require("queue.localItemQueue")
-        local liq = LocalItemQueue(curRep)
+        LocalItems = LocalItems or require("queues.local.items")
+        local liq = LocalItems(curRep)
         children = liq.reptable.subset
     end
 
-    if ext.empty(children) then
+    if obj.empty(children) then
         log.notify("No child elements available.")
         return
     end
@@ -201,8 +203,8 @@ function QueueMenu:local_queue(selected)
     if rep == nil then return end
 
     if queue.name:find("Topic") then
-        LocalTopicQueue = LocalTopicQueue or require("queue.localTopicQueue")
-        local ltq = LocalTopicQueue()
+        LocalTopics = LocalTopics or require("queues.local.topics")
+        local topics = LocalTopics()
 
     elseif queue.name:find("Extract") then
 

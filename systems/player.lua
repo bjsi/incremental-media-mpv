@@ -1,11 +1,13 @@
 local mpu = require("mp.utils")
-local ext = require("utils.ext")
 local subs = require("systems.subs.subs")
 local log = require("utils.log")
 local sounds = require("systems.sounds")
 local ydl = require "systems.ydl"
-local sys = require("systems.system")
 local fs = require "systems.fs"
+local path = require 'utils.path'
+local obj = require 'utils.object'
+local num = require 'utils.number'
+local mp = require 'mp'
 
 local player = {}
 
@@ -14,11 +16,11 @@ function player.get_full_url(rep, timestamp)
     if rep:is_yt() then
         url = ydl.url_prefix .. url
         timestamp = tonumber(timestamp)
-        if not ext.empty(timestamp) and timestamp > 0 then
-            url = table.concat({url, "&t=", tostring(ext.round(timestamp, 0))})
+        if not obj.empty(timestamp) and timestamp > 0 then
+            url = table.concat({url, "&t=", tostring(num.round(timestamp, 0))})
         end
     elseif rep:is_local() or rep:type() == "item" then
-        if not sys.is_absolute_path(url) then
+        if not path.is_absolute(url) then
             url = mpu.join_path(fs.media, url)
         end
     end

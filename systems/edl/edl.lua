@@ -1,9 +1,10 @@
-local log = require("utils.log")
-local str = require("utils.str")
-local mpu = require("mp.utils")
-local ext = require("utils.ext")
-local fs = require("systems.fs")
-local item_format = require("reps.rep.item_format")
+local log = require 'utils.log'
+local obj = require 'utils.object'
+local tbl = require 'utils.table'
+local str = require 'utils.str'
+local mpu = require 'mp.utils'
+local fs = require 'systems.fs'
+local item_format = require 'reps.rep.item_format'
 
 local ClozeEDL = {}
 ClozeEDL.__index = ClozeEDL
@@ -107,7 +108,7 @@ function ClozeEDL:read()
     end
 
     local function pred(arr) return arr == nil or #arr ~= 3 end
-    if ext.list_any(pred, {preCloze, cloze, postCloze}) then
+    if tbl.any(pred, {preCloze, cloze, postCloze}) then
         log.err("Invalid EDL data.")
         return nil
     end
@@ -161,7 +162,7 @@ end
 function ClozeEDL:parse_line(line)
     local ret = {}
     for v in string.gmatch(line, "[^,]*") do
-        if not ext.empty(v) then ret[#ret + 1] = v end
+        if not obj.empty(v) then ret[#ret + 1] = v end
     end
     return ret
 end

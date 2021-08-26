@@ -1,9 +1,10 @@
-local log = require("utils.log")
-local str = require("utils.str")
-local mpu = require("mp.utils")
-local sys = require("systems.system")
-local fs = require "systems.fs"
-local ext = require "utils.ext"
+local log = require 'utils.log'
+local str = require 'utils.str'
+local mpu = require 'mp.utils'
+local sys = require 'systems.system'
+local fs = require 'systems.fs'
+local tbl = require 'utils.table'
+local mp = require 'mp'
 
 local ydl = {}
 
@@ -24,10 +25,10 @@ function ydl.handle_download(args, url)
     local ret = sys.subprocess(args)
     if ret.status == 0 then
         local mediaFiles = mpu.readdir(fs.media)
-        local theFile = ext.first_or_nil(function(f)
+        local file = tbl.first(function(f)
             return str.remove_ext(f) == url
         end, mediaFiles)
-        return mpu.join_path(fs.media, theFile)
+        return mpu.join_path(fs.media, file)
     end
 
     return nil
@@ -35,18 +36,32 @@ end
 
 function ydl.download_video(url)
     local format = mp.get_property("ytdl-format")
+
+    -- LuaFormatter off
     local args = {
-        "youtube-dl", "--no-check-certificate", "-f", format, "-o",
-        "%(id)s.%(ext)s", url
+        "youtube-dl",
+	"--no-check-certificate",
+	"-f",
+	format,
+	"-o",
+        "%(id)s.%(ext)s",
+	url
     }
+    -- LuaFormatter on
 
     return ydl.handle_download(args, url)
 end
 
 function ydl.get_info(url)
+    -- LuaFormatter off
     local args = {
-        "youtube-dl", "--no-check-certificate", "-j", "--flat-playlist", url
+        "youtube-dl",
+	"--no-check-certificate",
+	"-j",
+	"--flat-playlist",
+	url
     }
+    -- LuaFormatter on
 
     local ret = sys.subprocess(args)
     local t = {}
@@ -63,10 +78,17 @@ function ydl.get_info(url)
 end
 
 function ydl.get_streams(url, quality)
+    -- LuaFormatter off
     local args = {
-        "youtube-dl", "--no-check-certificate", "-f", quality,
-        "--youtube-skip-dash-manifest", "-g", url
+        "youtube-dl",
+	"--no-check-certificate",
+	"-f",
+	quality,
+        "--youtube-skip-dash-manifest",
+	"-g",
+	url
     }
+    -- LuaFormatter on
     return sys.subprocess(args)
 end
 

@@ -1,7 +1,8 @@
 local active = require 'systems.active'
+local obj = require 'utils.object'
+local tbl = require 'utils.table'
 local mpu = require 'mp.utils'
 local Base = require 'systems.menu.submenuBase'
-local ext = require 'utils.ext'
 local str = require 'utils.str'
 local log = require 'utils.log'
 local player = require 'systems.player'
@@ -14,10 +15,11 @@ local fs = require 'systems.fs'
 local item_format = require 'reps.rep.item_format'
 local exporter = require 'systems.exporter'
 local get_user_input = require 'systems.get_user_input'
+local mp = require 'mp'
 
-local LocalItemQueue
-local LocalExtractQueue
-local GlobalExtractQueue
+local LocalItems
+local LocalExtracts
+local GlobalExtracts
 local menuBase
 
 -- Change name to element menu?
@@ -133,10 +135,8 @@ function HomeSubmenu:add_queue_osd(osd, queue)
     if queue ~= nil then
         osd:text(queue.name):newline()
         osd:item("reps: "):text(#queue.reptable.subset):newline()
-        local toexport = #ext.list_filter(queue.reptable.reps,
-                                          function(r)
-            return r:to_export()
-        end)
+	local predicate = function(r) return r:to_export() end
+        local toexport = #tbl.filter(queue.reptable.reps, predicate)
         osd:item("to export: "):text(tostring(toexport)):newline():newline()
     else
         osd:text("No queue loaded."):newline()
@@ -216,9 +216,9 @@ function HomeSubmenu:add_topic_osd(osd, cur)
     self:add_scheduling_info(osd, cur)
     self:add_chapter_info(osd)
 
-    LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
-    local leq = LocalExtractQueue(cur)
-    osd:item("children: "):text(#leq.reptable.subset):newline():newline()
+    LocalExtracts = LocalExtracts or require("queues.local.extracts")
+    local extracts = LocalExtracts(cur)
+    osd:item("children: "):text(#extracts.reptable.subset):newline():newline()
         :newline()
 
     self:add_keybinds(self.topic_keybinds)
@@ -229,10 +229,10 @@ function HomeSubmenu:add_extract_osd(osd, cur)
     self:add_scheduling_info(osd, cur)
     self:add_subs_osd(osd, cur)
 
-    LocalItemQueue = LocalItemQueue or require("queue.localItemQueue")
-    local liq = LocalItemQueue(cur)
-    osd:item("children: "):text(#liq.reptable.subset):newline()
-    if not ext.empty(cur.row["notes"]) then
+    LocalItems = LocalItems or require("queues.local.items")
+    local items = LocalItems(cur)
+    osd:item("children: "):text(#items.reptable.subset):newline()
+    if not obj.empty(cur.row["notes"]) then
         osd:item("notes: "):newline():text(cur.row["notes"]):newline()
     end
 
@@ -299,11 +299,10 @@ function HomeSubmenu:item_add_media(type)
 
     local sound, format, media = edl:read()
 
-    GlobalExtractQueue = GlobalExtractQueue or
-                             require("queue.globalExtractQueue")
-    local geq = GlobalExtractQueue(nil)
-    local parent = ext.first_or_nil(function(r) return r:is_parent_of(cur) end,
-                                    geq.reptable.reps)
+    GlobalExtracts = GlobalExtracts or require("queues.global.extracts")
+    local geq = GlobalExtracts(nil)
+    local predicate = function(r) return r:is_parent_of(cur) end
+    local parent = tbl.first(predicate, geq.reptable.reps)
     if not parent then return end
 
     local vidUrl = player.get_full_url(parent)

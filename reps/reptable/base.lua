@@ -1,9 +1,10 @@
-local log = require("utils.log")
-local sort = require("reps.reptable.sort")
-local ext = require("utils.ext")
-local str = require("utils.str")
-local CSVDB = require("db.csv")
-local MarkdownDB = require("db.md")
+local log = require 'utils.log'
+local tbl = require 'utils.table'
+local obj = require 'utils.object'
+local sort = require 'reps.reptable.sort'
+local str = require 'utils.str'
+local CSVDB = require 'db.csv'
+local MarkdownDB = require 'db.md'
 
 local RepTableBase = {}
 RepTableBase.__index = RepTableBase
@@ -26,12 +27,12 @@ function RepTableBase:_init(fp, header, subsetter)
 end
 
 function RepTableBase:get_rep_by_id(id, reps)
-    return ext.first_or_nil(function(r) return r.row["id"] == id end, reps)
+    return tbl.first(function(r) return r.row["id"] == id end, reps)
 end
 
 function RepTableBase:update_dependencies()
     local updated = false
-    if ext.empty(self.reps) then return false end
+    if obj.empty(self.reps) then return false end
     for _, v in ipairs(self.reps) do
         local depId = v.row["dependency"]
         if depId then

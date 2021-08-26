@@ -1,24 +1,21 @@
-local ext = require("utils.ext")
-local cfg = require("systems.config")
-local b64 = require("utils.base64")
-local ClozeEDL = require("systems.edl.edl")
-local QAEDL = require("systems.edl.qaEdl")
-local ClozeContextEDL = require("systems.edl.clozeContextEdl")
-local ffmpeg = require("systems.ffmpeg")
-local player = require("systems.player")
-local mpu = require("mp.utils")
-local sys = require("systems.system")
-local log = require "utils.log"
-local collection = require "systems.sm.xml.collection"
-local element = require "systems.sm.xml.element"
-local references = require "systems.sm.xml.references"
-local fs = require "systems.fs"
-local str = require "utils.str"
-local item_format = require "reps.rep.item_format"
+local cfg = require 'systems.config'
+local tbl = require 'utils.table'
+local b64 = require 'utils.base64'
+local ClozeEDL = require 'systems.edl.edl'
+local QAEDL = require 'systems.edl.qaEdl'
+local ClozeContextEDL = require 'systems.edl.clozeContextEdl'
+local ffmpeg = require 'systems.ffmpeg'
+local player = require 'systems.player'
+local mpu = require 'mp.utils'
+local sys = require 'systems.system'
+local log = require 'utils.log'
+local fs = require 'systems.fs'
+local str = require 'utils.str'
+local item_format = require 'reps.rep.item_format'
 
-local GlobalItemQueue
-local GlobalExtractQueue
-local GlobalTopicQueue
+local GlobalItems
+local GlobalExtracts
+local GlobalTopics
 
 local exporter = {}
 
@@ -277,18 +274,17 @@ function exporter.export_to_sm(predicate)
 
     log.debug("Successfully pinged SMA.")
 
-    GlobalTopicQueue = GlobalTopicQueue or require("queue.globalTopicQueue")
-    local gtq = GlobalTopicQueue(nil)
-    local grandParents = ext.index_by_key(gtq.reptable.reps, "id")
+    GlobalTopics = GlobalTopics or require("queues.global.topics")
+    local gtq = GlobalTopics(nil)
+    local grandParents = tbl.index_by_key(gtq.reptable.reps, "id")
 
-    GlobalExtractQueue = GlobalExtractQueue or
-                             require("queue.globalExtractQueue")
-    local geq = GlobalExtractQueue(nil)
-    local parents = ext.index_by_key(geq.reptable.reps, "id")
+    GlobalExtracts = GlobalExtracts or require("queues.global.extracts")
+    local geq = GlobalExtracts(nil)
+    local parents = tbl.index_by_key(geq.reptable.reps, "id")
 
-    GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
-    local giq = GlobalItemQueue(nil)
-    local toExport = ext.list_filter(giq.reptable.reps, predicate)
+    GlobalItems = GlobalItems or require("queues.globalItemQueue")
+    local giq = GlobalItems(nil)
+    local toExport = tbl.filter(giq.reptable.reps, predicate)
 
     local topics = {} -- id indexed
     for _, v in ipairs(toExport) do
@@ -316,21 +312,21 @@ end
 
 --     log.err("This function is broken")
 
---     GlobalTopicQueue = GlobalTopicQueue or require("queue.globalTopicQueue")
+--     GlobalTopicQueue = GlobalTopicQueue or require("queues.global.topics")
 --     local gtq = GlobalTopicQueue(nil)
 --     local grandParents = ext.index_by_key(gtq.reptable.reps, "id")
 
---     GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
+--     GlobalItemQueue = GlobalItemQueue or require("queues.global.items")
 --     local giq = GlobalItemQueue(nil)
 --     local toExport = ext.list_filter(giq.reptable.reps, function(r) return r:to_export() end)
---     if ext.empty(toExport) then
+--     if obj.empty(toExport) then
 --         log.debug("No item repetitions to export.")
 --         return false
 --     end
 
---     GlobalExtractQueue = GlobalExtractQueue or require("queue.globalExtractQueue")
+--     GlobalExtractQueue = GlobalExtractQueue or require("queues.global.extracts")
 --     local geq = GlobalExtractQueue(nil)
---     local parents = ext.index_by_key(geq.reptable.reps, "id")
+--     local parents = tbl.index_by_key(geq.reptable.reps, "id")
 
 --     local info, _ = mpu.file_info(outputFolder)
 --     if ext.empty(outputFolder) or info ~= nil then
@@ -365,7 +361,7 @@ end
 
 --     for _, extract in pairs(parents) do
 --         local children = ext.list_filter(toExport, function(r) return r:is_child_of(extract) end)
---         if not ext.empty(children) then
+--         if not obj.empty(children) then
 --             local topic = getParent(grandParents, extract)
 --             local title = topic.row["title"]
 
@@ -432,7 +428,7 @@ end
 --                     return false
 --                 end
 
---                 if not ext.empty(mediaFile) then
+--                 if not obj.empty(mediaFile) then
 --                     content:add_image("files\\" .. mediaFile)
 --                     sys.copy(mpu.join_path(fs.media, mediaFile), mpu.join_path(filesFolder, mediaFile))
 --                 end

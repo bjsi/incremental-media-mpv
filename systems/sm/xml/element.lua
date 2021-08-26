@@ -1,5 +1,5 @@
-local ext = require "utils.ext"
-local str = require "utils.str"
+local str = require 'utils.str'
+local obj = require 'utils.object'
 
 local element = {}
 element.__index = element
@@ -24,7 +24,7 @@ function element:as_has_children_string()
 end
 
 function element:as_string()
-    if ext.empty(self.content) then
+    if obj.empty(self.content) then
         return self:as_has_children_string()
     else
         return self:as_content_string()

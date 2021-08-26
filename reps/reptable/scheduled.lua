@@ -1,10 +1,10 @@
-local Base = require("reps.reptable.base")
-local Scheduler = require("reps.scheduler")
-local ext = require("utils.ext")
-local sounds = require("systems.sounds")
-local log = require("utils.log")
-local active = require("systems.active")
-local sort = require "reps.reptable.sort"
+local Base = require 'reps.reptable.base'
+local obj = require 'utils.object'
+local Scheduler = require 'reps.scheduler'
+local sounds = require 'systems.sounds'
+local log = require 'utils.log'
+local active = require 'systems.active'
+local sort = require 'reps.reptable.sort'
 
 local ScheduledRepTable = {}
 ScheduledRepTable.__index = ScheduledRepTable
@@ -29,7 +29,7 @@ function ScheduledRepTable:next_repetition()
 
     self:update_subset()
 
-    if ext.empty(self.subset) then
+    if obj.empty(self.subset) then
         log.debug("Subset is empty. No more repetitions!")
         sounds.play("negative")
         return

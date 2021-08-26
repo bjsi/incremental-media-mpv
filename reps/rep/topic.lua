@@ -1,5 +1,5 @@
-local Scheduled = require("reps.rep.scheduled")
-local ext = require('utils.ext')
+local Scheduled = require "reps.rep.scheduled"
+local obj = require 'utils.object'
 
 local TopicRep = {}
 TopicRep.__index = TopicRep
@@ -27,7 +27,7 @@ function TopicRep:is_outstanding(checkDue)
     end
 end
 
-function TopicRep:has_dependency() return not ext.empty(self.row["dependency"]) end
+function TopicRep:has_dependency() return not obj.empty(self.row["dependency"]) end
 
 function TopicRep:type() return "topic" end
 

@@ -1,8 +1,8 @@
-local log = require("utils.log")
-local mpu = require("mp.utils")
-local ext = require("utils.ext")
-local str = require("utils.str")
-local item_format = require("reps.rep.item_format")
+local log = require 'utils.log'
+local obj = require 'utils.object'
+local mpu = require 'mp.utils'
+local str = require 'utils.str'
+local item_format = require 'reps.rep.item_format'
 
 local QAEDL = {}
 QAEDL.__index = QAEDL
@@ -117,7 +117,7 @@ end
 function QAEDL:parse_line(line)
     local ret = {}
     for v in string.gmatch(line, "[^,]*") do
-        if not ext.empty(v) then ret[#ret + 1] = v end
+        if not obj.empty(v) then ret[#ret + 1] = v end
     end
     return ret
 end

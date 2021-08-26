@@ -1,5 +1,5 @@
 local mpu = require 'mp.utils'
-local cfg = require 'systems.config'
+local options = require 'systems.options'
 local mp = require 'mp'
 
 local fs = {}
@@ -7,7 +7,7 @@ local fs = {}
 fs.base = mp.get_script_directory()
 fs.scripts = mpu.join_path(fs.base, 'scripts')
 fs.data_base = mpu.join_path(fs.base, 'data')
-fs.data = mpu.join_path(fs.data_base, cfg['queue'])
+fs.data = mpu.join_path(fs.data_base, options.queue)
 fs.media = mpu.join_path(fs.data, 'media')
 fs.bkp = mpu.join_path(fs.data, 'bkp')
 fs.topics_data = mpu.join_path(fs.data, 'topics.csv')

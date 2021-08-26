@@ -1,7 +1,9 @@
-local log = require("utils.log")
-local ext = require("utils.ext")
-local str = require("utils.str")
-local Subtitle = require("systems.subs.subtitle")
+local log = require 'utils.log'
+local obj = require 'utils.object'
+local mp = require 'mp'
+local tbl = require 'utils.table'
+local str = require 'utils.str'
+local Subtitle = require 'systems.subs.subtitle'
 
 local function new_sub_list()
     local subs_list = {}
@@ -22,7 +24,7 @@ local function new_sub_list()
         return table.concat(speech, ' ')
     end
     local insert = function(sub)
-        if sub ~= nil and not ext.list_contains(subs_list, sub) then
+        if sub ~= nil and not tbl.contains(subs_list, sub) then
             table.insert(subs_list, find_i(sub), sub)
             return true
         end
@@ -56,7 +58,7 @@ local subs = {
 
 subs.get_current = function()
     local sub_text = mp.get_property("sub-text")
-    if not ext.empty(sub_text) then
+    if not obj.empty(sub_text) then
         local sub_delay = mp.get_property_native("sub-delay")
         return Subtitle:new{
             ['text'] = sub_text,
@@ -88,7 +90,7 @@ subs.get = function()
     if sub['start'] > sub['end'] then
         sub['start'], sub['end'] = sub['end'], sub['start']
     end
-    if not ext.empty(sub['text']) then
+    if not obj.empty(sub['text']) then
         sub['text'] = str.trim(sub['text'])
         sub["text"] = str.remove_db_delimiters(sub["text"])
         -- sub['text'] = str.escape_special_chars(sub['text'])
@@ -116,7 +118,7 @@ end
 
 subs.set_starting_line = function()
     subs.clear()
-    if not ext.empty(mp.get_property("sub-text")) then
+    if not obj.empty(mp.get_property("sub-text")) then
         subs.observe()
         log.notify("Timings have been set to the current sub.", "info", 2)
     else

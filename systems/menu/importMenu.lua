@@ -1,15 +1,13 @@
-local log = require "utils.log"
-local mpu = require("mp.utils")
-local Base = require("systems.menu.submenuBase")
-local ydl = require("systems.ydl")
-local importer = require("systems.importer")
-local sounds = require("systems.sounds")
-
-local ext = require "utils.ext"
-package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"}) ..
-                   package.path
-local ui = require "user-input-module"
-local get_user_input = ui.get_user_input
+local log = require 'utils.log'
+local obj = require 'utils.object'
+local pri = require 'utils.priority'
+local mpu = require 'mp.utils'
+local Base = require 'systems.menu.submenuBase'
+local ydl = require 'systems.ydl'
+local importer = require 'systems.importer'
+local sounds = require 'systems.sounds'
+local get_user_input = require 'systems.ui.user_input'
+local ivl = require 'utils.interval'
 
 local ImportSubmenu = {}
 ImportSubmenu.__index = ImportSubmenu
@@ -66,7 +64,7 @@ function ImportSubmenu:query_update_playlists() log.notify("TODO") end
 function ImportSubmenu:query_priority_single(args, chain, i)
     local handler = function(input)
         local p = tonumber(input)
-        if not ext.validate_priority(p) then
+        if not pri.validate(p) then
             log.notify("Invalid input.")
         else
             args["priority-min"] = p
@@ -136,7 +134,7 @@ function ImportSubmenu:query_confirm(args, chain, i)
                                                  args["priority-max"], true -- TODO: dependencyImport
         )
 
-        if ext.empty(topics) then
+        if obj.empty(topics) then
             log.notify("Failed to create topics.")
             return
         end
@@ -172,7 +170,7 @@ function ImportSubmenu:query_interval(args, chain, i)
         if input == nil then return end
 
         local n = tonumber(input)
-        if n ~= nil and ext.validate_interval(n) then
+        if n ~= nil and ivl.validate(n) then
             args["interval"] = n
             self:call_chain(args, chain, i + 1)
         else
@@ -193,7 +191,7 @@ function ImportSubmenu:query_priority_range(args, chain, i)
         min = tonumber(min)
         max = tonumber(max)
 
-        if not ext.validate_priority(min) or not ext.validate_priority(max) or
+        if not pri.validate(min) or not pri.validate(max) or
             min > max then
             log.notify("Invalid priority range.")
             self:call_chain(args, chain, i)
@@ -235,7 +233,7 @@ end
 
 function ImportSubmenu:query_import()
     local handle = function(input)
-        if ext.empty(input) then return end
+        if obj.empty(input) then return end
 
         local fileinfo, _ = mpu.file_info(input)
         if fileinfo then

@@ -1,8 +1,8 @@
-local Base = require("reps.reptable.base")
-local ext = require("utils.ext")
-local sounds = require("systems.sounds")
-local active = require("systems.active")
-local log = require("utils.log")
+local Base = require 'reps.reptable.base'
+local obj = require 'utils.object'
+local sounds = require 'systems.sounds'
+local active = require 'systems.active'
+local log = require 'utils.log'
 
 local UnscheduledRepTable = {}
 UnscheduledRepTable.__index = UnscheduledRepTable
@@ -27,7 +27,7 @@ function UnscheduledRepTable:next_repetition()
     -- Base:next_repetition(self)
     -- self:update_subset()
 
-    if ext.empty(self.subset) then
+    if obj.empty(self.subset) then
         log.debug("Subset is empty. No more repetitions!")
         sounds.play("negative")
         return

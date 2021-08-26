@@ -1,14 +1,18 @@
-local sounds = require("systems.sounds")
-local fs = require("systems.fs")
-local subs = require("systems.subs.subs")
-local mpu = require("mp.utils")
-local sys = require("systems.system")
-local log = require("utils.log")
-local player = require("systems.player")
-local Stack = require("queue.stack")
-local ext = require "utils.ext"
-local active = require "systems.active"
-local menu = require "systems.menu.menuBase"
+local sounds = require 'systems.sounds'
+local subs = require 'systems.subs.subs'
+local sys = require 'systems.system'
+local log = require 'utils.log'
+local player = require 'systems.player'
+local Stack = require 'queues.stack'
+local active = require 'systems.active'
+local menu = require 'systems.menu.menuBase'
+local mp = require 'mp'
+local stack = require 'utils.stack'
+local obj = require 'utils.object'
+local ivl = require 'utils.interval'
+local af = require 'utils.afactor'
+local pri = require 'utils.priority'
+local num = require 'utils.number'
 
 local QueueBase = {}
 QueueBase.__index = QueueBase
@@ -21,27 +25,27 @@ setmetatable(QueueBase, {
     end
 })
 
-function QueueBase:_init(name, reptable, oldRep)
+function QueueBase:_init(name, reptable, old_rep)
     self.name = name
     self.reptable = reptable
     self.fwd_history = Stack:Create()
     self.bwd_history = Stack:Create()
     self.playing = nil
-    self.oldRep = oldRep
-    self.createLoopBoundaries = true
-    self.useStartStop = true
-    self.bigSeek = 5
-    self.smallSeek = 1
+    self.old_rep = old_rep
+    self.create_loop_boundaries = true
+    self.use_start_stop = true
 end
 
 function QueueBase:activate()
+    -- LuaFormatter off
     log.debug(table.concat({
-        "Activating:", self.name, "with", tostring(#self.reptable.subset),
-        "reps."
+        "Activating:", self.name,
+	"with", tostring(#self.reptable.subset), "reps."
     }, " "))
+    -- LuaFormatter on
     player.on_overrun = nil
     player.on_underrun = nil
-    return self:loadRep(self.reptable.fst, self.oldRep)
+    return self:load_rep(self.reptable.fst, self.old_rep)
 end
 
 function QueueBase:localize(_)
@@ -53,23 +57,21 @@ function QueueBase:update_speed()
     local speed = mp.get_property_number("speed")
     if not speed then return end
     if not self.playing then return end
-    self.playing.row["speed"] = ext.round(speed, 2)
+    self.playing.row.speed = num.round(speed, 2)
 end
 
--- TODO: Change name to learn
-function QueueBase:next_repetition()
-    local oldRep = self.playing
-    local toLoad = self.reptable:next_repetition()
-    if not toLoad then
-        log.debug("No rep to load. Returning.")
+function QueueBase:learn()
+    local old_rep = self.playing
+    local new_rep = self.reptable:next_repetition()
+    if not new_rep then
+        log.debug("No new rep to load.")
         return
     end
 
     self:save_data()
-    if self:loadRep(toLoad, oldRep) and oldRep ~= nil then
-        self.bwd_history:push(oldRep)
-        log.debug("Pushing oldRep onto bwd history", self.bwd_history)
-        log.notify("next rep")
+    if self:load_rep(new_rep, old_rep) and old_rep ~= nil then
+        self.bwd_history:push(old_rep)
+        log.notify("Next repetition")
         menu.update()
     end
 end
@@ -84,63 +86,59 @@ function QueueBase:validate_abloop(a, b)
     return (a >= 0 and b >= 0) and (a <= dur and b <= dur)
 end
 
-function QueueBase:navigate_history(fwd)
-    log.debug("Navigate History called:")
+function QueueBase:navigate_history(forward)
+    local old_rep = self.playing
 
-    local oldRep = self.playing
-
+    local new_rep
     local exists = function(r) return r ~= nil and not r:is_deleted() end
-
-    local toload
-
-    if fwd then
-        toload = ext.stack_first(exists, self.fwd_history)
+    if forward then
+        new_rep = stack.first(exists, self.fwd_history)
     else
-        toload = ext.stack_first(exists, self.bwd_history)
+        new_rep = stack.first(exists, self.bwd_history)
     end
 
-    if toload == nil then
+    if new_rep == nil then
         log.debug("No elements to navigate to.")
         return false
     end
 
     self:save_data()
-    if self:loadRep(toload, oldRep) then
-        if oldRep ~= nil then
-            if fwd then
-                self.bwd_history:push(oldRep)
-                log.debug("Updated bwd history to: ", self.bwd_history)
-            else
-                self.fwd_history:push(oldRep)
-                log.debug("Updated fwd history to: ", self.fwd_history)
-            end
-        end
-        return true
+    if not self:load_rep(new_rep, old_rep) then
+	    log.debug("Failed to load rep.")
+	    return false
     end
 
-    return false
+    -- update navigation history
+    if old_rep == nil then
+	    -- no need to update history
+	    return true
+    end
+
+    if forward then
+	    self.bwd_history:push(old_rep)
+    else
+	    self.fwd_history:push(old_rep)
+    end
+    return true
 end
 
 function QueueBase:clear_extract_boundaries()
     player.unset_abloop()
     subs.clear()
-    log.notify("Clearning extract boundaries.")
+    log.notify("Cleared extract boundaries.")
 end
 
 function QueueBase:set_extract_start()
     subs.set_timing('start')
-    log.notify("Setting extract start boundary.")
+    log.notify("Extract start.")
 end
 
 function QueueBase:set_extract_stop()
     subs.set_timing('end')
-    log.notify("Setting extract stop boundary.")
+    log.notify("Extract stop.")
 end
 
--- TODO: what if a >b 
 function QueueBase:set_extract_boundary()
-    local curTime = mp.get_property("time-pos")
-
     mp.commandv("ab-loop")
     local a = tonumber(mp.get_property("ab-loop-a"))
     local b = tonumber(mp.get_property("ab-loop-b"))
@@ -154,6 +152,7 @@ function QueueBase:set_extract_boundary()
     end
 end
 
+-- TODO
 function QueueBase:set_end_boundary_extract()
     local cur = self.playing
     if cur == nil then return end
@@ -175,7 +174,7 @@ function QueueBase:copy_url(includeTimestamp)
     local url = includeTimestamp and
                     player.get_full_url(cur, mp.get_property("time-pos")) or
                     player.get_full_url(cur)
-    if ext.empty(url) then
+    if obj.empty(url) then
         log.err("Failed to get full url for current rep")
         return
     end
@@ -193,7 +192,7 @@ function QueueBase:adjust_interval(n)
     if curInt == nil or adj == nil then return false end
 
     local newInt = curInt + adj
-    if ext.validate_interval(newInt) then
+    if ivl.validate(newInt) then
         cur.row["interval"] = newInt
         self:save_data()
         log.notify("interval: " .. tostring(newInt))
@@ -209,7 +208,7 @@ function QueueBase:adjust_priority(n)
     local adj = tonumber(n)
     if curPri == nil or adj == nil then return end
     local newPri = curPri + adj
-    if ext.validate_priority(newPri) and cur ~= nil then
+    if pri.validate(newPri) and cur ~= nil then
         cur.row["priority"] = newPri
         self:save_data()
         log.notify("priority: " .. tostring(newPri))
@@ -283,7 +282,7 @@ function QueueBase:adjust_afactor(n)
     if curAF == nil or adj == nil then return end
 
     local newAF = curAF + adj
-    if ext.validate_afactor(newAF) then
+    if af.validate(newAF) then
         cur.row["afactor"] = newAF
         log.debug("Updated afactor to: " .. newAF)
         log.notify("interval: " .. tostring(newAF))
@@ -307,9 +306,9 @@ end
 
 function QueueBase:clear_abloop() player.unset_abloop() end
 
-function QueueBase:set_speed(num)
-    if num < 0 or num > 5 then return end
-    mp.set_property("speed", tostring(num))
+function QueueBase:set_speed(speed)
+    if speed < 0 or speed > 5 then return end
+    mp.set_property("speed", tostring(speed))
 end
 
 function QueueBase:forward_history()
@@ -417,8 +416,8 @@ function QueueBase:subscribe_to_events() end
 
 function QueueBase:clean_up_events() end
 
-function QueueBase:loadRep(newRep, oldRep)
-    if player.play(newRep, oldRep, self.createLoopBoundaries, self.useStartStop) then
+function QueueBase:load_rep(newRep, oldRep)
+    if player.play(newRep, oldRep, self.create_loop_boundaries, self.use_start_stop) then
         self.playing = newRep
         self.reptable:update_dependencies()
         return true

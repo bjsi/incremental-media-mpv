@@ -1,21 +1,23 @@
-local log = require("utils.log")
-local str = require("utils.str")
-local ffmpeg = require("systems.ffmpeg")
-local ydl = require("systems.ydl")
-local mpu = require("mp.utils")
-local ext = require("utils.ext")
-local extractHeader = require("reps.reptable.extract_header")
-local itemHeader = require("reps.reptable.item_header")
-local ExtractRep = require("reps.rep.extract")
-local fs = require("systems.fs")
-local ClozeEDL = require("systems.edl.edl")
-local ClozeContextEDL = require("systems.edl.clozeContextEdl")
-local QAEDL = require("systems.edl.qaEdl")
-local item_format = require("reps.rep.item_format")
-local ItemRep = require("reps.rep.item")
-local TopicRep = require("reps.rep.topic")
-local sys = require("systems.system")
-local player = require("systems.player")
+local log = require 'utils.log'
+local tbl = require 'utils.table'
+local ffmpeg = require 'systems.ffmpeg'
+local mpu = require 'mp.utils'
+local extractHeader = require 'reps.reptable.extract_header'
+local itemHeader = require 'reps.reptable.item_header'
+local ExtractRep = require 'reps.rep.extract'
+local fs = require 'systems.fs'
+local ClozeEDL = require 'systems.edl.edl'
+local ClozeContextEDL = require 'systems.edl.clozeContextEdl'
+local QAEDL = require 'systems.edl.qaEdl'
+local item_format = require 'reps.rep.item_format'
+local ItemRep = require 'reps.rep.item'
+local TopicRep = require 'reps.rep.topic'
+local sys = require 'systems.system'
+local player = require 'systems.player'
+local num = require 'utils.number'
+local mp = require 'mp'
+local obj = require 'utils.object'
+local file = require 'utils.file'
 
 local repCreators = {}
 
@@ -44,7 +46,7 @@ end
 --- Copy common kv pairs
 function repCreators.copyCommon(parentRow, childRow, childHeader)
     for k, v in pairs(parentRow) do
-        if ext.list_contains(childHeader, k) then childRow[k] = v end
+        if tbl.contains(childHeader, k) then childRow[k] = v end
     end
     return childRow
 end
@@ -61,12 +63,12 @@ function repCreators.createExtract(parent, start, stop, subText, priority)
         return nil
     end
 
-    extractRow["start"] = tostring(ext.round(start, 2))
+    extractRow["start"] = tostring(num.round(start, 2))
     extractRow["dismissed"] = 0
     extractRow["toexport"] = 0
     extractRow["created"] = tostring(os.time())
     extractRow["afactor"] = 2
-    extractRow["stop"] = tostring(ext.round(stop, 2))
+    extractRow["stop"] = tostring(num.round(stop, 2))
     extractRow["id"] = sys.uuid()
     extractRow["interval"] = 1
     extractRow["nextrep"] = "1970-01-01"
@@ -99,7 +101,7 @@ local function get_video_stream_path()
     local matches = stream:gmatch("https://[^;]+")
     local videoUrl
     local format
-    for v in x:gmatch("(https://[^;]+)") do
+    for v in matches do
         format = v:gmatch("mime=video%%2F([a-z0-9]+)&")()
         if format then
             videoUrl = v
@@ -113,7 +115,7 @@ function repCreators.download_yt_audio(fullUrl, start, stop)
     local audioFileNameNoExt = tostring(os.time())
 
     local audioUrl, format = get_audio_stream_path()
-    if ext.empty(audioUrl) or ext.empty(format) then
+    if obj.empty(audioUrl) or obj.empty(format) then
         log.err("Failed to get youtube audio stream.")
         return nil
     end
@@ -180,7 +182,7 @@ function repCreators.createItem1(parent, sound, media, text, format)
         end
 
         if not sound["path"] or
-            not sys.exists(mpu.join_path(fs.media, sound["path"])) then
+            not file.exists(mpu.join_path(fs.media, sound["path"])) then
             log.debug("Failed to get audio.")
             return nil
         end
@@ -190,7 +192,7 @@ function repCreators.createItem1(parent, sound, media, text, format)
         media["path"] = repCreators.extract_media(parent, media["start"],
                                                   media["stop"], media["type"])
         if not media["path"] or
-            not sys.exists(mpu.join_path(fs.media, media["path"])) then
+            not file.exists(mpu.join_path(fs.media, media["path"])) then
             log.debug("Failed to get media.")
             return nil
         end
@@ -222,7 +224,7 @@ function repCreators.createItem1(parent, sound, media, text, format)
         ret = edl:write(sound, format, media)
     end
 
-    if not ret or not sys.exists(edlFullPathWithExt) then
+    if not ret or not file.exists(edlFullPathWithExt) then
         log.debug("Failed to create item: failed to write EDL file.")
         return nil
     end

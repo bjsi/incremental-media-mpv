@@ -1,5 +1,5 @@
 -- from: https://github.com/Ben-Kerman/immersive/blob/master/utility/base64.lua
-local ext = require "utils.ext"
+local tbl = require 'utils.table'
 
 local bit_conv = {}
 
@@ -26,7 +26,7 @@ function bit_conv.to_num(bits)
 end
 
 local function bitwise_combine(op, init, nums)
-    local numbers = ext.list_map(nums,
+    local numbers = tbl.map(nums,
                                  function(num) return bit_conv.to_bits(num) end)
 
     local res = {}

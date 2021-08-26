@@ -1,30 +1,28 @@
-local Base = require("queue.queueBase")
-local exporter = require("systems.exporter")
-local subs = require("systems.subs.subs")
-local repCreators = require("reps.rep.repCreators")
-local player = require("systems.player")
-local sounds = require("systems.sounds")
-local ext = require("utils.ext")
-local log = require("utils.log")
-local active = require("systems.active")
-local item_format = require("reps.rep.item_format")
-local cfg = require("systems.config")
+local QueueBase = require 'queues.base.base'
+local obj = require 'utils.object'
+local exporter = require 'systems.exporter'
+local subs = require 'systems.subs.subs'
+local repCreators = require 'reps.rep.repCreators'
+local player = require 'systems.player'
+local sounds = require 'systems.sounds'
+local log = require 'utils.log'
+local active = require 'systems.active'
+local item_format = require 'reps.rep.item_format'
+local cfg = require 'systems.config'
+local get_user_input = require 'systems.user_input'
+local mp = require 'mp'
+local tbl = require 'utils.table'
 
-package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"}) ..
-                   package.path
-local ui = require "user-input-module"
-local get_user_input = ui.get_user_input
-
-local LocalTopicQueue
-local LocalItemQueue
-local GlobalItemQueue
-local GlobalTopicQueue
+local LocalTopics
+local LocalItems
+local GlobalItems
+local GlobalTopics
 
 local ExtractQueueBase = {}
 ExtractQueueBase.__index = ExtractQueueBase
 
 setmetatable(ExtractQueueBase, {
-    __index = Base, -- this is what makes the inheritance work
+    __index = QueueBase, -- this is what makes the inheritance work
     __call = function(cls, ...)
         local self = setmetatable({}, cls)
         self:_init(...)
@@ -32,15 +30,12 @@ setmetatable(ExtractQueueBase, {
     end
 })
 
-function ExtractQueueBase:_init(name, oldRep, repTable)
-    Base._init(self, name, repTable, oldRep)
-    self.bigSeek = 2.5
-    self.smallSeek = 0.1
+function ExtractQueueBase:_init(name, old_rep, rep_table)
+    QueueBase._init(self, name, rep_table, old_rep)
+    -- LuaFormatter off
     self.script_messages = {
         ["incmedia-create-qa"] = function() self:create_qa() end,
-        ["incmedia-create-cloze-context"] = function()
-            self:extract(item_format.cloze_context)
-        end,
+        ["incmedia-create-cloze-context"] = function() self:extract(item_format.cloze_context) end,
         ["incmedia-extract-extract"] = function() self:extract("extract") end
     }
     self.create_qa_chain = {
@@ -51,6 +46,7 @@ function ExtractQueueBase:_init(name, oldRep, repTable)
         function(args, chain, i) self:query_answer(args, chain, i) end,
         function(args, chain, i) self:query_confirm_qa(args, chain, i) end
     }
+    -- LuaFormatter on
 end
 
 function ExtractQueueBase:clean_up_events() self:unregister_script_messages() end
@@ -70,7 +66,7 @@ function ExtractQueueBase:unregister_script_messages()
 end
 
 function ExtractQueueBase:activate()
-    if Base.activate(self) then
+    if QueueBase.activate(self) then
         self:register_script_messages()
         return true
     end
@@ -92,9 +88,9 @@ function ExtractQueueBase:child()
         return false
     end
 
-    LocalItemQueue = LocalItemQueue or require("queue.localItemQueue")
-    local queue = LocalItemQueue(self.playing)
-    if ext.empty(queue.reptable.subset) then
+    LocalItems = LocalItems or require("queues.local.items")
+    local queue = LocalItems(self.playing)
+    if obj.empty(queue.reptable.subset) then
         log.debug("No children available for extract")
         sounds.play("negative")
         return false
@@ -111,8 +107,8 @@ function ExtractQueueBase:parent()
         return false
     end
 
-    LocalTopicQueue = LocalTopicQueue or require("queue.localTopicQueue")
-    local queue = LocalTopicQueue(self.playing)
+    LocalTopics = LocalTopics or require("queues.local.topics")
+    local queue = LocalTopics(self.playing)
     active.change_queue(queue)
 end
 
@@ -170,7 +166,7 @@ function ExtractQueueBase:advance_start(n)
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
-        Base.advance_start(self, n)
+        QueueBase.advance_start(self, n)
     else
         self:adjust_extract(false, true, n)
     end
@@ -181,7 +177,7 @@ function ExtractQueueBase:advance_stop(n)
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
-        Base.advance_stop(self, n)
+        QueueBase.advance_stop(self, n)
     else
         self:adjust_extract(false, false, n)
     end
@@ -192,7 +188,7 @@ function ExtractQueueBase:postpone_start(n)
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
-        Base.postpone_start(self, n)
+        QueueBase.postpone_start(self, n)
     else
         self:adjust_extract(true, true, n)
     end
@@ -203,7 +199,7 @@ function ExtractQueueBase:postpone_stop(n)
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if self:validate_abloop(a, b) then
-        Base.postpone_stop(self, n)
+        QueueBase.postpone_stop(self, n)
     else
         self:adjust_extract(true, false, n)
     end
@@ -255,8 +251,8 @@ function ExtractQueueBase:query_confirm_qa(args, chain, i)
 end
 
 function ExtractQueueBase:add_item(itemRep)
-    GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
-    local giq = GlobalItemQueue(nil)
+    GlobalItems = GlobalItems or require("queues.global.items")
+    local giq = GlobalItems(nil)
     local irt = giq.reptable
     if irt:add_to_reps(itemRep) then
         sounds.play("echo")
@@ -438,9 +434,9 @@ function ExtractQueueBase:handle_extract_extract(start, stop, curRep)
     local queue = active.queue
     if queue == nil then return end
 
-    GlobalTopicQueue = GlobalTopicQueue or require("queue.globalTopicQueue")
-    local gtq = GlobalTopicQueue(nil)
-    local parent = ext.first_or_nil(
+    GlobalTopics = GlobalTopics or require("queues.global.topics")
+    local gtq = GlobalTopics(nil)
+    local parent = tbl.first(
                        function(r) return r:is_parent_of(curRep) end,
                        gtq.reptable.reps)
     if parent == nil then
@@ -450,7 +446,7 @@ function ExtractQueueBase:handle_extract_extract(start, stop, curRep)
 
     local extract = repCreators.createExtract(parent, start, stop,
                                               curRep.row.subs)
-    if ext.empty(extract) then return false end
+    if obj.empty(extract) then return false end
 
     if queue.reptable:add_to_reps(extract) then
         sounds.play("echo")
@@ -466,7 +462,7 @@ end
 
 function ExtractQueueBase:handle_extract_cloze(curRep, sound, format)
     local itemRep = repCreators.createItem1(curRep, sound, nil, nil, format)
-    if ext.empty(itemRep) then
+    if obj.empty(itemRep) then
         log.debug("Failed to create item rep.")
         return false
     end

@@ -1,9 +1,8 @@
-local log = require("utils.log")
-local item_format = require("reps.rep.item_format")
-local mpu = require("mp.utils")
-local ext = require("utils.ext")
-local fs = require("systems.fs")
-local str = require("utils.str")
+local log = require 'utils.log'
+local obj = require 'utils.object'
+local tbl = require 'utils.table'
+local item_format = require 'reps.rep.item_format'
+local mpu = require 'mp.utils'
 
 local ClozeContextEDL = {}
 ClozeContextEDL.__index = ClozeContextEDL
@@ -103,7 +102,7 @@ function ClozeContextEDL:read()
     end
 
     local function pred(arr) return arr == nil or #arr ~= 3 end
-    if ext.list_any(pred, {cloze, context}) then
+    if tbl.list_any(pred, {cloze, context}) then
         log.err("Invalid EDL data: unexpected parsed array size.")
         return nil
     end
@@ -132,7 +131,7 @@ end
 function ClozeContextEDL:parse_line(line)
     local ret = {}
     for v in string.gmatch(line, "[^,]*") do
-        if not ext.empty(v) then ret[#ret + 1] = v end
+        if not obj.empty(v) then ret[#ret + 1] = v end
     end
     return ret
 end

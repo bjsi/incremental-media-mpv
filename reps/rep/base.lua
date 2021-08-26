@@ -1,5 +1,5 @@
-local ext = require("utils.ext")
-local player = require("systems.player")
+local player = require 'systems.player'
+local file = require 'utils.file'
 
 local Rep = {}
 Rep.__index = Rep
@@ -20,7 +20,7 @@ function Rep:is_deleted()
     if self:is_yt() then
         return false
     elseif self:is_local() then
-        return not ext.file_exists(player.get_full_url(self))
+        return not file.exists(player.get_full_url(self))
     end
 end
 

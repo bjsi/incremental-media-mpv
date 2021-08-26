@@ -1,11 +1,10 @@
-local DB = require("db.base")
-local log = require("utils.log")
+local DBBase = require("db.base")
 
 local CSVDB = {}
 CSVDB.__index = CSVDB
 
 setmetatable(CSVDB, {
-    __index = DB,
+    __index = DBBase,
     __call = function(cls, ...)
         local self = setmetatable({}, cls)
         self:_init(...)
@@ -14,8 +13,7 @@ setmetatable(CSVDB, {
 })
 
 function CSVDB:_init(fp, default_header)
-    log.debug("Initialising CSV database: " .. fp)
-    DB._init(self, fp, ",", default_header)
+    DBBase._init(self, fp, ",", default_header)
 end
 
 function CSVDB:write_cell(handle, idx, total_cells, cell)

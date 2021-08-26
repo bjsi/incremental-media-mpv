@@ -2,110 +2,69 @@ local mpu = require 'mp.utils'
 local str = require 'utils.str'
 local log = require 'utils.log'
 local fs = require 'systems.fs'
-local ext = require 'utils.ext'
 local mp = require 'mp'
+local file = require 'utils.file'
+local platforms = require 'systems.platform'
 
 local sys = {}
 
-local function nix_ipc_socket(pid) return "/tmp/mpv-socket-" .. pid end
+local function is_win()
+	return sys.platform == platforms.win
+end
 
-local function windows_ipc_pipe(pid) return [[\\.\pipe\mpv-socket-]] .. pid end
+function sys.already_running()
+    local pid_file = mpu.join_path(fs.data, "pid_file")
+    local pid = file.read_all_text(pid_file)
+    return pid and sys.is_process_running(pid)
+end
+
+function sys.write_pid_file()
+   	local pid_file = mpu.join_path(fs.data, "pid_file")
+	file.write_all_text(pid_file, mpu.getpid())
+	mp.register_event("shutdown", function() file.delete(pid_file) end)
+end
 
 function sys.setup_ipc()
     local pid = tostring(mpu.getpid())
     local path
-    if sys.platform == "win" then
-        path = windows_ipc_pipe(pid)
+    if is_win() then
+        path = [[\\.\pipe\mpv-socket-]] .. pid
     else
-        path = nix_ipc_socket(pid)
+        path = "/tmp/mpv-socket-" .. pid
     end
     mp.set_property("input-ipc-server", path)
     mp.register_event("shutdown", function() os.remove(path) end)
 end
 
-function sys.read_text(file)
-    local h = io.open(file, "r")
-    local data
-    if h ~= nil then data = h:read("*all") end
-    return data
-end
-
-function sys.write_to_ipc(pipeOrSock, data)
+function sys.write_to_ipc(path, data)
     local args
-    if sys.platform == "win" then
-        args = {"cmd", "/c", table.concat({"echo", data, ">", pipeOrSock}, " ")}
-    elseif sys.platform == "mac" or sys.platform == "lnx" then
-        data = {command = str.split(data)}
-        args = {
-            "sh", "-c",
-            "echo '" .. mpu.format_json(data) .. "' | socat - " .. pipeOrSock
-        }
+    if is_win() then
+	local echo_data_to_pipe = table.concat({ "echo", data, ">", path}, " ")
+        args = {"cmd", "/c", echo_data_to_pipe}
+    else
+        local payload = mpu.format_json({command = str.split(data)})
+	local echo_data_to_sock = "echo '" .. payload .. "' | socat - " .. path
+        args = {"sh", "-c", echo_data_to_sock}
     end
-    sys.background_process(args)
+    sys.background_process(args) -- TODO
 end
 
-function sys.pid_running(pid)
+function sys.is_process_running(pid)
     pid = tostring(pid)
     local args
-    if sys.platform == "lnx" or sys.platform == "max" then
-        args = {"ps", "-p", pid}
-    elseif sys.platform == "win" then
+    if sys.platform == "win" then
+	-- LuaFormatter off
         args = {
-            "powershell", "-NoProfile", "-Command", "Get-Process -Id " .. pid
+            "powershell",
+	    "-NoProfile",
+	    "-Command",
+	    "Get-Process -Id " .. pid
         }
+	-- LuaFormatter on
+    else
+	args = {"ps", "-p", pid}
     end
     return sys.subprocess(args).status == 0
-end
-
-function sys.json_rpc_request(method, params)
-    local req = {id = 1, method = method, params = params}
-
-    local json = mpu.format_json(req)
-    if not json then
-        log.debug("Invalid json")
-        return nil
-    end
-
-    local jsonFile = mpu.join_path(sys.tmp_dir, "body.json")
-    local h = io.open(jsonFile, "w")
-    h:write(json .. "\n")
-    h:close()
-
-    local args = {"localhost", "9898", jsonFile}
-
-    if sys.platform == "win" then
-        local bat = mpu.join_path(fs.scripts, "curl_telnet.bat")
-        table.insert(args, 1, bat)
-        return sys.subprocess(args)
-    elseif sys.platform == "lnx" or sys.platform == "mac" then
-        local sh = mpu.join_path(fs.scripts, "curl_telnet.sh")
-        table.insert(args, 1, sh)
-        return sys.subprocess(args)
-    end
-end
-
-function sys.create_essential_files()
-    local folders = {fs.data, fs.media, fs.bkp}
-    for _, folder in pairs(folders) do
-        if not sys.exists(folder) then
-            if not sys.create_dir(folder) then
-                log.debug("Could not create essential folder: " .. folder ..
-                              ". Exiting...")
-                mp.commmandv("quit")
-                return false
-            end
-        end
-    end
-
-    if not ext.file_exists(fs.sine) then sys.copy(fs.sine_base, fs.sine) end
-
-    if not ext.file_exists(fs.meaning_zh) then
-        sys.copy(fs.meaning_zh_base, fs.meaning_zh)
-    end
-
-    if not ext.file_exists(fs.silence) then
-        sys.copy(fs.silence_base, fs.silence)
-    end
 end
 
 function sys.get_bkp_name(ogPath)
@@ -115,10 +74,10 @@ function sys.get_bkp_name(ogPath)
     return mpu.join_path(fs.bkp, no_ext .. tostring(os.time()) .. ".csv")
 end
 
-function sys.backup()
+function sys.backup() -- TODO
     local files = {fs.extracts_data, fs.topics_data, fs.items_data}
     for _, v in pairs(files) do
-        if sys.exists(v) then
+        if file.exists(v) then
             log.debug("Backing up file: " .. v)
             local h1 = io.open(v, "r")
             local s = h1:read("*a")
@@ -129,18 +88,6 @@ function sys.backup()
             h2:close()
         end
     end
-end
-
---- Check if a file or directory exists in this path
-function sys.exists(file)
-    local ok, err, code = os.rename(file, file)
-    if not ok then
-        if code == 13 then
-            -- Permission denied, but it exists
-            return true
-        end
-    end
-    return ok, err
 end
 
 function sys.verify_dependencies()
@@ -156,57 +103,36 @@ function sys.verify_dependencies()
     log.debug("All dependencies available in path.")
 end
 
-function sys.copy(from, to)
-    local fromFile = io.open(from, "r")
-    if fromFile == nil then
-        log.debug("Failed to read " .. to)
-        return false
-    end
-
-    local fromData = fromFile:read("*a")
-    fromFile:close()
-
-    local toFile = io.open(to, "w")
-    if toFile == nil then
-        log.debug("Failed to write to " .. to)
-        return false
-    end
-
-    toFile:write(fromData)
-    toFile:close()
-    return true
-end
-
 sys.platform = (function()
     local ostype = os.getenv("OSTYPE")
-    if ostype and ostype == "linux-gnu" then return "lnx" end
+    if ostype and ostype == "linux-gnu" then return platforms.lnx end
 
     local os_env = os.getenv("OS")
-    if os_env and os_env == "Windows_NT" then return "win" end
+    if os_env and os_env == "Windows_NT" then return platforms.win end
 
     -- TODO macOS
 
     -- taken from mpv's built-in console
     local default = {}
     if mp.get_property_native("options/vo-mmcss-profile", default) ~= default then
-        return "win"
+        return platforms.win
     elseif mp.get_property_native("options/macos-force-dedicated-gpu", default) ~=
         default then
-        return "mac"
+        return platforms.mac
     end
-    return "lnx"
+    return platforms.lnx
 end)()
 
 sys.tmp_dir = (function()
-    if sys.platform == "lnx" or sys.platform == "mac" then
+    if is_win() then
+        return os.getenv("TEMP")
+    else
         local tmpdir_env = os.getenv("TMPDIR")
         if tmpdir_env then
             return tmpdir_env
         else
             return "/tmp"
         end
-    elseif sys.platform == "win" then
-        return os.getenv("TEMP")
     end
 end)()
 
@@ -234,23 +160,17 @@ function sys.subprocess(args)
 end
 
 function sys.has_dependency(dependency)
-    local args = sys.platform == "win" and {"where", "/q"} or {"which"}
-    table.insert(args, dependency)
+    local args
+    if is_win() then
+	    args = {"where", "/q", dependency}
+    else
+	    args = {"which", dependency}
+    end
     local ret = sys.subprocess(args)
     return ret.status == 0
 end
 
-function sys.file2base64(fp)
-    local script = "./file2base64"
-    if sys.platform == "win" then script = script .. ".bat" end
-    local args = {script, fp}
-    return sys.subprocess(args)
-end
-
--- TODO: test: join_path should return url if it is absolute
-function sys.is_absolute_path(url) return mpu.join_path("testing", url) == url end
-
-function sys.background_process(args, callback)
+function sys.background_process(args, callback) -- TODO
     return mp.command_native_async({
         name = "subprocess",
         playback_only = false,
@@ -263,80 +183,25 @@ function sys.background_process(args, callback)
     end)
 end
 
-function sys.list_files(dir) return mpu.readdir(dir, "files") end
-
-function sys.create_dir(path)
-    local stat_res = mpu.file_info(path)
-    if stat_res then return stat_res.is_dir end
-
-    local args
-    if sys.platform == "lnx" or sys.platform == "mac" then
-        args = {"mkdir", "-p", path}
-    elseif sys.platform == "win" then
-        args = {"cmd", "/d", "/c", "mkdir", (path:gsub("/", "\""))}
-    end
-    return sys.subprocess(args).status == 0
-end
-
-function sys.move_file(src_path, tgt_path)
-    local cmd
-    if sys.platform == "lnx" or sys.platform == "mac" then
-        cmd = "mv"
-    elseif sys.platform == "win" then
-        cmd = "move"
-    end
-    return sys.subprocess {cmd, src_path, tgt_path} == 0
-end
-
-local ps_clip_write_fmt =
-    "Set-Clipboard ([Text.Encoding]::UTF8.GetString((%s)))"
-local function ps_clip_write(str)
-    local bytes = {}
-    for i = 1, #str do table.insert(bytes, (str:byte(i))) end
-    return string.format(ps_clip_write_fmt, table.concat(bytes, ","))
-end
-
-local ps_clip_read = [[
-Add-Type -AssemblyName System.Windows.Forms
-$clip = [Windows.Forms.Clipboard]::GetText()
-$utf8 = [Text.Encoding]::UTF8.GetBytes($clip)
-[Console]::OpenStandardOutput().Write($utf8, 0, $utf8.length)]]
-
-function sys.clipboard_read()
-    if sys.platform == "mac" then
-        local pipe = io.popen("LANG=en_US.UTF-8 pbpaste", "r")
-        local clip = pipe:read("*a")
-        pipe:close()
-        return clip
-    else
-        local args
-        if sys.platform == "lnx" then
-            args = {"xclip", "-out", "-sel", "clipboard"}
-        elseif sys.platform == "win" then
-            args = {"powershell", "-NoProfile", "-Command", ps_clip_read}
-        end
-
-        local ret = sys.subprocess(args)
-        if ret.status == 0 then
-            return ret.stdout
-        else
-            return false, ret.error
-        end
-    end
-end
-
 function sys.uuid()
     local args
-    if sys.platform == "lnx" or sys.platform == "mac" then
+    if is_win() then
+	-- LuaFormatter off
         args = {
-            "sh", "-c",
-            "cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-zA-Z0-9' | head -c 32"
-        }
-    elseif sys.platform == "win" then
-        args = {
-            "powershell", "-NoProfile", "-Command",
+            "powershell",
+	    "-NoProfile",
+	    "-Command",
             "[guid]::NewGuid().ToString()"
         }
+	-- LuaFormatter on
+    else
+	-- LuaFormatter off
+        args = {
+            "sh",
+	    "-c",
+            "cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-zA-Z0-9' | head -c 32"
+        }
+	-- LuaFormatter on
     end
     local ret = sys.subprocess(args)
     if ret.status == 0 then
@@ -344,36 +209,6 @@ function sys.uuid()
     else
         error("Failed to generate uuid with error: " .. ret.error)
     end
-end
-
-function sys.clipboard_write(str)
-    if sys.platform == "lnx" or sys.platform == "mac" then
-        local cmd
-        if sys.platform == "lnx" then
-            cmd = "xclip -in -selection clipboard"
-        else
-            cmd = "LANG=en_US.UTF-8 pbcopy"
-        end
-
-        local pipe = io.popen(cmd, "w")
-        pipe:write(str)
-        pipe:close()
-    elseif sys.platform == "win" then
-        sys.background_process {
-            "powershell", "-NoProfile", "-Command", ps_clip_write(str)
-        }
-    end
-end
-
-function sys.set_primary_sel(str)
-    if sys.platform ~= "lnx" then
-        log.err("Primary selection is only available in X11 environments")
-        return
-    end
-
-    local pipe = io.popen("xclip -in -selection primary", "w")
-    pipe:write(str)
-    pipe:close()
 end
 
 return sys

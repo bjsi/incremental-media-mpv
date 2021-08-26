@@ -1,24 +1,26 @@
-local sounds = require("systems.sounds")
-local player = require("systems.player")
-local log = require("utils.log")
-local active = require("systems.active")
-local Base = require("queue.queueBase")
-local ext = require("utils.ext")
-local TopicRepTable = require("reps.reptable.topics")
-local repCreators = require("reps.rep.repCreators")
-local ydl = require "systems.ydl"
-local importer = require "systems.importer"
-local subs = require("systems.subs.subs")
+local sounds = require 'systems.sounds'
+local player = require 'systems.player'
+local log = require 'utils.log'
+local active = require 'systems.active'
+local QueueBase = require 'queues.base.base'
+local TopicRepTable = require 'reps.reptable.topics'
+local repCreators = require 'reps.rep.repCreators'
+local ydl = require 'systems.ydl'
+local subs = require 'systems.subs.subs'
+local obj = require 'utils.object'
+local mp = require 'mp'
+local tbl = require 'utils.table'
+local num = require 'utils.number'
 
-local GlobalExtractQueue
-local GlobalItemQueue
-local LocalExtractQueue
+local GlobalExtracts
+local GlobalItems
+local LocalExtracts
 
 local TopicQueueBase = {}
 TopicQueueBase.__index = TopicQueueBase
 
 setmetatable(TopicQueueBase, {
-    __index = Base,
+    __index = QueueBase,
     __call = function(cls, ...)
         local self = setmetatable({}, cls)
         self:_init(...)
@@ -30,7 +32,7 @@ setmetatable(TopicQueueBase, {
 --- @param oldRep Rep Last playing Rep object.
 --- @param subsetter function Subset creator function.
 function TopicQueueBase:_init(name, oldRep, subsetter)
-    Base._init(self, name, TopicRepTable(subsetter), oldRep)
+    QueueBase._init(self, name, TopicRepTable(subsetter), oldRep)
     self.createLoopBoundaries = false -- allow seeking behind curtime
     self.bigSeek = 10
     self.smallSeek = 2
@@ -39,7 +41,7 @@ end
 function TopicQueueBase:localize(video)
     local cur = self.playing
     if not cur or cur:is_local() then return end
-    local url = cur.row["url"]
+    local url = cur.row.url
     local file = video and ydl.download_video(url) or ydl.download_audio(url)
     if not file then
         log.debug("Failed to download locally.")
@@ -51,17 +53,17 @@ function TopicQueueBase:localize(video)
     cur.row["url"] = file
     cur.row["type"] = "local"
 
-    LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
-    local leq = LocalExtractQueue(cur)
+    LocalExtracts = LocalExtracts or require("queues.local.extracts")
+    local extracts = LocalExtracts(cur)
     local saved
-    for _, extract in ipairs(leq.reptable.subset) do
+    for _, extract in ipairs(extracts.reptable.subset) do
         saved = true
         extract.row["url"] = file
         extract.row["type"] = "local"
     end
 
     self:save_data()
-    if saved then leq:save_data() end
+    if saved then extracts:save_data() end
 
     -- Reload the current file
     self:loadRep(cur, nil)
@@ -79,34 +81,34 @@ function TopicQueueBase:load_grand_queue()
         return
     end
 
-    LocalExtractQueue = LocalExtractQueue or require("queue.globalExtractQueue")
-    local leq = LocalExtractQueue(topicParent)
-    local extractReps = leq.reptable.reps
-    local extractParentIds = ext.list_map(extractReps,
-                                          function(r) return r.row["id"] end)
-    if ext.empty(extractParentIds) then
+    LocalExtracts = LocalExtracts or require("queues.global.extracts")
+    local extracts = LocalExtracts(topicParent)
+    local extract_reps = extracts.reptable.reps
+    local mapper =  function(r) return r.row["id"] end
+    local extractParentIds = tbl.map(extract_reps, mapper)
+    if obj.empty(extractParentIds) then
         log.debug("No available grandchild repetitions.")
         return
     end
 
-    local GlobalItemQueue = GlobalItemQueue or require("queue.globalItemQueue")
-    local giq = GlobalItemQueue(nil)
-    local itemReps = giq.reptable.reps
+    GlobalItems = GlobalItems or require("queues.global.items")
+    local items = GlobalItems(nil)
+    local itemReps = items.reptable.reps
     local isGrandChild = function(r)
-        return ext.list_contains(extractParentIds, r.row["parent"])
+        return tbl.contains(extractParentIds, r.row["parent"])
     end
-    local grandChildren = ext.list_filter(itemReps, isGrandChild)
-    if ext.empty(grandChildren) then
+    local grandChildren = tbl.filter(itemReps, isGrandChild)
+    if obj.empty(grandChildren) then
         log.debug("No available grandchild repetitions.")
     end
 
-    giq.reptable.subset = grandChildren
+    items.reptable.subset = grandChildren
     self:clean_up_events()
-    active.change_queue(giq)
+    active.change_queue(items)
 end
 
 function TopicQueueBase:activate()
-    if Base.activate(self) then
+    if QueueBase.activate(self) then
         player.on_overrun = function() self:next_repetition() end
         return true
     end
@@ -129,7 +131,7 @@ end
 function TopicQueueBase:update_curtime(time)
     if not time then return end
     if not self.playing then return end
-    self.playing.row["curtime"] = tostring(ext.round(time, 2))
+    self.playing.row["curtime"] = tostring(num.round(time, 2))
 end
 
 function TopicQueueBase:split_chapters()
@@ -141,7 +143,7 @@ function TopicQueueBase:split_chapters()
     end
 
     local info = ydl.get_info(cur.row["url"])
-    if ext.empty(info) or ext.empty(info["chapters"]) then
+    if obj.empty(info) or obj.empty(info["chapters"]) then
         log.debug("Failed to get vid info or chapters.")
         sounds.play("negative")
         return
@@ -165,9 +167,8 @@ function TopicQueueBase:handle_extract(start, stop, curRep)
         return false
     end
 
-    GlobalExtractQueue = GlobalExtractQueue or
-                             require("queue.globalExtractQueue")
-    local geq = GlobalExtractQueue(nil)
+    GlobalExtracts = GlobalExtracts or require("queues.global.extracts")
+    local geq = GlobalExtracts(nil)
     if geq.reptable:add_to_reps(extract) then
         sounds.play("echo")
         player.unset_abloop()
@@ -190,9 +191,9 @@ function TopicQueueBase:child()
         return false
     end
 
-    LocalExtractQueue = LocalExtractQueue or require("queue.localExtractQueue")
-    local extractQueue = LocalExtractQueue(cur)
-    if ext.empty(extractQueue.reptable.subset) then
+    LocalExtracts = LocalExtracts or require("queues.local.extracts")
+    local extractQueue = LocalExtracts(cur)
+    if obj.empty(extractQueue.reptable.subset) then
         log.debug("No children available for topic: " .. cur.row["title"])
         sounds.play("negative")
         return false

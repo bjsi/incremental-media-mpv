@@ -1,9 +1,9 @@
 local log = require("utils.log")
 
-local DB = {}
-DB.__index = DB
+local DBBase = {}
+DBBase.__index = DBBase
 
-setmetatable(DB, {
+setmetatable(DBBase, {
     __call = function(cls, ...)
         local self = setmetatable({}, cls)
         self:_init(...)
@@ -11,25 +11,20 @@ setmetatable(DB, {
     end
 })
 
-function DB:_init(fp, sep, default_header)
-    log.debug("Initialising database: " .. fp .. " with seperator: " .. sep)
+function DBBase:_init(fp, sep, default_header)
     self.fp = fp
     self.sep = sep
     self.default_header = default_header
 end
 
---- Open the database file for IO with mode and return the file handle.
---- @param mode string
-function DB:open(mode)
-    local handle = io.open(self.fp, mode)
-    if handle == nil then log.err("Failed to open database: " .. self.fp) end
-    return handle
+function DBBase:open(mode)
+    return io.open(self.fp, mode)
 end
 
-function DB:read_reps(rep_func)
+function DBBase:read_reps(rep_func)
     local handle = self:open("r")
     if handle == nil then
-        log.debug("Database file does not exist. Creating empty rep table.")
+        log.debug("Creating new empty database.")
         return self.default_header, {}
     end
 
@@ -55,10 +50,8 @@ function DB:read_reps(rep_func)
     return header, reps
 end
 
---- Write a RepTable to the database file.
---- @param repTable RepTable
-function DB:write(repTable)
-    if repTable == nil or repTable.header == nil then
+function DBBase:write(rep_table)
+    if rep_table == nil or rep_table.header == nil then
         log.err("Failed to write invalid data to: " .. self.fp)
         return false
     end
@@ -69,7 +62,7 @@ function DB:write(repTable)
         return false
     end
 
-    if not self:write_header(handle, repTable.header) then
+    if not self:write_header(handle, rep_table.header) then
         log.err("Failed to write header to: " .. self.fp)
         handle:close()
         return false
@@ -77,7 +70,7 @@ function DB:write(repTable)
 
     log.debug("Successfully wrote header to: " .. self.fp)
 
-    if not self:write_rows(handle, repTable) then
+    if not self:write_rows(handle, rep_table) then
         log.err("Failed to write rows to: " .. self.fp)
         handle:close()
         return false
@@ -89,11 +82,11 @@ function DB:write(repTable)
     return true
 end
 
-function DB:preprocess_read_row(row) return row end
+function DBBase:preprocess_read_row(row) return row end
 
-function DB:parse_row(row) return string.gmatch(row, "[^" .. self.sep .. "]*") end
+function DBBase:parse_row(row) return string.gmatch(row, "[^" .. self.sep .. "]*") end
 
-function DB:read_header(handle)
+function DBBase:read_header(handle)
     local ret = {}
     local data = handle:read()
     if data == nil then
@@ -107,7 +100,7 @@ function DB:read_header(handle)
 end
 
 --- Reads the rows of the database returning a table of Rep objects.
-function DB:read_rows(handle, header, rep_func)
+function DBBase:read_rows(handle, header, rep_func)
     local ret = {}
     for line in handle:lines() do
         line = self:preprocess_read_row(line)
@@ -133,12 +126,12 @@ function DB:read_rows(handle, header, rep_func)
     return ret
 end
 
-function DB:write_header(handle, header)
+function DBBase:write_header(handle, header)
     for i, v in ipairs(header) do self:write_cell(handle, i, #header, v) end
     return true
 end
 
-function DB:write_rows(handle, repTable)
+function DBBase:write_rows(handle, repTable)
     for _, rep in ipairs(repTable.reps) do
         for i, h in ipairs(repTable.header) do
             local cell = rep.row[h]
@@ -149,4 +142,4 @@ function DB:write_rows(handle, repTable)
     return true
 end
 
-return DB
+return DBBase

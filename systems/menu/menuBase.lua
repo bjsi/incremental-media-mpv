@@ -1,7 +1,8 @@
-local log = require "utils.log"
-local ext = require "utils.ext"
-local cfg = require "systems.config"
-local OSD = require('systems.osd_styler')
+local log = require 'utils.log'
+local cfg = require 'systems.config'
+local mp = require 'mp'
+local OSD = require 'systems.osd_styler'
+local tbl = require 'utils.table'
 
 -- Based on: https://github.com/Ajatt-Tools/mpvacious/blob/master/subs2srs.lua
 
@@ -43,7 +44,7 @@ menu.base_binds = {
 
 menu.active_binds = {}
 
-ext.table_copy(menu.base_binds, menu.active_binds)
+tbl.copy_to(menu.base_binds, menu.active_binds)
 
 menu.update = function()
 
@@ -116,7 +117,7 @@ end
 menu.reset_binds_to_base = function()
     menu.remove_binds()
     menu.active_binds = {}
-    ext.table_copy(menu.base_binds, menu.active_binds)
+    tbl.copy_to(menu.base_binds, menu.active_binds)
     menu.add_binds()
 end
 

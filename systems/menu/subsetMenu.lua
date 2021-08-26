@@ -1,12 +1,8 @@
-local active = require("systems.active")
-local log = require("utils.log")
-local Base = require("systems.menu.submenuBase")
-local ext = require("utils.ext")
-local str = require("utils.str")
-package.path = mp.command_native({"expand-path", "~~/script-modules/?.lua;"}) ..
-                   package.path
-local ui = require "user-input-module"
-local get_user_input = ui.get_user_input
+local active = require 'systems.active'
+local obj = require 'utils.object'
+local log = require 'utils.log'
+local Base = require 'systems.menu.submenuBase'
+local get_user_input = require 'systems.ui.user_input'
 
 local SubsetMenu = {}
 SubsetMenu.__index = SubsetMenu
@@ -28,8 +24,6 @@ function SubsetMenu:_init()
     }
 end
 
-function SubsetMenu:show_results(res) for _, v in ipairs(res) do end end
-
 function SubsetMenu:call_chain(args, chain, i)
     if chain ~= nil and i <= #chain then
         chain[i](args, chain, i)
@@ -40,7 +34,7 @@ end
 
 function SubsetMenu:query_title()
     local handle = function(input)
-        if ext.empty(input) then
+        if obj.empty(input) then
             log.notify("Cancelling.")
             return
         end
@@ -51,7 +45,7 @@ function SubsetMenu:query_title()
         elseif active.queue.name:find("Extract") then
         elseif active.queue.name:find("Item") then
         end
-        self:call_chain(args, chain, i + 1)
+        self:call_chain(args, self.tasks, i + 1)
     end
 
     get_user_input(handle, {text = "Search: ", replace = true})

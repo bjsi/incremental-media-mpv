@@ -1,8 +1,8 @@
-local log = require "utils.log"
-local dt = require "utils.date"
-local mpu = require("mp.utils")
-local ext = require("utils.ext")
-local element = require "systems.sm.xml.element"
+local log = require 'utils.log'
+local obj = require 'utils.object'
+local dt = require 'utils.date'
+local mpu = require 'mp.utils'
+local element = require 'systems.sm.xml.element'
 
 local collection = {}
 collection.__index = collection
@@ -42,13 +42,13 @@ end
 function collection:write(n)
     self.count.content = tostring(n)
 
-    if ext.empty(self.root.children) then
+    if obj.empty(self.root.children) then
         log.debug("No elements to write!")
         return false
     end
 
     local data = self:as_string()
-    if ext.empty(data) then
+    if obj.empty(data) then
         log.err("XML data string was nil or empty.")
         return false
     end

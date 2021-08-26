@@ -1,4 +1,5 @@
 local mpu = require("mp.utils")
+local mp = require 'mp'
 local fs = require("systems.fs")
 local sys = require("systems.system")
 local log = require("utils.log")
@@ -21,14 +22,23 @@ local sounds = {
 }
 
 local pid = tostring(mpu.getpid())
-local pipeOrSock = sys.platform == "win" and [[\\.\pipe\background-sounds]] ..
-                       pid or "/tmp/background-sounds" .. pid .. ".sock"
+local pipeOrSock
+if sys.platform == "win" then
+	pipeOrSock = [[\\.\pipe\background-sounds]] .. pid
+else
+	pipeOrSock = "/tmp/background-sounds" .. pid .. ".sock"
+end
 
 sounds.start_background_process = function()
+    -- LuaFormatter off
     local args = {
-        "mpv", "--no-video", "--really-quiet", "--idle=yes", -- keeps it running after playing files.
+        "mpv",
+	"--no-video",
+	"--really-quiet",
+	"--idle=yes", -- keeps it running after playing files.
         "--input-ipc-server=" .. pipeOrSock
     }
+    -- LuaFormatter on
 
     log.debug("Starting background sounds process.")
     sys.background_process(args)
