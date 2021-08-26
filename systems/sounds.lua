@@ -24,9 +24,9 @@ local sounds = {
 local pid = tostring(mpu.getpid())
 local pipeOrSock
 if sys.platform == "win" then
-	pipeOrSock = [[\\.\pipe\background-sounds]] .. pid
+    pipeOrSock = [[\\.\pipe\background-sounds]] .. pid
 else
-	pipeOrSock = "/tmp/background-sounds" .. pid .. ".sock"
+    pipeOrSock = "/tmp/background-sounds" .. pid .. ".sock"
 end
 
 sounds.start_background_process = function()

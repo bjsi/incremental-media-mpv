@@ -12,9 +12,7 @@ local locked = false -- TODO
 
 local active = {}
 
-function active.get_queue()
-	return queue
-end
+function active.get_queue() return queue end
 
 function active.on_shutdown()
     if active.queue then
@@ -41,13 +39,9 @@ function active.load_global_items()
     active.change_queue(giq)
 end
 
-function active.enter_update_lock()
-	locked = true
-end
+function active.enter_update_lock() locked = true end
 
-function active.exit_update_lock() 
-	locked = false
-end
+function active.exit_update_lock() locked = false end
 
 function active.change_queue(queue)
     if active.queue then

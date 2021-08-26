@@ -15,7 +15,7 @@ setmetatable(SingletonTopic, {
 
 function SingletonTopic:_init(id)
     TopicQueueBase._init(self, "Singleton Topic Queue", nil,
-               function(reps) return self:subsetter(reps, id) end)
+                         function(reps) return self:subsetter(reps, id) end)
 end
 
 function SingletonTopic:subsetter(reps, id)

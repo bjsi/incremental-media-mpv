@@ -20,7 +20,9 @@ local importer = {}
 function importer.import_extract(args)
     GlobalTopics = GlobalTopics or require('queues.global.topics')
     local topics = GlobalTopics(nil)
-    local predicate = function(r) return r.row.title == args["title"] and r.row.type == "local-oc" end
+    local predicate = function(r)
+        return r.row.title == args["title"] and r.row.type == "local-oc"
+    end
     local folder = tbl.first(predicate, topics.reptable.reps)
     if folder == nil then
         local duration = ffmpeg.get_duration(args["path"])

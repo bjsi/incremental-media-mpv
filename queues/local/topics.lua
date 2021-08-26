@@ -32,9 +32,8 @@ end
 -- TODO: is there the possibility of duplication between the first element
 -- and the same element in the subset
 function LocalTopics:subsetter(reps, oldRep)
-    local subset = tbl.filter(reps, function(r)
-        return r:is_outstanding(false)
-    end)
+    local subset = tbl.filter(reps,
+                              function(r) return r:is_outstanding(false) end)
     local pred = function(topic) return oldRep:is_child_of(topic) end
     local fst = tbl.first(pred, reps)
     return subset, fst and fst or subset[1]

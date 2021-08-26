@@ -35,9 +35,8 @@ function LocalExtractQueue:activate()
 end
 
 function LocalExtractQueue:subsetter(oldRep, reps)
-    local subset = tbl.filter(reps, function(r)
-        return r:is_outstanding(false)
-    end)
+    local subset = tbl.filter(reps,
+                              function(r) return r:is_outstanding(false) end)
     local from_topics = (oldRep ~= nil) and (oldRep:type() == "topic")
     local from_items = (oldRep ~= nil) and (oldRep:type() == "item")
     local from_nil = oldRep == nil
@@ -54,7 +53,7 @@ function LocalExtractQueue:subsetter(oldRep, reps)
 
         -- Get all extracts where the topic == the item's grandparent
         -- TODO: what if nil
-	local predicate = function(r) return r:is_parent_of(oldRep) end
+        local predicate = function(r) return r:is_parent_of(oldRep) end
         local parent = tbl.first(predicate, reps)
         filter = function(r)
             return r.row["parent"] == parent.row["parent"]

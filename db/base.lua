@@ -17,9 +17,7 @@ function DBBase:_init(fp, sep, default_header)
     self.default_header = default_header
 end
 
-function DBBase:open(mode)
-    return io.open(self.fp, mode)
-end
+function DBBase:open(mode) return io.open(self.fp, mode) end
 
 function DBBase:read_reps(rep_func)
     local handle = self:open("r")
@@ -84,7 +82,9 @@ end
 
 function DBBase:preprocess_read_row(row) return row end
 
-function DBBase:parse_row(row) return string.gmatch(row, "[^" .. self.sep .. "]*") end
+function DBBase:parse_row(row)
+    return string.gmatch(row, "[^" .. self.sep .. "]*")
+end
 
 function DBBase:read_header(handle)
     local ret = {}

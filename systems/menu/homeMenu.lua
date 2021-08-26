@@ -135,7 +135,7 @@ function HomeSubmenu:add_queue_osd(osd, queue)
     if queue ~= nil then
         osd:text(queue.name):newline()
         osd:item("reps: "):text(#queue.reptable.subset):newline()
-	local predicate = function(r) return r:to_export() end
+        local predicate = function(r) return r:to_export() end
         local toexport = #tbl.filter(queue.reptable.reps, predicate)
         osd:item("to export: "):text(tostring(toexport)):newline():newline()
     else

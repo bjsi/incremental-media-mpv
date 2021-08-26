@@ -4,11 +4,9 @@ local log = require 'utils.log'
 local file = {}
 
 function file.exists(f)
-	local info, _ = mpu.file_info(f)
-	if not info then
-		return false
-	end
-	return info.is_file
+    local info, _ = mpu.file_info(f)
+    if not info then return false end
+    return info.is_file
 end
 
 function file.copy(from, to)
@@ -46,8 +44,6 @@ function file.write_all_text(path, data)
     h:close()
 end
 
-function file.delete(f)
-    os.remove(f)
-end
+function file.delete(f) os.remove(f) end
 
 return file

@@ -104,20 +104,20 @@ function QueueBase:navigate_history(forward)
 
     self:save_data()
     if not self:load_rep(new_rep, old_rep) then
-	    log.debug("Failed to load rep.")
-	    return false
+        log.debug("Failed to load rep.")
+        return false
     end
 
     -- update navigation history
     if old_rep == nil then
-	    -- no need to update history
-	    return true
+        -- no need to update history
+        return true
     end
 
     if forward then
-	    self.bwd_history:push(old_rep)
+        self.bwd_history:push(old_rep)
     else
-	    self.fwd_history:push(old_rep)
+        self.fwd_history:push(old_rep)
     end
     return true
 end
@@ -417,7 +417,8 @@ function QueueBase:subscribe_to_events() end
 function QueueBase:clean_up_events() end
 
 function QueueBase:load_rep(newRep, oldRep)
-    if player.play(newRep, oldRep, self.create_loop_boundaries, self.use_start_stop) then
+    if player.play(newRep, oldRep, self.create_loop_boundaries,
+                   self.use_start_stop) then
         self.playing = newRep
         self.reptable:update_dependencies()
         return true

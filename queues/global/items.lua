@@ -31,9 +31,8 @@ function GlobalItems:activate()
 end
 
 function GlobalItems:subsetter(reps)
-    local subset = tbl.filter(reps, function(r)
-        return r:is_outstanding(true)
-    end)
+    local subset = tbl.filter(reps,
+                              function(r) return r:is_outstanding(true) end)
     self:sort(subset)
     return subset, subset[1]
 end

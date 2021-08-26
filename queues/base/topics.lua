@@ -84,7 +84,7 @@ function TopicQueueBase:load_grand_queue()
     LocalExtracts = LocalExtracts or require("queues.global.extracts")
     local extracts = LocalExtracts(topicParent)
     local extract_reps = extracts.reptable.reps
-    local mapper =  function(r) return r.row["id"] end
+    local mapper = function(r) return r.row["id"] end
     local extractParentIds = tbl.map(extract_reps, mapper)
     if obj.empty(extractParentIds) then
         log.debug("No available grandchild repetitions.")

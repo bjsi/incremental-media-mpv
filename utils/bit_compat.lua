@@ -26,8 +26,8 @@ function bit_conv.to_num(bits)
 end
 
 local function bitwise_combine(op, init, nums)
-    local numbers = tbl.map(nums,
-                                 function(num) return bit_conv.to_bits(num) end)
+    local numbers =
+        tbl.map(nums, function(num) return bit_conv.to_bits(num) end)
 
     local res = {}
     for bit_pos = 1, 32 do

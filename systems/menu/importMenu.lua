@@ -191,8 +191,7 @@ function ImportSubmenu:query_priority_range(args, chain, i)
         min = tonumber(min)
         max = tonumber(max)
 
-        if not pri.validate(min) or not pri.validate(max) or
-            min > max then
+        if not pri.validate(min) or not pri.validate(max) or min > max then
             log.notify("Invalid priority range.")
             self:call_chain(args, chain, i)
             return

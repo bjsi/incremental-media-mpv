@@ -15,11 +15,12 @@ function ext.get_singleton_queue(type, id)
         SingletonTopic = SingletonTopic or require("queues.singletons.topic")
         return SingletonTopic(id)
     elseif type == "Extract" then
-        SingletonExtract = SingletonExtract or require("queues.singletons.extract")
+        SingletonExtract = SingletonExtract or
+                               require("queues.singletons.extract")
         return SingletonExtract(id)
     else
-	log.err("Failed to get singleton queue - unrecognised type: " .. type)
-	return nil
+        log.err("Failed to get singleton queue - unrecognised type: " .. type)
+        return nil
     end
 end
 

@@ -8,9 +8,7 @@ local platforms = require 'systems.platform'
 
 local sys = {}
 
-local function is_win()
-	return sys.platform == platforms.win
-end
+local function is_win() return sys.platform == platforms.win end
 
 function sys.already_running()
     local pid_file = mpu.join_path(fs.data, "pid_file")
@@ -19,9 +17,9 @@ function sys.already_running()
 end
 
 function sys.write_pid_file()
-   	local pid_file = mpu.join_path(fs.data, "pid_file")
-	file.write_all_text(pid_file, mpu.getpid())
-	mp.register_event("shutdown", function() file.delete(pid_file) end)
+    local pid_file = mpu.join_path(fs.data, "pid_file")
+    file.write_all_text(pid_file, mpu.getpid())
+    mp.register_event("shutdown", function() file.delete(pid_file) end)
 end
 
 function sys.setup_ipc()
@@ -39,11 +37,11 @@ end
 function sys.write_to_ipc(path, data)
     local args
     if is_win() then
-	local echo_data_to_pipe = table.concat({ "echo", data, ">", path}, " ")
+        local echo_data_to_pipe = table.concat({"echo", data, ">", path}, " ")
         args = {"cmd", "/c", echo_data_to_pipe}
     else
         local payload = mpu.format_json({command = str.split(data)})
-	local echo_data_to_sock = "echo '" .. payload .. "' | socat - " .. path
+        local echo_data_to_sock = "echo '" .. payload .. "' | socat - " .. path
         args = {"sh", "-c", echo_data_to_sock}
     end
     sys.background_process(args) -- TODO
@@ -53,7 +51,7 @@ function sys.is_process_running(pid)
     pid = tostring(pid)
     local args
     if sys.platform == "win" then
-	-- LuaFormatter off
+        -- LuaFormatter off
         args = {
             "powershell",
 	    "-NoProfile",
@@ -62,7 +60,7 @@ function sys.is_process_running(pid)
         }
 	-- LuaFormatter on
     else
-	args = {"ps", "-p", pid}
+        args = {"ps", "-p", pid}
     end
     return sys.subprocess(args).status == 0
 end
@@ -162,9 +160,9 @@ end
 function sys.has_dependency(dependency)
     local args
     if is_win() then
-	    args = {"where", "/q", dependency}
+        args = {"where", "/q", dependency}
     else
-	    args = {"which", dependency}
+        args = {"which", dependency}
     end
     local ret = sys.subprocess(args)
     return ret.status == 0
@@ -186,7 +184,7 @@ end
 function sys.uuid()
     local args
     if is_win() then
-	-- LuaFormatter off
+        -- LuaFormatter off
         args = {
             "powershell",
 	    "-NoProfile",
@@ -195,7 +193,7 @@ function sys.uuid()
         }
 	-- LuaFormatter on
     else
-	-- LuaFormatter off
+        -- LuaFormatter off
         args = {
             "sh",
 	    "-c",

@@ -17,7 +17,7 @@ setmetatable(SingletonItem, {
 
 function SingletonItem:_init(repId)
     ItemQueueBase._init(self, "Singleton Item Queue", nil,
-               function(reps) return self:subsetter(reps, repId) end)
+                        function(reps) return self:subsetter(reps, repId) end)
 end
 
 function SingletonItem:subsetter(reps, id)

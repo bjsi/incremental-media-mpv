@@ -436,9 +436,8 @@ function ExtractQueueBase:handle_extract_extract(start, stop, curRep)
 
     GlobalTopics = GlobalTopics or require("queues.global.topics")
     local gtq = GlobalTopics(nil)
-    local parent = tbl.first(
-                       function(r) return r:is_parent_of(curRep) end,
-                       gtq.reptable.reps)
+    local parent = tbl.first(function(r) return r:is_parent_of(curRep) end,
+                             gtq.reptable.reps)
     if parent == nil then
         log.debug("Failed to find parent element.")
         return

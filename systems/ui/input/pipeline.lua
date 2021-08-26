@@ -18,43 +18,41 @@ function InputPipeline.new(handler, args)
 end
 
 function InputPipeline:run_current_task(state)
-    if not self.tasks then
-	    return
-    end
+    if not self.tasks then return end
 
     local cur = self.tasks[self.idx]
     if cur then
-	    cur(state)
+        cur(state)
     elseif self.finally then
-	    self.finally(state)
+        self.finally(state)
     end
 end
 
 function InputPipeline:create_continuation(handler)
-	return function(input, state)
-		local result = handler(input, state)
-		if result == task_result.next then
-			self.idx = self.idx + 1
-			self:run_current_task(state)
-		elseif result == task_result.again then
-			self:run_current_task()
-		elseif result == task_result.again_invalid_data then
-			log.notify("Invalid data.")
-			self:run_current_task()
-		elseif result == task_result.cancel then
-			log.notify("Cancelled.")
-		end
-	end
+    return function(input, state)
+        local result = handler(input, state)
+        if result == task_result.next then
+            self.idx = self.idx + 1
+            self:run_current_task(state)
+        elseif result == task_result.again then
+            self:run_current_task()
+        elseif result == task_result.again_invalid_data then
+            log.notify("Invalid data.")
+            self:run_current_task()
+        elseif result == task_result.cancel then
+            log.notify("Cancelled.")
+        end
+    end
 end
 
 function InputPipeline:then_(handler, gui_args)
-	local continuation = self:create_continuation(handler)
-	local task = function(state) get_user_input(function(input) continuation(input, state) end, gui_args) end
-	table.insert(self.tasks, task)
+    local continuation = self:create_continuation(handler)
+    local task = function(state)
+        get_user_input(function(input) continuation(input, state) end, gui_args)
+    end
+    table.insert(self.tasks, task)
 end
 
-function InputPipeline:finally(func)
-	self.finally = func
-end
+function InputPipeline:finally(func) self.finally = func end
 
 return InputPipeline

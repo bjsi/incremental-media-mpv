@@ -5,11 +5,9 @@ local platforms = require 'systems.platform'
 local dir = {}
 
 function dir.exists(f)
-	local info, _ = mpu.file_info(f)
-	if not info then
-		return false
-	end
-	return info.is_dir
+    local info, _ = mpu.file_info(f)
+    if not info then return false end
+    return info.is_dir
 end
 
 function dir.create(path)

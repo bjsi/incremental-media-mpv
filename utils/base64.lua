@@ -74,7 +74,7 @@ function base64.decode(b64)
         local to = from + 7
         if to > #bits then break end
 
-        local byte = bit_conv.to_num(tbl.reverse( tbl.range(bits, from, to)))
+        local byte = bit_conv.to_num(tbl.reverse(tbl.range(bits, from, to)))
         table.insert(str, string.char(byte))
 
         from = from + 8
