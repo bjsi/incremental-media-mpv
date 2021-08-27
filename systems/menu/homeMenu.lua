@@ -14,7 +14,7 @@ local ydl = require 'systems.ydl'
 local fs = require 'systems.fs'
 local item_format = require 'reps.rep.item_format'
 local exporter = require 'systems.exporter'
-local get_user_input = require 'systems.get_user_input'
+local get_user_input = require 'systems.user_input'
 local mp = require 'mp'
 
 local LocalItems
@@ -38,18 +38,23 @@ setmetatable(HomeSubmenu, {
 function HomeSubmenu:_init()
     Base._init(self)
 
+    -- LuaFormatter off
     self.keybinds = {}
 
     self.base_binds = {}
 
     self.topic_keybinds = {
-        {key = "t", desc = "edit title", fn = function()
-            self:edit_title()
-        end}, {
-            key = "c",
-            desc = "extract chapter",
-            fn = function() self:extract_chapter() end
-        }, {
+        {
+	    key = "t",
+	    desc = "edit title",
+	    fn = function() self:edit_title() end
+        },
+	{
+	    key = "c",
+	    desc = "extract chapter",
+	    fn = function() self:extract_chapter() end
+        },
+	{
             key = "C",
             desc = "extract all chapters",
             fn = function() self:extract_all_chapters() end
@@ -69,7 +74,8 @@ function HomeSubmenu:_init()
             key = 'Q',
             desc = "create Q/A",
             fn = function() active.queue:create_qa() end
-        }, {
+        },
+	{
             key = 'Z',
             desc = "edit subs",
             fn = function() self:edit_current_field("subs") end
@@ -81,7 +87,8 @@ function HomeSubmenu:_init()
             key = 'Z',
             desc = "edit subs",
             fn = function() self:edit_current_field("subs") end
-        }, {
+        },
+	{
             key = "S",
             desc = "add screenshot",
             fn = function() self:item_add_media("screenshot") end
@@ -90,20 +97,24 @@ function HomeSubmenu:_init()
             key = "G",
             desc = "add gif",
             fn = function() self:item_add_media("gif") end
-        }, {
+        },
+	{
             key = "q",
             desc = "edit question",
             fn = function() self:edit_current_field("question") end
-        }, {
+        },
+	{
             key = "a",
             desc = "edit answer",
             fn = function() self:edit_current_field("answer") end
-        }, {
+        },
+	{
             key = "U",
             desc = "update sm item",
             fn = function() self:update_sm_item() end
         }
     }
+    -- LuaFormatter on
 end
 
 function HomeSubmenu:update_sm_item()
@@ -161,7 +172,8 @@ end
 
 function HomeSubmenu:add_chapter_info(osd)
     local chaps = mp.get_property_native("chapter-list")
-    local num = chaps ~= nil and #chaps or 0
+    local num = 0
+    if chaps then num = #chaps end
     osd:item("chapters: "):text(tostring(num)):newline()
 end
 

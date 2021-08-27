@@ -109,7 +109,7 @@ end
 
 function TopicQueueBase:activate()
     if QueueBase.activate(self) then
-        player.on_overrun = function() self:next_repetition() end
+        player.on_overrun = function() self:learn() end
         return true
     end
     return false

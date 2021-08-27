@@ -11,7 +11,8 @@ local ydl = {}
 ydl.url_prefix = "https://www.youtube.com/watch?v="
 
 function ydl.download_audio(url, goodQuality)
-    local quality = goodQuality and "bestaudio" or "worstaudio"
+    local quality = "worstaudio"
+    if goodQuality then quality = "bestaudio" end
     local args = {
         "youtube-dl", "--no-check-certificate", "-x", "-f", quality,
         mpu.join_path(fs.media, "%(id)s.%(ext)s")
@@ -93,7 +94,8 @@ function ydl.get_streams(url, quality)
 end
 
 function ydl.get_video_stream(url, goodQuality)
-    local quality = goodQuality and "best" or "worst"
+    local quality = "worst"
+    if goodQuality then quality = "best" end
     local ret = ydl.get_streams(url, quality)
     if ret.status == 0 then
         local lines = ret.stdout
@@ -108,7 +110,8 @@ function ydl.get_video_stream(url, goodQuality)
 end
 
 function ydl.get_audio_stream(url, goodQuality)
-    local quality = goodQuality and "bestaudio" or "worstaudio"
+    local quality = "worstaudio"
+    if goodQuality then quality = "bestaudio" end
     local ret = ydl.get_streams(url, quality)
     if ret.status == 0 then
         local lines = ret.stdout

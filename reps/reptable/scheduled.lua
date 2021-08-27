@@ -23,9 +23,9 @@ function ScheduledRepTable:_init(dbPath, defaultHeader, subsetter)
     self:read_reps()
 end
 
-function ScheduledRepTable:next_repetition()
+function ScheduledRepTable:learn()
 
-    -- Base:next_repetition(self) -- Not working for some reason
+    -- Base:learn(self) -- Not working for some reason
 
     self:update_subset()
 

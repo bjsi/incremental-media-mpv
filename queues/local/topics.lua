@@ -36,7 +36,8 @@ function LocalTopics:subsetter(reps, oldRep)
                               function(r) return r:is_outstanding(false) end)
     local pred = function(topic) return oldRep:is_child_of(topic) end
     local fst = tbl.first(pred, reps)
-    return subset, fst and fst or subset[1]
+    if not fst then fst = subset[1] end
+    return subset, fst
 end
 
 return LocalTopics

@@ -1,44 +1,35 @@
-local active = require("systems.active")
-local menu = require("systems.menu.menuBase")
+local active = require 'systems.active'
+local mp = require 'mp'
+local menu = require 'systems.menu.menuBase'
 
+-- LuaFormatter off
 local keys = {
-    ["incmedia-set-extract-boundary"] = function()
-        active.queue:set_extract_boundary()
-    end,
-    ["incmedia-menu-toggle"] = function() menu.open() end,
-    ["incmedia-adjust-priority"] = function(n)
-        active.queue:adjust_priority(n)
-    end,
-    ["incmedia-adjust-interval"] = function(n)
-        active.queue:adjust_interval(n)
-    end,
-    ["incmedia-adjust-afactor"] = function(n) active.queue:adjust_afactor(n) end,
-    ["incmedia-clear-extract-boundaries"] = function()
-        active.queue:clear_abloop()
-    end,
-    ["incmedia-set-end-boundary-extract"] = function()
-        active.queue:set_end_boundary_extract()
-    end,
-    ["incmedia-copy-url"] = function() active.queue:copy_url(false) end,
-    ["incmedia-copy-url-with-timestamp"] = function()
-        active.queue:copy_url(true)
-    end,
-    ["incmedia-localize-video"] = function() active.queue:localize_video() end,
-    ["incmedia-dismiss"] = function() active.queue:dismiss() end,
-    ["incmedia-global-extracts"] = function() active.load_global_extracts() end,
-    ["incmedia-global-items"] = function() active.load_global_items() end,
-    ["incmedia-global-topics"] = function() active.load_global_topics() end,
-    ["incmedia-parent"] = function() active.queue:parent() end,
-    ["incmedia-child"] = function() active.queue:child() end,
-    ["incmedia-fwd-history"] = function() active.queue:forward_history() end,
-    ["incmedia-bwd-history"] = function() active.queue:backward_history() end,
-    ["incmedia-extract"] = function() active.queue:extract() end,
-    ["incmedia-next-repetition"] = function() active.queue:next_repetition() end,
-    ["incmedia-advance-start"] = function(n) active.queue:advance_start(n) end,
-    ["incmedia-postpone-stop"] = function(n) active.queue:postpone_stop(n) end,
-    ["incmedia-advance-stop"] = function(n) active.queue:advance_stop(n) end,
-    ["incmedia-toggle-video"] = function() active.queue:toggle_video() end
+    ["im-set-extract-boundary"] = function() active.queue:set_extract_boundary() end,
+    ["im-menu-toggle"] = function() menu.open() end,
+    ["im-adjust-priority"] = function(n) active.queue:adjust_priority(n) end,
+    ["im-adjust-interval"] = function(n) active.queue:adjust_interval(n) end,
+    ["im-adjust-afactor"] = function(n) active.queue:adjust_afactor(n) end,
+    ["im-clear-extract-boundaries"] = function() active.queue:clear_abloop() end,
+    ["im-set-end-boundary-extract"] = function() active.queue:set_end_boundary_extract() end,
+    ["im-copy-url"] = function() active.queue:copy_url(false) end,
+    ["im-copy-url-with-timestamp"] = function() active.queue:copy_url(true) end,
+    ["im-localize-video"] = function() active.queue:localize_video() end,
+    ["im-dismiss"] = function() active.queue:dismiss() end,
+    ["im-global-extracts"] = function() active.load_global_extracts() end,
+    ["im-global-items"] = function() active.load_global_items() end,
+    ["im-global-topics"] = function() active.load_global_topics() end,
+    ["im-parent"] = function() active.queue:parent() end,
+    ["im-child"] = function() active.queue:child() end,
+    ["im-fwd-history"] = function() active.queue:forward_history() end,
+    ["im-bwd-history"] = function() active.queue:backward_history() end,
+    ["im-extract"] = function() active.queue:extract() end,
+    ["im-next-repetition"] = function() active.queue:next_repetition() end,
+    ["im-advance-start"] = function(n) active.queue:advance_start(n) end,
+    ["im-postpone-stop"] = function(n) active.queue:postpone_stop(n) end,
+    ["im-advance-stop"] = function(n) active.queue:advance_stop(n) end,
+    ["im-toggle-video"] = function() active.queue:toggle_video() end
 }
+-- LuaFormatter on
 
 (function()
     for name, cb in pairs(keys) do mp.register_script_message(name, cb) end

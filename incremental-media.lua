@@ -82,7 +82,11 @@ local function run_master_mode()
         log.debug("No repetitions available. Creating empty topic queue...")
         queue = GlobalTopics(nil)
     end
-    if not active_queue.change_queue(queue) then menuBase.open() end
+
+    if not active_queue.change_queue(queue) then
+        mp.commandv("loadfile", fs.splashscreen, "replace")
+        menuBase.open()
+    end
 end
 
 local function run_import_extract_mode()
@@ -146,13 +150,15 @@ local function create_essential_files() -- TODO
         end
     end
 
-    if not file.exists(fs.sine) then sys.copy(fs.sine_base, fs.sine) end
+    if not file.exists(fs.sine) then file.copy(fs.sine_base, fs.sine) end
 
     if not file.exists(fs.meaning_zh) then
-        sys.copy(fs.meaning_zh_base, fs.meaning_zh)
+        file.copy(fs.meaning_zh_base, fs.meaning_zh)
     end
 
-    if not file.exists(fs.silence) then sys.copy(fs.silence_base, fs.silence) end
+    if not file.exists(fs.silence) then
+        file.copy(fs.silence_base, fs.silence)
+    end
 end
 
 local function run()
@@ -191,6 +197,4 @@ local function run()
     end
 end
 
-if opts.mode ~= "" then
-  run()
-end
+if opts.mode ~= "" then run() end

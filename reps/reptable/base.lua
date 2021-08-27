@@ -121,8 +121,16 @@ function RepTableBase:sort() sort.by_priority(self.subset) end
 function RepTableBase:read_reps()
     local repFunc = function(row) return self:as_rep(row) end
     local header, reps = self.db:read_reps(repFunc)
-    self.reps = reps and reps or {}
-    self.header = header and header or self.defaultHeader
+    if reps then
+        self.reps = reps
+    else
+        self.reps = {}
+    end
+    if header then
+        self.header = header
+    else
+        self.header = self.defaultHeader
+    end
     self:update_subset()
 end
 

@@ -23,8 +23,8 @@ end
 -- noop
 function UnscheduledRepTable:sort(reps) end
 
-function UnscheduledRepTable:next_repetition()
-    -- Base:next_repetition(self)
+function UnscheduledRepTable:learn()
+    -- Base:learn(self)
     -- self:update_subset()
 
     if obj.empty(self.subset) then

@@ -6,7 +6,7 @@ local Base = require 'systems.menu.submenuBase'
 local ydl = require 'systems.ydl'
 local importer = require 'systems.importer'
 local sounds = require 'systems.sounds'
-local get_user_input = require 'systems.ui.user_input'
+local get_user_input = require 'systems.user_input'
 local ivl = require 'utils.interval'
 
 local ImportSubmenu = {}

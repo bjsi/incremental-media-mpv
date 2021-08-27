@@ -442,7 +442,7 @@ end
 --                 local toCopy = { parentPath, fs.sine, url }
 --                 for _, f in ipairs(toCopy) do
 --                     local _, fname = mpu.split_path(f)
---                     if not sys.copy(f, mpu.join_path(moveMeFolder, fname)) then
+--                     if not file.copy(f, mpu.join_path(moveMeFolder, fname)) then
 --                         log.err("Failed to copy " .. fname .. " to the move inside sm folder")
 --                     end
 --                 end

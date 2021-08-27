@@ -2,7 +2,7 @@ local active = require 'systems.active'
 local obj = require 'utils.object'
 local log = require 'utils.log'
 local Base = require 'systems.menu.submenuBase'
-local get_user_input = require 'systems.ui.user_input'
+local get_user_input = require 'systems.user_input'
 
 local SubsetMenu = {}
 SubsetMenu.__index = SubsetMenu

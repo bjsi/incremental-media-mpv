@@ -22,7 +22,8 @@ local file = require 'utils.file'
 local repCreators = {}
 
 function repCreators.createTopic(title, type, url, priority, stop, dependency)
-    stop = stop and stop or -1
+    if not stop then stop = -1 end
+    if not dependency then dependency = "" end
     local topicRow = {
         ["id"] = sys.uuid(),
         ["title"] = title,
@@ -36,7 +37,7 @@ function repCreators.createTopic(title, type, url, priority, stop, dependency)
         ["curtime"] = 0,
         ["priority"] = priority,
         ["interval"] = 1,
-        ["dependency"] = dependency and dependency or "",
+        ["dependency"] = dependency,
         ["nextrep"] = "1970-01-01",
         ["speed"] = 1
     }
@@ -63,6 +64,9 @@ function repCreators.createExtract(parent, start, stop, subText, priority)
         return nil
     end
 
+    if not priority then priority = parent.row.priority end
+    if not subText then subText = "" end
+
     extractRow["start"] = tostring(num.round(start, 2))
     extractRow["dismissed"] = 0
     extractRow["toexport"] = 0
@@ -75,8 +79,8 @@ function repCreators.createExtract(parent, start, stop, subText, priority)
     extractRow["parent"] = parent.row["id"]
     extractRow["speed"] = 1
     extractRow["notes"] = ""
-    extractRow["priority"] = priority and priority or parent.row.priority
-    extractRow["subs"] = subText and subText or ""
+    extractRow["priority"] = priority
+    extractRow["subs"] = subText
 
     return ExtractRep(extractRow)
 end
@@ -249,6 +253,13 @@ function repCreators.create_item_rep(parent, sound, text, format,
         return nil
     end
 
+    local answer = ""
+    local question = ""
+    if text then
+        answer = text["answer"]
+        question = text["question"]
+    end
+
     itemRow["id"] = sys.uuid()
     itemRow["created"] = os.time()
     itemRow["dismissed"] = 0
@@ -261,8 +272,8 @@ function repCreators.create_item_rep(parent, sound, text, format,
     itemRow["stop"] = parent.row.stop
 
     -- Text
-    itemRow["question"] = text and text["question"] or ""
-    itemRow["answer"] = text and text["answer"] or ""
+    itemRow["question"] = question
+    itemRow["answer"] = answer
 
     -- Format
     itemRow["format"] = format["name"]
