@@ -1,12 +1,12 @@
 local mpopt = require 'mp.options'
-local mode = require 'systems.mode'
+local cfg = require 'systems.config'
 
 local options = {}
 
 -- Settings generally passed in script-opts
-options.mode = mode.master
+options.mode = ""
 options.path = ""
-options.queue = "main"
+options.queue = cfg.default_queue
 options.type = ""
 options.id = ""
 

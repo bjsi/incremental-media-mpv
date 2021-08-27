@@ -191,4 +191,6 @@ local function run()
     end
 end
 
-run() -- TODO: IIFE?
+if opts.mode ~= "" then
+  run()
+end

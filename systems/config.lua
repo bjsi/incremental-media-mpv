@@ -8,6 +8,7 @@ local config = {}
 -- CLI example: mpv --script-opts=imconf-auto_export=yes,imconf-audio_format=mp3
 -- Config path: ~/.config/mpv/script-opts/???.conf
 -- Config file isn't created automatically.
+config.default_queue = "main"
 config.auto_export = true
 config.menu_font_size = 24
 config.default_priority_min = 20
