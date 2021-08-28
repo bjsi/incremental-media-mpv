@@ -120,18 +120,11 @@ function ExtractQueueBase:adjust_extract(postpone, start, n)
         return
     end
 
-    local adj
-    if postpone then
-        adj = n
-    else
-        adj = -n
-    end
+    local adj = postpone and n or -n
     local oldStart = tonumber(curRep.row["start"])
     local oldStop = tonumber(curRep.row["stop"])
-    local newStart = oldStart
-    if start then newStart = oldStart + adj end
-    local newStop = oldStop + adj
-    if start then newStop = oldStop end
+    local newStart = start and oldStart + adj or oldStart
+    local newStop = start and oldStop or oldStop + adj
 
     local duration = tonumber(mp.get_property("duration"))
     if newStart < 0 or newStart > duration or newStop < 0 or newStop > duration then

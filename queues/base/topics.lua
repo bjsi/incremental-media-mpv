@@ -34,8 +34,6 @@ setmetatable(TopicQueueBase, {
 function TopicQueueBase:_init(name, oldRep, subsetter)
     QueueBase._init(self, name, TopicRepTable(subsetter), oldRep)
     self.createLoopBoundaries = false -- allow seeking behind curtime
-    self.bigSeek = 10
-    self.smallSeek = 2
 end
 
 function TopicQueueBase:localize(video)

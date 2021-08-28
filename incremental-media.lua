@@ -1,14 +1,12 @@
 local log = require 'utils.log'
+local directory = require 'utils.directory'
+local mpu = require 'mp.utils'
 local dir = require 'utils.directory'
 local fs = require 'systems.fs'
 local importer = require 'systems.importer'
 local exporter = require 'systems.exporter'
 local active_queue = require 'systems.active'
 local sys = require 'systems.system'
-local GlobalTopics = require 'queues.global.topics'
-local GlobalExtracts = require 'queues.global.extracts'
-local GlobalItems = require 'queues.global.items'
-local SingletonExtract = require 'queues.singletons.extract'
 local player = require 'systems.player'
 local sounds = require 'systems.sounds'
 local menuBase = require 'systems.menu.menuBase' -- TODO
@@ -16,8 +14,6 @@ local mp = require 'mp'
 local singleton_utils = require 'queues.singletons.utils'
 local obj = require 'utils.object'
 local file = require 'utils.file'
-local InputPipeline = require 'systems.ui.input.pipeline'
-local create_input_handler = require 'systems.ui.input.create_input_handler'
 local opts = require 'systems.options'
 local mode = require 'systems.mode'
 
@@ -66,6 +62,9 @@ local function run_minion_mode()
 end
 
 local function run_master_mode()
+    local GlobalTopics = require 'queues.global.topics'
+    local GlobalExtracts = require 'queues.global.extracts'
+    local GlobalItems = require 'queues.global.items'
     setup_player()
     -- get a topic, extract or item queue depending on which has
     -- outstanding reps.
@@ -97,6 +96,7 @@ local function run_import_extract_mode()
     end
 
     local import_and_load = function(state)
+        local SingletonExtract = require 'queues.singletons.extract'
         local extract = importer.import_extract(state)
         local sound = "positive"
         local queue
@@ -113,9 +113,14 @@ local function run_import_extract_mode()
     end
 
     mp.set_property("force-window", "yes")
+    local InputPipeline = require 'systems.ui.input.pipeline'
+    local create_input_handler = require 'systems.ui.input.create_input_handler'
+    -- LuaFormatter off
     local pipeline =
-        InputPipeline.new(create_input_handler("title", "string")):then_(
-            create_input_handler("priority", "number")):finally(import_and_load)
+        InputPipeline.new(create_input_handler("title", "string"))
+                     :then_(create_input_handler("priority", "number"))
+                     :finally(import_and_load)
+    -- LuaFormatter on
     pipeline:run({path = path})
 end
 
@@ -152,13 +157,38 @@ local function create_essential_files() -- TODO
 
     if not file.exists(fs.sine) then file.copy(fs.sine_base, fs.sine) end
 
-    if not file.exists(fs.meaning_zh) then
-        file.copy(fs.meaning_zh_base, fs.meaning_zh)
-    end
-
     if not file.exists(fs.silence) then
         file.copy(fs.silence_base, fs.silence)
     end
+end
+
+local function install_scripts_and_modules()
+  local mpv_install_dir = mp.command_native({"expand-path", "~~/"})
+  local mpv_scripts_dir = mpu.join_path(mpv_install_dir, "scripts")
+  local mpv_script_modules_dir = mp.command_native({"expand-path", "~~/script-modules"})
+  local user_input_script = mpu.join_path(mpv_scripts_dir, "user-input.lua")
+  local scroll_list_module = mpu.join_path(mpv_script_modules_dir, "scroll-list.lua")
+  local user_input_module = mpu.join_path(mpv_script_modules_dir, "user-input-module.lua")
+
+  if not directory.exists(mpv_script_modules_dir) then
+    log.debug("Creating script modules directory.")
+    directory.create(mpv_script_modules_dir)
+  end
+
+  if not file.exists(user_input_script) then
+    log.debug("Installing user-input script.")
+    file.copy(fs.user_input_script, user_input_script)
+  end
+
+  if not file.exists(scroll_list_module) then
+    log.debug("Installing scroll-list module.")
+    file.copy(fs.scroll_list_module, scroll_list_module)
+  end
+
+  if not file.exists(user_input_module) then
+    log.debug("Installing user-input module.")
+    file.copy(fs.user_input_module, user_input_module)
+  end
 end
 
 local function run()
@@ -177,6 +207,7 @@ local function run()
     sys.write_pid_file()
     sys.verify_dependencies()
     create_essential_files()
+    install_scripts_and_modules()
     sys.backup() -- TODO
     sounds.start_background_process()
     mp.register_event("shutdown", active_queue.on_shutdown)

@@ -385,16 +385,6 @@ function QueueBase:toggle() player.toggle() end
 
 function QueueBase:loop() player.loop() end
 
-function QueueBase:handle_backward(big)
-    local seek = big and self.bigSeek or self.smallSeek
-    mp.commandv("seek", "-" .. tostring(seek))
-end
-
-function QueueBase:handle_forward(big)
-    local seek = big and self.bigSeek or self.smallSeek
-    mp.commandv("seek", tostring(seek))
-end
-
 function QueueBase:dismiss()
     local cur = self.playing
     if cur == nil then

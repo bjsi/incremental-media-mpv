@@ -26,17 +26,20 @@ function ImportSubmenu:_init()
     -- osd:tab():item("i: "):italics("import videos / playlists"):newline()
     -- osd:tab():item("p: "):italics("update playlists"):newline()
 
+    -- LuaFormatter off
     self.keybinds = {
         {
             key = 'i',
             desc = "import video / playlist",
             fn = function() self:query_import() end
-        }, {
+        },
+	{
             key = 'p',
             desc = "update playlists",
             fn = function() self:query_update_playlists() end
         }
     }
+    -- LuaFormatter on
 
     self.yt_chain = {
         function(args, chain, idx) self:query_download(args, chain, idx) end,
