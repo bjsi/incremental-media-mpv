@@ -89,6 +89,7 @@ function player.play(newRep, oldRep, createLoopBoundaries)
 end
 
 function player.unset_abloop()
+    log.notify("Extract boundaries cleared")
     mp.set_property("ab-loop-a", "no")
     mp.set_property("ab-loop-b", "no")
 end

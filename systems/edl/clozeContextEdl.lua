@@ -102,7 +102,7 @@ function ClozeContextEDL:read()
     end
 
     local function pred(arr) return arr == nil or #arr ~= 3 end
-    if tbl.list_any(pred, {cloze, context}) then
+    if tbl.any(pred, {cloze, context}) then
         log.err("Invalid EDL data: unexpected parsed array size.")
         return nil
     end

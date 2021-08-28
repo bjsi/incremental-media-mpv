@@ -1,4 +1,5 @@
 local cfg = require 'systems.config'
+local json_rpc = require 'systems.json_rpc'
 local tbl = require 'utils.table'
 local b64 = require 'utils.base64'
 local ClozeEDL = require 'systems.edl.edl'
@@ -228,7 +229,7 @@ end
 
 function exporter.get_last_export_time()
     log.debug("Getting last export time for queue:", cfg.queue, "from SMA.")
-    local ret = sys.json_rpc_request("GetLastImportTime", {cfg.queue})
+    local ret = json_rpc.send_sma_request("GetLastImportTime", {cfg.queue})
     if ret then
         local jobj = mpu.parse_json(ret.stdout)
         if jobj then return tonumber(jobj.result) end
@@ -318,7 +319,7 @@ end
 
 --     GlobalItemQueue = GlobalItemQueue or require("queues.global.items")
 --     local giq = GlobalItemQueue(nil)
---     local toExport = ext.list_filter(giq.reptable.reps, function(r) return r:to_export() end)
+--     local toExport = ext.filter(giq.reptable.reps, function(r) return r:to_export() end)
 --     if obj.empty(toExport) then
 --         log.debug("No item repetitions to export.")
 --         return false
@@ -360,7 +361,7 @@ end
 --     local ct = 1
 
 --     for _, extract in pairs(parents) do
---         local children = ext.list_filter(toExport, function(r) return r:is_child_of(extract) end)
+--         local children = tbl.filter(toExport, function(r) return r:is_child_of(extract) end)
 --         if not obj.empty(children) then
 --             local topic = getParent(grandParents, extract)
 --             local title = topic.row["title"]

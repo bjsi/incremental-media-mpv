@@ -93,7 +93,7 @@ function tbl.range(list, from, to)
     elseif to < 0 then
         to = #list + to + 1
     end
-    return tbl.list_slice(list, from, to - from)
+    return tbl.slice(list, from, to - from)
 end
 
 function tbl.reverse(list)

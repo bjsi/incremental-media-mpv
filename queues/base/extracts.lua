@@ -53,7 +53,7 @@ function ExtractQueueBase:clean_up_events() self:unregister_script_messages() en
 
 function ExtractQueueBase:register_script_messages()
     log.debug("registering extract queue script messages")
-    for k, v in ipairs(self.script_messages) do
+    for k, v in pairs(self.script_messages) do
         mp.register_script_message(k, v)
     end
 end

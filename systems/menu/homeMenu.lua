@@ -70,6 +70,11 @@ function HomeSubmenu:_init()
     }
 
     self.extract_keybinds = {
+	{
+	    key = 'C',
+	    desc = "create cloze context",
+	    fn = function() active.queue:extract(item_format.cloze_context) end,
+	},
         {
             key = 'Q',
             desc = "create Q/A",

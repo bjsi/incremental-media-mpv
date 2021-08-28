@@ -33,7 +33,7 @@ setmetatable(TopicQueueBase, {
 --- @param subsetter function Subset creator function.
 function TopicQueueBase:_init(name, oldRep, subsetter)
     QueueBase._init(self, name, TopicRepTable(subsetter), oldRep)
-    self.createLoopBoundaries = false -- allow seeking behind curtime
+    self.create_loop_boundaries = false -- allow seeking behind curtime
 end
 
 function TopicQueueBase:localize(video)

@@ -1,4 +1,5 @@
 local mpu = require 'mp.utils'
+local cfg = require 'systems.config'
 local fs = require 'systems.fs'
 local file = require 'utils.file'
 local log = require 'utils.log'
@@ -8,6 +9,10 @@ local json_rpc = {}
 
 local function format_request(method, params)
     return mpu.format_json({id = 1, method = method, params = params})
+end
+
+function json_rpc.send_sma_request(method, params)
+	return json_rpc.send_request(cfg.sma_server_host, cfg.sma_server_port, method, params)
 end
 
 function json_rpc.send_request(host, port, method, params)

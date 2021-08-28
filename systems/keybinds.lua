@@ -25,6 +25,7 @@ local keys = {
     ["im-extract"] = function() active.queue:extract() end,
     ["im-next-repetition"] = function() active.queue:next_repetition() end,
     ["im-advance-start"] = function(n) active.queue:advance_start(n) end,
+    ["im-postpone-start"] = function(n) active.queue:postpone_start(n) end,
     ["im-postpone-stop"] = function(n) active.queue:postpone_stop(n) end,
     ["im-advance-stop"] = function(n) active.queue:advance_stop(n) end,
     ["im-toggle-video"] = function() active.queue:toggle_video() end
