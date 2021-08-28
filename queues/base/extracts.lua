@@ -497,6 +497,7 @@ function ExtractQueueBase:handle_extract(loopStart, loopStop, curRep,
             ["cloze-start"] = loopStart,
             ["cloze-stop"] = loopStop
         }
+
         return self:handle_extract_cloze(curRep, sound, format)
     else
         log.err("Unrecognised extract type.")

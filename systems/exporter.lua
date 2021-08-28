@@ -1,4 +1,5 @@
 local cfg = require 'systems.config'
+local file = require 'utils.file'
 local json_rpc = require 'systems.json_rpc'
 local tbl = require 'utils.table'
 local b64 = require 'utils.base64'
@@ -130,7 +131,7 @@ end
 
 function exporter.add_cloze_data(itemRep, exportItem, sound, format)
     local soundFullPathWithExt = sound["path"]
-    if not sys.is_absolute_path(soundFullPathWithExt) then
+    if not file.is_absolute(soundFullPathWithExt) then
         soundFullPathWithExt = mpu.join_path(fs.media, sound["path"])
     end
 
@@ -177,7 +178,7 @@ function exporter.create_item_export_data(itemRep)
         parent = itemRep.row["parent"],
         qtext = itemRep.row.question,
         atext = itemRep.row.answer,
-        edl = sys.read_text(player.get_full_url(itemRep)),
+        edl = file.read_all_text(player.get_full_url(itemRep)),
         format = itemRep.row["format"],
         flashcard_medias = {},
         stored_medias = {},
@@ -239,19 +240,18 @@ function exporter.get_last_export_time()
 end
 
 function exporter.update_sm_item(itemRep)
+    if not json_rpc.send_sma_request("Ping") then
+        log.notify("Failed to connect to SMA.")
+        return false
+    end
+
     local itemExportData = exporter.create_item_export_data(itemRep)
     if itemExportData == nil then
         log.debug("Failed to create item export data")
         return false
     end
 
-    if not sys.json_rpc_request("Ping") then
-        log.debug("Failed to ping SMA.")
-        return false
-    end
-
-    log.debug("Successfully pinged SMA")
-    return sys.json_rpc_request("UpdateItem", {cfg.queue, itemExportData})
+    return json_rpc.send_sma_request("UpdateItem", {cfg.queue, itemExportData})
                .status == 0
 end
 
@@ -268,8 +268,8 @@ function exporter.export_new_items_to_sm(lastExportTime)
 end
 
 function exporter.export_to_sm(predicate)
-    if not sys.json_rpc_request("Ping") then
-        log.debug("Failed to ping SMA.")
+    if not json_rpc.send_sma_request("Ping") then
+        log.notify("Failed to connect to SMA.")
         return false
     end
 
@@ -305,7 +305,7 @@ function exporter.export_to_sm(predicate)
         topics[grandparent.row.id].extracts[parent.row.id].items[item.id] = item
     end
 
-    sys.json_rpc_request("ImportTopics", {cfg.queue, topics})
+    json_rpc.send_sma_request("ImportTopics", {cfg.queue, topics})
 end
 
 -- TODO: Need to update to the latest version of EDL files and item creation

@@ -82,10 +82,11 @@ local function run_master_mode()
         mp.commandv("loadfile", fs.splashscreen, "replace")
         menuBase.open()
     else
-      if not active_queue.change_queue(queue) then
-        log.notify("Failed to load queue.", "info", 5)
-        mp.commandv("loadfile", fs.splashscreen, "replace")
-      end
+        if not active_queue.change_queue(queue) then
+            log.notify("Failed to load queue.", "info", 5)
+            mp.commandv("loadfile", fs.splashscreen, "replace")
+            menuBase.open()
+        end
     end
 
 end
@@ -165,32 +166,36 @@ local function create_essential_files() -- TODO
 end
 
 local function install_scripts_and_modules()
-  local mpv_install_dir = mp.command_native({"expand-path", "~~/"})
-  local mpv_scripts_dir = mpu.join_path(mpv_install_dir, "scripts")
-  local mpv_script_modules_dir = mp.command_native({"expand-path", "~~/script-modules"})
-  local user_input_script = mpu.join_path(mpv_scripts_dir, "user-input.lua")
-  local scroll_list_module = mpu.join_path(mpv_script_modules_dir, "scroll-list.lua")
-  local user_input_module = mpu.join_path(mpv_script_modules_dir, "user-input-module.lua")
+    local mpv_install_dir = mp.command_native({"expand-path", "~~/"})
+    local mpv_scripts_dir = mpu.join_path(mpv_install_dir, "scripts")
+    local mpv_script_modules_dir = mp.command_native({
+        "expand-path", "~~/script-modules"
+    })
+    local user_input_script = mpu.join_path(mpv_scripts_dir, "user-input.lua")
+    local scroll_list_module = mpu.join_path(mpv_script_modules_dir,
+                                             "scroll-list.lua")
+    local user_input_module = mpu.join_path(mpv_script_modules_dir,
+                                            "user-input-module.lua")
 
-  if not directory.exists(mpv_script_modules_dir) then
-    log.debug("Creating script modules directory.")
-    directory.create(mpv_script_modules_dir)
-  end
+    if not directory.exists(mpv_script_modules_dir) then
+        log.debug("Creating script modules directory.")
+        directory.create(mpv_script_modules_dir)
+    end
 
-  if not file.exists(user_input_script) then
-    log.debug("Installing user-input script.")
-    file.copy(fs.user_input_script, user_input_script)
-  end
+    if not file.exists(user_input_script) then
+        log.debug("Installing user-input script.")
+        file.copy(fs.user_input_script, user_input_script)
+    end
 
-  if not file.exists(scroll_list_module) then
-    log.debug("Installing scroll-list module.")
-    file.copy(fs.scroll_list_module, scroll_list_module)
-  end
+    if not file.exists(scroll_list_module) then
+        log.debug("Installing scroll-list module.")
+        file.copy(fs.scroll_list_module, scroll_list_module)
+    end
 
-  if not file.exists(user_input_module) then
-    log.debug("Installing user-input module.")
-    file.copy(fs.user_input_module, user_input_module)
-  end
+    if not file.exists(user_input_module) then
+        log.debug("Installing user-input module.")
+        file.copy(fs.user_input_module, user_input_module)
+    end
 end
 
 local function run()
@@ -202,7 +207,7 @@ local function run()
     -- run for each queue.
     if sys.already_running() then
         log.debug(opts.queue .. " inc media queue already running. Exiting.")
-        mp.commandv("quit", 65)
+        mp.commandv("quit", 1)
         return
     end
 

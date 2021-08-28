@@ -12,7 +12,8 @@ local function format_request(method, params)
 end
 
 function json_rpc.send_sma_request(method, params)
-	return json_rpc.send_request(cfg.sma_server_host, cfg.sma_server_port, method, params)
+    return json_rpc.send_request(cfg.sma_server_host, cfg.sma_server_port,
+                                 method, params)
 end
 
 function json_rpc.send_request(host, port, method, params)

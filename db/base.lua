@@ -21,9 +21,7 @@ function DBBase:open(mode) return io.open(self.fp, mode) end
 
 function DBBase:read_reps(rep_func)
     local handle = self:open("r")
-    if handle == nil then
-        return self.default_header, {}
-    end
+    if handle == nil then return self.default_header, {} end
 
     local header = self:read_header(handle)
     if header == nil then

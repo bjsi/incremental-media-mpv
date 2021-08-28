@@ -27,7 +27,8 @@ fs.splashscreen = mpu.join_path(fs.edl, 'splashscreen.edl')
 fs.mpv_scripts = mpu.join_path(fs.scripts, "mpv")
 fs.mpv_script_modules = mpu.join_path(fs.mpv_scripts, "modules")
 fs.user_input_script = mpu.join_path(fs.mpv_scripts, "user-input.lua")
-fs.user_input_module = mpu.join_path(fs.mpv_script_modules, "user-input-module.lua")
+fs.user_input_module = mpu.join_path(fs.mpv_script_modules,
+                                     "user-input-module.lua")
 fs.scroll_list_module = mpu.join_path(fs.mpv_script_modules, "scroll-list.lua")
 
 return fs
