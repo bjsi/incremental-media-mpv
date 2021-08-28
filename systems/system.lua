@@ -94,11 +94,9 @@ function sys.verify_dependencies()
         if not sys.has_dependency(dep) then
             log.debug("Could not find dependency " .. dep ..
                           " in path. Exiting...")
-            mp.commmandv("quit")
-            return
+            mp.commmandv("quit", 1)
         end
     end
-    log.debug("All dependencies available in path.")
 end
 
 sys.platform = (function()

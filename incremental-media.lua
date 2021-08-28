@@ -78,14 +78,16 @@ local function run_master_mode()
     end
     local queue = get_startup_queue()
     if not queue or obj.empty(queue.reptable.subset) then
-        log.debug("No repetitions available. Creating empty topic queue...")
-        queue = GlobalTopics(nil)
-    end
-
-    if not active_queue.change_queue(queue) then
+        log.notify("No repetitions available.", "info", 5)
         mp.commandv("loadfile", fs.splashscreen, "replace")
         menuBase.open()
+    else
+      if not active_queue.change_queue(queue) then
+        log.notify("Failed to load queue.", "info", 5)
+        mp.commandv("loadfile", fs.splashscreen, "replace")
+      end
     end
+
 end
 
 local function run_import_extract_mode()

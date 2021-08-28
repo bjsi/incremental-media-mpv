@@ -62,7 +62,7 @@ end
 
 function QueueBase:learn()
     local old_rep = self.playing
-    local new_rep = self.reptable:next_repetition()
+    local new_rep = self.reptable:learn()
     if not new_rep then
         log.debug("No new rep to load.")
         return
@@ -348,6 +348,7 @@ function QueueBase:extract(extractType)
         return false
     end
 
+    -- TODO: has to be adjusted for speed?
     local a = mp.get_property("ab-loop-a")
     local b = mp.get_property("ab-loop-b")
     if a == "no" or b == "no" then

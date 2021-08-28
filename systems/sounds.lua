@@ -40,7 +40,6 @@ sounds.start_background_process = function()
     }
     -- LuaFormatter on
 
-    log.debug("Starting background sounds process.")
     sys.background_process(args)
 
     -- on exit, send command to quit

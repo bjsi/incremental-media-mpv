@@ -22,7 +22,6 @@ function DBBase:open(mode) return io.open(self.fp, mode) end
 function DBBase:read_reps(rep_func)
     local handle = self:open("r")
     if handle == nil then
-        log.debug("Creating new empty database.")
         return self.default_header, {}
     end
 
@@ -33,8 +32,6 @@ function DBBase:read_reps(rep_func)
         return nil
     end
 
-    log.debug("Successfully read header from: " .. self.fp)
-
     local reps = self:read_rows(handle, header, rep_func)
     if reps == nil then
         log.debug("Failed to read reps from: " .. self.fp)
@@ -42,9 +39,7 @@ function DBBase:read_reps(rep_func)
         return nil
     end
 
-    log.debug("Successfully read reps from: " .. self.fp)
     handle:close()
-
     return header, reps
 end
 
@@ -66,15 +61,11 @@ function DBBase:write(rep_table)
         return false
     end
 
-    log.debug("Successfully wrote header to: " .. self.fp)
-
     if not self:write_rows(handle, rep_table) then
         log.err("Failed to write rows to: " .. self.fp)
         handle:close()
         return false
     end
-
-    log.debug("Successfully wrote rows to: " .. self.fp)
 
     handle:close()
     return true
