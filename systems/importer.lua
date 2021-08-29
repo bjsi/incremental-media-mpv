@@ -17,6 +17,64 @@ local LocalExtracts
 
 local importer = {}
 
+function importer.import_yt_playlist(infos,
+				     split_chapters,
+			             download,
+				     priority_min,
+				     priority_max,
+				     dependency_mode, -- topic id or nil
+				     playlist)
+    if obj.empty(infos) then
+        log.debug("No YouTube videos.")
+        return false
+    end
+
+    local prev_id = ""
+    local pri_step = (priority_max - priority_min) / #infos
+    local cur_priority = priority_min;
+    for _, info in ipairs(infos) do
+	    local imported_id = importer.import_yt_video(info,
+							 split_chapters,
+							 download,
+							 cur_priority,
+							 prev_id,
+							 playlist)
+	    if not imported_id then
+		    log.notify("Failed to import YouTube video. Cancelling.", "info", 4)
+		    return false
+	    end
+	    cur_priority = cur_priority + pri_step
+	    if dependency_mode then prev_id = imported_id end
+    end
+end
+
+function importer.import_yt_video(info,
+				  split_chapters,
+			          download,
+				  priority,
+				  dependency, -- topic id or nil
+				  playlist) -- playlist id or nil
+    if obj.empty(info) then
+        log.debug("Youtube info is nil.")
+        return false
+    end
+
+    if split_chapters then
+	    importer.import_yt_chapters(info,
+	    			 	download,
+					priority,
+					dependency,
+					playlist)
+    end
+end
+
+function importer.import_yt_chapters(info,
+				     download,
+				     priority,
+				     dependency,
+				     playlist)
+end
+
 function importer.import_extract(args)
     GlobalTopics = GlobalTopics or require('queues.global.topics')
     local topics = GlobalTopics(nil)
@@ -47,7 +105,6 @@ function importer.import_extract(args)
 end
 
 function importer.split_and_import_chapters(info, cur)
-
     if obj.empty(info) then
         log.debug("Youtube info is nil.")
         return false
@@ -83,7 +140,6 @@ function importer.import_from_clipboard()
 end
 
 function importer.import(url)
-
     local fileinfo, _ = mpu.file_info(url)
     local topics
     if fileinfo then

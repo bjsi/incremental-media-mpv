@@ -1,4 +1,5 @@
 local log = require 'utils.log'
+local tbl = require 'utils.table'
 local Pipeline = require 'systems.ui.input.pipeline'
 local query = require 'systems.ui.input.create_input_handler'
 local obj = require 'utils.object'
@@ -6,7 +7,6 @@ local mpu = require 'mp.utils'
 local Base = require 'systems.menu.submenuBase'
 local ydl = require 'systems.ydl'
 local importer = require 'systems.importer'
-local sounds = require 'systems.sounds'
 
 local ImportSubmenu = {}
 ImportSubmenu.__index = ImportSubmenu
@@ -45,78 +45,67 @@ function ImportSubmenu:add_osd(osd)
 end
 
 function ImportSubmenu:import_yt_playlist(args)
-	log.debug(args)
-	--local topics = importer.create_yt_topics(args["infos"],
-	--args["split-chapters"],
-	--args["download"],
-	--args["priority-min"],
-	--args["priority-max"], true -- TODO: dependencyImport
-	--)
-
-	--if obj.empty(topics) then
-	--	log.notify("Failed to create topics.")
-	--	return
-	--end
-
-	--if importer.add_topics_to_queue(topics) then
-	--	sounds.play("positive")
-	--else
-	--	sounds.play("negative")
-	--end
+	-- LuaFormatter off
+	importer.import_yt_playlist(
+		args["info"],
+		args["split"],
+		args["download"],
+		args["priority-min"],
+		args["priority-max"],
+		args["dependency"],
+		args["playlist"]
+	)
+	-- LuaFormatter on
 end
 
 function ImportSubmenu:import_yt_video(args)
-	log.debug(args)
-	--local topics = importer.create_yt_topics(args["infos"],
-	--args["split-chapters"],
-	--args["download"],
-	--args["priority-min"],
-	--args["priority-max"], true -- TODO: dependencyImport
-	--)
-
-	--if obj.empty(topics) then
-	--	log.notify("Failed to create topics.")
-	--	return
-	--end
-
-	--if importer.add_topics_to_queue(topics) then
-	--	sounds.play("positive")
-	--else
-	--	sounds.play("negative")
-	--end
+	-- LuaFormatter off
+	importer.import_yt_video(
+		args["info"],
+		args["split"],
+		args["download"],
+		args["priority"]
+	)
+	-- LuaFormatter on
 end
 
+local has_chapters = function(info) return not obj.empty(info["chapters"]) end
+local run_if_has_chaps = function(state) return has_chapters(state["info"]) end
+local confirmed = function(s) return s["confirm"] end
+
 function ImportSubmenu:create_yt_playlist_import_pipeline()
-	local p = Pipeline.new(query.priority_range())
-	p:then_(query.yn("split", "n", nil, "Split by chapter if available?: "))
-	p:then_(query.yn("download", "n", nil, "Localize YouTube video?: "))
-	p:then_(query.confirm())
-	p:finally(function(state) self:import_yt_playlist(state) end)
+	local p = Pipeline.new(nil, query.priority_range())
+	p:then_(run_if_has_chaps, query.yn("split", "n", nil, "Split by chapter?: "))
+	p:then_(run_if_has_chaps, query.yn("pending_chapters", "n", nil, "Add chapter backlog to pending queue?: "))
+	p:then_(nil, query.yn("download", "n", nil, "Localize YouTube video?: "))
+	p:then_(nil, query.yn("dependency", "y", nil, "Add playlist backlog to pending queue?: "))
+	p:then_(nil, query.confirm())
+	p:finally({task=function(s) self:import_yt_playlist(s) end, run_if=confirmed})
 	return p
 end
 
 function ImportSubmenu:create_yt_video_import_pipeline()
-	local p = Pipeline.new(query.priority())
-	p:then_(query.yn("split", "n", nil, "Split by chapter if available?: "))
-	p:then_(query.yn("download", "n", nil, "Localize YouTube video?: "))
-	p:then_(query.confirm())
-	p:finally(function(state) self:import_yt_video(state) end)
+	local p = Pipeline.new(nil, query.priority())
+	p:then_(run_if_has_chaps, query.yn("split", "n", nil, "Split by chapter?: "))
+	p:then_(run_if_has_chaps, query.yn("pending_chapters", "n", nil, "Add chapter backlog to pending queue?: "))
+	p:then_(nil, query.yn("download", "n", nil, "Localize YouTube video?: "))
+	p:then_(nil, query.confirm())
+	--p:finally(function(state) self:import_yt_video(state) end)
+	p:finally({task=function(s) log.debug(s) end, run_if=confirmed})
 	return p
 end
 
 function ImportSubmenu:create_local_video_import_pipeline()
-	local p = Pipeline.new(query.priority())
-	p:then_()
-	p:then_(query.confirm())
-	p:finally()
+	local p = Pipeline.new(nil, query.priority())
+	p:then_(nil, query.confirm())
+	p:finally({task=function(state) self:import_local_video(state) end, run_if=confirmed})
 	return p
 end
 
 function ImportSubmenu:create_local_dir_import_pipeline()
-	local p = Pipeline.new(query.priority_range())
-	p:then_()
-	p:then_(query.confirm())
-	p:finally()
+	local p = Pipeline.new(nil, query.priority_range())
+	p:then_(nil, query.confirm())
+	p:finally({task=function(state) self:import_local_directory(state) end, run_if=confirmed})
 	return p
 end
 
@@ -153,8 +142,8 @@ function ImportSubmenu:choose_import_pipeline(state)
 end
 
 function ImportSubmenu:query_import()
-	local p = Pipeline.new(query.string("url", nil, nil, "Enter a file, folder or youtube link: "))
-	p:finally(function(state) self:choose_import_pipeline(state) end)
+	local p = Pipeline.new(nil, query.string("url", nil, nil, "Enter a file, folder or youtube link: "))
+	p:finally({task=function(s) self:choose_import_pipeline(s) end})
 	p:run({})
 end
 
