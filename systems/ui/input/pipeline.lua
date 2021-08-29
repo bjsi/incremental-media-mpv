@@ -12,12 +12,12 @@ function InputPipeline.new(handler, args)
     pipeline.tasks = {}
     pipeline.idx = 1
     pipeline.finally = nil
-    pipeline:Then(handler, args)
+    pipeline:then_(handler, args)
 
     return pipeline
 end
 
-function InputPipeline:run_current_task(state)
+function InputPipeline:run(state)
     if not self.tasks then return end
 
     local cur = self.tasks[self.idx]
@@ -33,12 +33,12 @@ function InputPipeline:create_continuation(handler)
         local result = handler(input, state)
         if result == task_result.next then
             self.idx = self.idx + 1
-            self:run_current_task(state)
+            self:run(state)
         elseif result == task_result.again then
-            self:run_current_task()
+            self:run(state)
         elseif result == task_result.again_invalid_data then
             log.notify("Invalid data.")
-            self:run_current_task()
+            self:run(state)
         elseif result == task_result.cancel then
             log.notify("Cancelled.")
         end

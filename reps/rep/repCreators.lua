@@ -117,7 +117,6 @@ end
 
 function repCreators.download_yt_audio(fullUrl, start, stop)
     local audioFileNameNoExt = tostring(os.time())
-
     local audioUrl, format = get_audio_stream_path()
     if obj.empty(audioUrl) or obj.empty(format) then
         log.err("Failed to get youtube audio stream.")
