@@ -113,12 +113,15 @@ function ffmpeg.generate_cloze_item_files(parentPath, sound, format,
 end
 
 function ffmpeg.get_duration(localUrl)
-    -- LuaFormatter on
+    -- LuaFormatter off
     local args = {
-        "ffprobe", localUrl, "-v", "quiet", "-print_format", "json=compact=0",
+        "ffprobe",
+	localUrl,
+	"-v", "quiet",
+	"-print_format", "json=compact=0",
         "-show_entries", "format"
     }
-    -- LuaFormatter off
+    -- LuaFormatter on
 
     local ret = sys.subprocess(args)
     log.debug("duration", ret)
@@ -128,27 +131,6 @@ function ffmpeg.get_duration(localUrl)
     else
         return nil
     end
-end
-
-local function get_active_track(track_type)
-    local track_list = mp.get_property_native('track-list')
-    for _, track in pairs(track_list) do
-        if track.type == track_type and track.selected == true then
-            return track
-        end
-    end
-    return nil
-end
-
-local function get_audio_info()
-    local source_path = mp.get_property("path")
-    local audio_track = get_active_track('audio')
-    local audio_track_id = mp.get_property("aid")
-    if audio_track and audio_track.external == true then
-        source_path = audio_track['external-filename']
-        audio_track_id = 'auto'
-    end
-    return source_path, audio_track_id
 end
 
 function ffmpeg.audio_extract(start, stop, audioUrl, outputPath)
@@ -164,7 +146,6 @@ function ffmpeg.audio_extract(start, stop, audioUrl, outputPath)
 	-- "-acodec", "copy", causes duration issues
 	outputPath
     }
-    log.debug("Audio extract args: ", args)
     -- LuaFormatter on
     return sys.subprocess(args)
 end

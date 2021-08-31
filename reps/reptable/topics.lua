@@ -15,6 +15,25 @@ setmetatable(TopicRepTable, {
     end
 })
 
+local function same_start(a, b)
+	return a.row.start == b.row.start
+end
+
+local function same_stop(a, b)
+	return a.row.stop == b.row.stop
+end
+
+local function same_url(a, b)
+	return a.row["url"] == b.row["url"]
+end
+
+function TopicRepTable:chapter_exists(chapter)
+    for _, rep in ipairs(self.reps) do
+        return same_start(rep, chapter) and same_stop(rep, chapter) and same_url(rep, chapter)
+    end
+    return false
+end
+
 function TopicRepTable:_init(subsetter)
     ScheduledRepTable._init(self, fs.topics_data, defaultHeader, subsetter)
 end

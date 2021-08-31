@@ -1,7 +1,6 @@
 local mode = {
-    import = "import",
-    export = "export_sm",
-    add_extract = "add_extract",
+    export_sm = "export_sm",
+    import_extract = "import_extract",
     master = "master",
     minion = "minion"
 }

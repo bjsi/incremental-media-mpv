@@ -127,24 +127,6 @@ local function run_import_extract_mode()
     pipeline:run({path = path})
 end
 
-local function run_import_topic_mode()
-    local path = opts.path
-    local ret = importer.import(path)
-    local sound
-    local exit_code
-    if ret then
-        log.debug("Successfully imported: " .. path)
-        sound = "positive"
-        exit_code = 0
-    else
-        log.debug("Failed to import: " .. path)
-        sound = "negative"
-        exit_code = 1
-    end
-    sounds.play_sync(sound)
-    mp.commandv("quit", exit_code)
-end
-
 local function create_essential_files() -- TODO
     local folders = {fs.data, fs.media, fs.bkp}
     for _, folder in pairs(folders) do
@@ -223,8 +205,6 @@ local function run()
         run_master_mode()
     elseif opts.mode == mode.minion then
         run_minion_mode()
-    elseif opts.mode == mode.import_topic then
-        run_import_topic_mode()
     elseif opts.mode == mode.import_extract then
         run_import_extract_mode()
     elseif opts.mode == mode.export_sm then

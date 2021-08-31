@@ -1,5 +1,5 @@
 local log = require 'utils.log'
-local tbl = require 'utils.table'
+local sounds = require 'systems.sounds'
 local Pipeline = require 'systems.ui.input.pipeline'
 local query = require 'systems.ui.input.create_input_handler'
 local obj = require 'utils.object'
@@ -40,32 +40,44 @@ end
 
 function ImportSubmenu:query_update_playlists() log.notify("TODO") end
 
+
 function ImportSubmenu:add_osd(osd)
     osd:submenu("Import Menu"):newline():newline()
 end
 
 function ImportSubmenu:import_yt_playlist(args)
 	-- LuaFormatter off
-	importer.import_yt_playlist(
+	if importer.import_yt_playlist(
 		args["info"],
-		args["split"],
+		args["split_chapters"],
 		args["download"],
 		args["priority-min"],
 		args["priority-max"],
-		args["dependency"],
-		args["playlist"]
-	)
+		args["pending_chapters"],
+		args["pending_videos"],
+		args["playlist_id"],
+		args["playlist_title"]
+	) then
+		sounds.play("positive")
+	else
+		sounds.play("negative")
+	end
 	-- LuaFormatter on
 end
 
 function ImportSubmenu:import_yt_video(args)
 	-- LuaFormatter off
-	importer.import_yt_video(
+	if importer.import_yt_video(
 		args["info"],
-		args["split"],
+		args["split_chapters"],
 		args["download"],
-		args["priority"]
-	)
+		args["priority"],
+		args["pending_chapters"]
+	) then
+		sounds.play("positive")
+	else
+		sounds.play("negative")
+	end
 	-- LuaFormatter on
 end
 
@@ -73,12 +85,13 @@ local has_chapters = function(info) return not obj.empty(info["chapters"]) end
 local run_if_has_chaps = function(state) return has_chapters(state["info"]) end
 local confirmed = function(s) return s["confirm"] end
 
+-- TODO: customize title
 function ImportSubmenu:create_yt_playlist_import_pipeline()
 	local p = Pipeline.new(nil, query.priority_range())
-	p:then_(run_if_has_chaps, query.yn("split", "n", nil, "Split by chapter?: "))
+	p:then_(run_if_has_chaps, query.yn("split_chapters", "n", nil, "Split by chapter?: "))
 	p:then_(run_if_has_chaps, query.yn("pending_chapters", "n", nil, "Add chapter backlog to pending queue?: "))
 	p:then_(nil, query.yn("download", "n", nil, "Localize YouTube video?: "))
-	p:then_(nil, query.yn("dependency", "y", nil, "Add playlist backlog to pending queue?: "))
+	p:then_(nil, query.yn("pending_videos", "y", nil, "Add playlist backlog to pending queue?: "))
 	p:then_(nil, query.confirm())
 	p:finally({task=function(s) self:import_yt_playlist(s) end, run_if=confirmed})
 	return p
@@ -86,12 +99,11 @@ end
 
 function ImportSubmenu:create_yt_video_import_pipeline()
 	local p = Pipeline.new(nil, query.priority())
-	p:then_(run_if_has_chaps, query.yn("split", "n", nil, "Split by chapter?: "))
+	p:then_(run_if_has_chaps, query.yn("split_chapters", "n", nil, "Split by chapter?: "))
 	p:then_(run_if_has_chaps, query.yn("pending_chapters", "n", nil, "Add chapter backlog to pending queue?: "))
 	p:then_(nil, query.yn("download", "n", nil, "Localize YouTube video?: "))
 	p:then_(nil, query.confirm())
-	--p:finally(function(state) self:import_yt_video(state) end)
-	p:finally({task=function(s) log.debug(s) end, run_if=confirmed})
+	p:finally({task=function(state) self:import_yt_video(state) end, run_if=confirmed})
 	return p
 end
 
@@ -131,6 +143,7 @@ function ImportSubmenu:choose_import_pipeline(state)
 	    if #yt_info > 1 then
 		    log.notify("Playlist info found.")
 		    state["playlist"] = url:gmatch("%?list=(.+)")()
+		    state["title"] = ydl.get_playlist_title(state["playlist"])
 		    pipeline = self:create_yt_playlist_import_pipeline()
 	    else
 		    log.notify("Video info found.")

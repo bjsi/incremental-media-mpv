@@ -4,75 +4,181 @@ local ffmpeg = require 'systems.ffmpeg'
 local active = require 'systems.active'
 local str = require 'utils.str'
 local repCreators = require 'reps.rep.repCreators'
-local mpu = require 'mp.utils'
 local ydl = require 'systems.ydl'
 local log = require 'utils.log'
 local rep_factory = require 'reps.rep.repCreators' -- TODO
 local tbl = require 'utils.table'
 local obj = require 'utils.object'
 local num = require 'utils.number'
+local Playlist = require 'systems.playlists.playlist'
+local PlaylistTable = require 'systems.playlists.playlist_table'
 
 local GlobalTopics
 local LocalExtracts
 
 local importer = {}
 
+function importer.create_yt_playlist(playlist_id, playlist_title)
+    local row = {
+        ["id"] = sys.uuid(),
+        ["title"] = playlist_title,
+        ["dismissed"] = 0,
+        ["url"] = playlist_id,
+    }
+    local playlist = Playlist(row)
+    if not PlaylistTable().add(playlist) then
+	    return nil
+    end
+    return playlist.row.id
+end
+
+---Import a YouTube playlist.
+---@param infos table of YouTube video information.
+---@param split_chapters boolean true if each video should be split by chapter.
+---@param download boolean true if each video should be downloaded.
+---@param priority_min number minimum priority.
+---@param priority_max number maximum priority.
+---@param pending_chapters boolean true if should add chapter backlog to pending queue.
+---@param pending_videos boolean true if should add video backlog to pending queue.
+---@param playlist_yt_id string YouTube id of the playlist.
+---@param playlist_title string title of the playlist.
 function importer.import_yt_playlist(infos,
 				     split_chapters,
 			             download,
 				     priority_min,
 				     priority_max,
-				     dependency_mode, -- topic id or nil
-				     playlist)
+				     pending_chapters,
+				     pending_videos,
+				     playlist_yt_id,
+				     playlist_title)
     if obj.empty(infos) then
         log.debug("No YouTube videos.")
         return false
+    end
+
+    -- import playlist
+    local imported_playlist_id = importer.create_yt_playlist(playlist_yt_id,
+    							     playlist_title)
+    if not imported_playlist_id then
+	    log.debug("Failed to import playlist row.")
+	    return false
     end
 
     local prev_id = ""
     local pri_step = (priority_max - priority_min) / #infos
     local cur_priority = priority_min;
     for _, info in ipairs(infos) do
+
+	    -- imported video id, or final chapter id
 	    local imported_id = importer.import_yt_video(info,
 							 split_chapters,
 							 download,
 							 cur_priority,
+							 pending_chapters,
 							 prev_id,
-							 playlist)
+							 imported_playlist_id)
 	    if not imported_id then
 		    log.notify("Failed to import YouTube video. Cancelling.", "info", 4)
 		    return false
 	    end
-	    cur_priority = cur_priority + pri_step
-	    if dependency_mode then prev_id = imported_id end
+            cur_priority = num.round(cur_priority + pri_step, 2);
+	    if pending_videos then prev_id = imported_id end
     end
+    return true
 end
 
 function importer.import_yt_video(info,
 				  split_chapters,
 			          download,
 				  priority,
-				  dependency, -- topic id or nil
-				  playlist) -- playlist id or nil
+				  pending_chapters,
+				  vid_dependency_id,
+				  playlist_id)
     if obj.empty(info) then
         log.debug("Youtube info is nil.")
         return false
     end
 
-    if split_chapters then
-	    importer.import_yt_chapters(info,
-	    			 	download,
-					priority,
-					dependency,
-					playlist)
+    if download then
+	    local video_file = ydl.download_video(info["id"])
+	    if not video_file then
+		    log.debug("Failed to download video.")
+		    return false
+	    end
+	    info["downloaded_file"] = video_file
+    end
+
+    if split_chapters and not obj.empty(info["chapters"]) then
+	    return importer.import_yt_chapters(info,
+					       priority,
+					       pending_chapters,
+					       vid_dependency_id,
+					       playlist_id)
+    else
+	    local topic = importer.create_yt_topic(info,
+	    					   vid_dependency_id,
+						   priority,
+						   playlist_id)
+	    importer.add_topics_to_queue({topic}, false)
+	    return topic.row.id
     end
 end
 
 function importer.import_yt_chapters(info,
-				     download,
 				     priority,
-				     dependency,
+				     pending_chapters,
+				     vid_dependency_id,
 				     playlist)
+
+	local dependency_id = vid_dependency_id
+	local chapter_topics = {}
+	for _, chapter in ipairs(info["chapters"]) do
+		local chapter_topic = importer.create_yt_chapter(info,
+								 chapter,
+								 priority,
+								 dependency_id,
+								 playlist)
+		if not chapter_topic then
+			log.debug("Failed to create YouTube video chapter topic.")
+			return false
+		end
+
+		table.insert(chapter_topics, chapter_topic)
+		if pending_chapters then
+			dependency_id = chapter_topic.row.id
+		end
+	end
+    	importer.add_topics_to_queue(chapter_topics, true)
+	return dependency_id
+end
+
+function importer.create_yt_chapter(info,
+				    chapter,
+				    priority,
+				    dependency,
+				    playlist_id)
+
+	local type
+	local url
+	if info["downloaded_file"] then
+		type = "local"
+		url = info["downloaded_file"]
+	else
+		type = "youtube"
+		url = info["id"]
+	end
+
+	local title = str.remove_db_delimiters(info["title"] .. ": " .. chapter["title"])
+	local topic = rep_factory.createTopic(title,
+					      type,
+					      url,
+					      priority,
+					      info["duration"],
+					      dependency,
+					      playlist_id)
+	topic.row["start"] = chapter["start_time"]
+	topic.row["stop"] = chapter["end_time"]
+	return topic
 end
 
 function importer.import_extract(args)
@@ -104,60 +210,7 @@ function importer.import_extract(args)
     return extract
 end
 
-function importer.split_and_import_chapters(info, cur)
-    if obj.empty(info) then
-        log.debug("Youtube info is nil.")
-        return false
-    end
-
-    local chapters = info["chapters"]
-    if obj.empty(chapters) then
-        log.debug("Chapters are nil.")
-        return false
-    end
-
-    local topics = {}
-    local prevId = ""
-    for _, chapter in ipairs(chapters) do
-        local topic = importer.create_yt_topic(info, prevId)
-        prevId = topic.row["id"]
-        topic.row["start"] = chapter["start"]
-        topic.row["stop"] = chapter["stop"]
-        table.insert(topics, topic)
-    end
-
-    local duplicateIds = {cur.row["id"]}
-    return importer.add_topics_to_queue(topics, duplicateIds)
-end
-
-function importer.import_from_clipboard()
-    local url, _ = sys.clipboard_read()
-    if obj.empty(url) then
-        log.debug("Url is nil.")
-        return
-    end
-    return importer.import(url)
-end
-
-function importer.import(url)
-    local fileinfo, _ = mpu.file_info(url)
-    local topics
-    if fileinfo then
-        if fileinfo then -- if file
-            topics = importer.create_local_topics(url)
-        else -- if directory
-            topics = importer.create_local_topics(url)
-        end
-    else
-        local infos = ydl.get_info(url)
-        topics = importer.create_yt_topics(infos)
-    end
-
-    return importer.add_topics_to_queue(topics)
-end
-
-function importer.add_topics_to_queue(topics, allowedDuplicateIds)
-
+function importer.add_topics_to_queue(topics, chapters)
     local queue
     if active.queue ~= nil and active.queue.name:find("Topic") then
         queue = active.queue
@@ -168,10 +221,17 @@ function importer.add_topics_to_queue(topics, allowedDuplicateIds)
 
     local imported = false
     for _, topic in ipairs(topics) do
-        if not queue.reptable:exists(topic) then
-            log.debug("Importing: " .. topic.row["title"])
-            queue.reptable:add_to_reps(topic)
-            imported = true
+	local exists
+	if chapters then
+		exists = queue.reptable:chapter_exists(topic)
+	else
+		exists = queue.reptable:exists(topic)
+	end
+        if not exists then
+            log.notify("Importing: " .. topic.row["title"])
+	    if queue.reptable:add_to_reps(topic) then
+		    imported = true
+	    end
         else
             log.debug("Skipping already-existing topic: " .. topic.row["title"])
         end
@@ -182,50 +242,17 @@ function importer.add_topics_to_queue(topics, allowedDuplicateIds)
     return imported
 end
 
--- TODO: import directory
-function importer.create_local_topics(url)
-    local _, fn = mpu.split_path(url)
-    local title = str.remove_db_delimiters(str.remove_ext(fn))
-    local priority = 30
-    local duration = ffmpeg.get_duration(url)
-    local topic = repCreators.createTopic(title, "local", url, priority,
-                                          duration)
-    return {topic}
-end
-
-function importer.create_yt_topic(info, prevId, priority)
+function importer.create_yt_topic(info, dependency_id, priority, playlist_id)
     local title = str.remove_db_delimiters(info["title"])
-    local ytId = info["id"]
+    local youtube_id = info["id"]
     local duration = info["duration"]
-    return repCreators.createTopic(title, "youtube", ytId, priority, duration,
-                                   prevId)
-end
-
-function importer.create_yt_topics(infos, splitChaps, download, priMin, priMax,
-                                   dependencyImport)
-    if infos == nil then return {} end
-
-    if tonumber(priMin) == nil or tonumber(priMax) == nil then
-        priMin = cfg.default_priority_min
-        priMax = cfg.default_priority_max
-    end
-
-    local topics = {}
-    local prevId = ""
-    for _, info in ipairs(infos) do
-        if info then
-
-            -- TODO: chapters
-            -- TODO: download
-            local priStep = (priMax - priMin) / #infos
-            local curPriority = priMin;
-            local topic = importer.create_yt_topic(info, prevId, curPriority)
-            table.insert(topics, topic)
-            prevId = dependencyImport and topic.row["id"] or ""
-            curPriority = num.round(curPriority + priStep, 2);
-        end
-    end
-    return topics
+    return repCreators.createTopic(title,
+    			           "youtube",
+				   youtube_id,
+				   priority,
+				   duration,
+				   dependency_id,
+				   playlist_id)
 end
 
 return importer

@@ -1,10 +1,10 @@
+local CSVDB = require 'db.csv'
+local MarkdownDB = require 'db.md'
 local log = require 'utils.log'
 local tbl = require 'utils.table'
 local obj = require 'utils.object'
 local sort = require 'reps.reptable.sort'
 local str = require 'utils.str'
-local CSVDB = require 'db.csv'
-local MarkdownDB = require 'db.md'
 
 local RepTableBase = {}
 RepTableBase.__index = RepTableBase

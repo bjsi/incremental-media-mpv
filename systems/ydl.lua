@@ -10,6 +10,19 @@ local ydl = {}
 
 ydl.url_prefix = "https://www.youtube.com/watch?v="
 
+function ydl.get_playlist_title(id)
+	local args = {
+		"youtube-dl",
+		"--no-check-certificate",
+		"--get-filename",
+		"--playlist-items", "1",
+		"-o", "%(playlist_title)s",
+		id
+	}
+    	local ret = sys.subprocess(args)
+	if ret.status == 0 then return str.remove_newlines(ret.stdout) else return nil end
+end
+
 function ydl.download_audio(url, goodQuality)
     local quality = "worstaudio"
     if goodQuality then quality = "bestaudio" end
@@ -18,11 +31,11 @@ function ydl.download_audio(url, goodQuality)
         mpu.join_path(fs.media, "%(id)s.%(ext)s")
     }
 
-    return ydl.handle_download(args, url)
+    return ydl.handle_media_download(args, url)
 end
 
 -- TODO: Should be background_process?
-function ydl.handle_download(args, url)
+function ydl.handle_media_download(args, url)
     local ret = sys.subprocess(args)
     if ret.status == 0 then
         local mediaFiles = mpu.readdir(fs.media)
@@ -35,30 +48,39 @@ function ydl.handle_download(args, url)
     return nil
 end
 
-function ydl.download_video(url)
+function ydl.download_video(youtube_id)
     local format = mp.get_property("ytdl-format")
+    local output_path = mpu.join_path(fs.downloads, "%(id)s.%(ext)s")
 
     -- LuaFormatter off
     local args = {
         "youtube-dl",
 	"--no-check-certificate",
-	"-f",
-	format,
-	"-o",
-        "%(id)s.%(ext)s",
-	url
+	"-f", format,
+	"-o", output_path,
+	youtube_id
     }
     -- LuaFormatter on
 
-    return ydl.handle_download(args, url)
+    local ret = sys.subprocess(args)
+    if ret.status == 0 then
+	    local downloads = mpu.readdir(fs.downloads)
+	    local file = tbl.first(function(f)
+		    return str.remove_ext(f) == youtube_id
+	    end, downloads)
+	    return mpu.join_path(fs.downloads, file)
+    else
+	    return nil
+    end
 end
 
 function ydl.get_info(url)
     -- LuaFormatter off
     local args = {
         "youtube-dl",
+	"--no-warnings",
 	"--no-check-certificate",
-	"-j",
+	"-J",
 	"--flat-playlist",
 	url
     }
@@ -67,12 +89,13 @@ function ydl.get_info(url)
     local ret = sys.subprocess(args)
     local t = {}
     if ret.status == 0 then
-        for i in ret.stdout:gmatch("([^\n]*)\n?") do
-            if i then
-                t[#t + 1] = mpu.parse_json(str.remove_newlines(i))
-            end
-        end
-        return t
+        --for i in ret.stdout:gmatch("([^\n]*)\n?") do
+        --    if i then
+        --        t[#t + 1] = mpu.parse_json(str.remove_newlines(i))
+        --    end
+        --end
+        --return t
+	return mpu.parse_json(ret.stdout)
     end
 
     return t
