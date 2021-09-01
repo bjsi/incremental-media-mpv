@@ -10,17 +10,25 @@ local ydl = {}
 
 ydl.url_prefix = "https://www.youtube.com/watch?v="
 
-function ydl.get_playlist_title(id)
+function ydl.get_playlist_info(info, url)
 	local args = {
 		"youtube-dl",
 		"--no-check-certificate",
 		"--get-filename",
 		"--playlist-items", "1",
-		"-o", "%(playlist_title)s",
-		id
+		"-o", info,
+		url
 	}
     	local ret = sys.subprocess(args)
 	if ret.status == 0 then return str.remove_newlines(ret.stdout) else return nil end
+end
+
+function ydl.get_playlist_title(url)
+	return ydl.get_playlist_info("%(playlist_title)s", url)
+end
+
+function ydl.get_playlist_id(url)
+	return ydl.get_playlist_info("%(playlist_id)s", url)
 end
 
 function ydl.download_audio(url, goodQuality)
@@ -89,15 +97,8 @@ function ydl.get_info(url)
     local ret = sys.subprocess(args)
     local t = {}
     if ret.status == 0 then
-        --for i in ret.stdout:gmatch("([^\n]*)\n?") do
-        --    if i then
-        --        t[#t + 1] = mpu.parse_json(str.remove_newlines(i))
-        --    end
-        --end
-        --return t
 	return mpu.parse_json(ret.stdout)
     end
-
     return t
 end
 

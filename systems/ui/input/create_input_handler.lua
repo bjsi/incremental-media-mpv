@@ -87,8 +87,9 @@ local function priority_range_input_handler()
 		max = tonumber(max)
 
 		if not pri.validate(min) or not pri.validate(max) or min > max then
-		    return task_result.again_invalid_data
+		    return false
 		end
+		return true
 	end
 
 	local state_setter = function(input, state)
@@ -99,7 +100,7 @@ local function priority_range_input_handler()
 		state["priority-max"] = max
 	end
 
-	return number_input_handler(nil, validator, state_setter, "Priority Range (eg. 5-20): ")
+	return string_input_handler(nil, validator, state_setter, "Priority Range (eg. 5-20): ")
 end
 
 -- LuaFormatter off

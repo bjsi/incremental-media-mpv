@@ -26,7 +26,8 @@ function importer.create_yt_playlist(playlist_id, playlist_title)
         ["url"] = playlist_id,
     }
     local playlist = Playlist(row)
-    if not PlaylistTable().add(playlist) then
+    local t = PlaylistTable()
+    if not t:add(playlist) then
 	    return nil
     end
     return playlist.row.id

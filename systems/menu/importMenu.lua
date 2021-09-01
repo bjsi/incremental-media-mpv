@@ -139,14 +139,16 @@ function ImportSubmenu:choose_import_pipeline(state)
 		return
 	    end
 
-	    state["info"] = yt_info
-	    if #yt_info > 1 then
+
+	    if yt_info["_type"] == "playlist" then
 		    log.notify("Playlist info found.")
-		    state["playlist"] = url:gmatch("%?list=(.+)")()
-		    state["title"] = ydl.get_playlist_title(state["playlist"])
+		    state["info"] = yt_info["entries"]
+		    state["playlist_id"] = yt_info["id"]
+		    state["playlist_title"] = yt_info["title"]
 		    pipeline = self:create_yt_playlist_import_pipeline()
 	    else
 		    log.notify("Video info found.")
+		    state["info"] = yt_info
 		    pipeline = self:create_yt_video_import_pipeline()
 	    end
         end
