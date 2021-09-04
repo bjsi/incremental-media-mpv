@@ -82,21 +82,21 @@ function ExtractQueueBase:call_chain(args, chain, i)
 end
 
 function ExtractQueueBase:child()
-    local curRep = self.reptable:current_scheduled()
-    if curRep == nil then
+    local cur = self.playing
+    if cur == nil then
         log.debug("Failed to load child queue because current rep is nil.")
         return false
     end
 
     LocalItems = LocalItems or require("queues.local.items")
-    local queue = LocalItems(self.playing)
-    if obj.empty(queue.reptable.subset) then
+    local items = LocalItems(self.playing)
+    if obj.empty(items.reptable.subset) then
         log.debug("No children available for extract")
         sounds.play("negative")
         return false
     end
 
-    active.change_queue(queue)
+    active.change_queue(items)
     return true
 end
 

@@ -61,24 +61,22 @@ function player.play(newRep, oldRep, createLoopBoundaries)
     if curtime ~= nil then start = curtime end
     local stop = tonumber(newRep.row["stop"])
 
-    -- reset loops and timers
     player.unset_abloop()
     subs.clear()
     player.pause_timer.stop()
-
     player.load(newRep, oldRep, start)
-
     player.setSpeed(speed)
 
-    --  ?
+    -- TODO
     if not createLoopBoundaries then
-        if newRep.row.start then
-            start = tonumber(newRep.row.start)
-        else
-            start = 0
-        end
-        stop = start + newRep:duration()
-        if newRep:type() == "topic" then stop = stop - 1.5 end
+	start = 0
+	if newRep:type() == "item" then
+		stop = newRep:duration()
+	elseif newRep:type() == "topic" then
+		stop = newRep.row.stop - 1.5
+	else
+		stop = newRep.row.stop
+	end
     end
 
     log.debug("Setting loop boundaries - start: " .. tostring(start) ..
