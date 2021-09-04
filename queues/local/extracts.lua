@@ -64,9 +64,7 @@ function LocalExtractQueue:subsetter(oldRep, reps)
     end
 
     subset = tbl.filter(subset, filter)
-
-    -- Sorting subset
-    self:sort(subset)
+    sort.by_created(subset)
 
     -- Determining first element
     if from_items then
@@ -75,11 +73,6 @@ function LocalExtractQueue:subsetter(oldRep, reps)
     end
 
     return subset, subset[1]
-end
-
-function LocalExtractQueue:sort(reps)
-    if not self.sorted then sort.by_created(reps) end
-    self.sorted = true
 end
 
 return LocalExtractQueue

@@ -1,6 +1,7 @@
 local Base = require 'reps.reptable.base'
-local obj = require 'utils.object'
-local Scheduler = require 'reps.scheduler'
+local af = require 'utils.afactor'
+local ivl = require 'utils.interval'
+local dt = require 'utils.date'
 local sounds = require 'systems.sounds'
 local log = require 'utils.log'
 local active = require 'systems.active'
@@ -18,52 +19,44 @@ setmetatable(ScheduledRepTable, {
     end
 })
 
-function ScheduledRepTable:_init(dbPath, defaultHeader, subsetter)
-    Base._init(self, dbPath, defaultHeader, subsetter)
-    self:read_reps()
+function ScheduledRepTable:_init(path, default_header, subsetter)
+    Base._init(self, path, default_header, subsetter)
 end
 
 function ScheduledRepTable:learn()
-
-    -- Base:learn(self) -- Not working for some reason
-
-    self:update_subset()
-
-    if obj.empty(self.subset) then
-        log.debug("Subset is empty. No more repetitions!")
-        sounds.play("negative")
-        return
+    -- updates subset, checks if it is empty
+    if not Base.learn(self) then
+	    return false
     end
 
-    local curSchedRep = self:current_scheduled()
-    local nextSchedRep = self:get_next_rep()
-    local curPlayRep = active.queue.playing
+    -- subset not empty, must at least be a current scheduled rep.
+    -- current scheduled rep not necessarily playing eg.
+    -- if user navigates history
+    local next_scheduled_rep = self.subset[2]
+    local cur_scheduled_rep = self.subset[1]
+    local playing_rep = active.queue.playing
 
-    -- not due; don't schedule or load
-    if curSchedRep and not curSchedRep:is_due() then
-        log.debug("CurRep is not due. No more repetitions!")
-        sounds.play("negative")
-        return
-    end
-
-    if curPlayRep.row["id"] ~= curSchedRep.row["id"] then
+    -- if the user navigates history then presses learn, it should
+    -- take them to the current scheduled element.
+    -- also, if the last current scheduled rep (before update_subset)
+    -- was removed for being done, this will effectively load the
+    -- next rep
+    if (playing_rep.row["id"] ~= cur_scheduled_rep.row["id"]) then
         log.debug(
             "Currently playing is not currently scheduled. Loading currently scheduled.")
-        return curSchedRep
+        return cur_scheduled_rep
     end
 
-    self:remove_current()
-    self:schedule(curPlayRep)
+    table.remove(self.subset, 1)
+    self:schedule(cur_scheduled_rep)
 
-    local toload = nil
-
-    if curSchedRep and not nextSchedRep then
-        toload = nil
+    local toload
+    if not next_scheduled_rep then
         log.debug("No more repetitions!")
         sounds.play("negative")
-    elseif curSchedRep and nextSchedRep then
-        if nextSchedRep:is_due() then
-            toload = nextSchedRep
+    else
+        if next_scheduled_rep:is_due() then
+            toload = next_scheduled_rep
             log.debug("Loading the next scheduled repetition.")
         else
             log.debug("No more repetitions!")
@@ -71,26 +64,31 @@ function ScheduledRepTable:learn()
         end
     end
 
-    self:update_subset()
     self:write()
-
     return toload
 end
 
 function ScheduledRepTable:schedule(rep)
-    local af = rep.row["afactor"]
-    local sched = Scheduler(af)
-    sched:schedule(self, rep)
+    -- add interval to current date to
+    -- work out the next date of repetition
+    local today = dt.date_today()
+    local todayY, todayM, todayD = dt.parse_hhmmss(today)
+    local interval = tonumber(rep.row["interval"])
+    if not ivl.validate(interval) then interval = 1 end
+    local afactor = tonumber(rep.row.afactor)
+    if not af.validate(afactor) then afactor = 2 end
+
+    -- works fine if day > no. of days in month.
+    local next_rep_table = {
+        year = tonumber(todayY),
+        month = tonumber(todayM),
+        day = tonumber(todayD) + interval
+    }
+
+    rep.row["interval"] = afactor  * interval
+    rep.row["nextrep"] = os.date("%Y-%m-%d", os.time(next_rep_table))
 end
 
-function ScheduledRepTable:sort()
-    sort.by_priority(self.subset)
-    sort.by_due(self.subset)
-end
-
---- Takes a row and returns a Rep object. Override me!
---- @param row table
---- @return Rep
-function ScheduledRepTable:as_rep(row) error("Need to override as_rep(row)!") end
+function ScheduledRepTable:as_rep(_) error("Need to override as_rep(row)!") end
 
 return ScheduledRepTable

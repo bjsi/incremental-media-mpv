@@ -1,11 +1,11 @@
-local Scheduled = require "reps.rep.scheduled"
+local ScheduledRep = require "reps.rep.scheduled"
 local obj = require 'utils.object'
 
 local TopicRep = {}
 TopicRep.__index = TopicRep
 
 setmetatable(TopicRep, {
-    __index = Scheduled,
+    __index = ScheduledRep,
     __call = function(cls, ...)
         local self = setmetatable({}, cls)
         self:_init(...)
@@ -13,7 +13,7 @@ setmetatable(TopicRep, {
     end
 })
 
-function TopicRep:_init(row) Scheduled._init(self, row) end
+function TopicRep:_init(row) ScheduledRep._init(self, row) end
 
 function TopicRep:is_chapter() return self.row["chapter"] == "1" end
 
@@ -35,7 +35,7 @@ function TopicRep:is_done()
     local curtime = tonumber(self.row["curtime"])
     local stop = tonumber(self.row["stop"])
     if curtime == nil or stop == nil then return false end
-    return curtime / stop >= 0.95
+    return (stop - curtime) <= 2
 end
 
 function TopicRep:is_child_of() return false end

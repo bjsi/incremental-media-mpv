@@ -1,5 +1,5 @@
 local Base = require 'reps.reptable.base'
-local obj = require 'utils.object'
+local sort = require 'reps.reptable.sort'
 local sounds = require 'systems.sounds'
 local active = require 'systems.active'
 local log = require 'utils.log'
@@ -20,41 +20,34 @@ function UnscheduledRepTable:_init(dbPath, defaultHeader, subsetter)
     Base._init(self, dbPath, defaultHeader, subsetter)
 end
 
--- noop
-function UnscheduledRepTable:sort(reps) end
-
 function UnscheduledRepTable:learn()
-    -- Base:learn(self)
-    -- self:update_subset()
-
-    if obj.empty(self.subset) then
-        log.debug("Subset is empty. No more repetitions!")
-        sounds.play("negative")
-        return
+    if not Base.learn(self) then
+	    return false
     end
 
-    local curRep = self:current_scheduled()
-    if active.queue.playing ~= curRep then
+    sort.by_priority(self.subset)
+
+    local cur_scheduled_rep = self.subset[1]
+    local next_scheduled_rep = self.subset[2]
+    local playing_rep = active.queue.playing
+
+    if playing_rep.row.id ~= cur_scheduled_rep.row.id then
         log.debug(
             "Currently playing is not currently scheduled. Loading currently scheduled.")
-        return curRep
+        return cur_scheduled_rep
     end
 
-    local nextRep = self:get_next_rep()
-    if not nextRep then
+    if not next_scheduled_rep then
         log.debug("No more repetitions!")
         sounds.play("negative")
         return
     end
 
     table.remove(self.subset, 1)
-    table.insert(self.subset, curRep)
-
-    log.debug("Post next repetition subset: ", self.subset)
+    table.insert(self.subset, cur_scheduled_rep)
 
     self:write()
-    log.debug("Loading the next scheduled repetition...")
-    return nextRep
+    return next_scheduled_rep
 end
 
 return UnscheduledRepTable

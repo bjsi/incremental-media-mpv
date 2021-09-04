@@ -1,4 +1,6 @@
 local log = require 'utils.log'
+local tbl = require 'utils.table'
+local PlaylistTable = require 'systems.playlists.playlist_table'
 local sounds = require 'systems.sounds'
 local Pipeline = require 'systems.ui.input.pipeline'
 local query = require 'systems.ui.input.create_input_handler'
@@ -38,8 +40,18 @@ function ImportSubmenu:_init()
     -- LuaFormatter on
 end
 
-function ImportSubmenu:query_update_playlists() log.notify("TODO") end
+function ImportSubmenu:query_update_playlists()
+	local t = PlaylistTable()
+	local playlists = tbl.filter(t.reps, function(p) return not p:is_dismissed() end)
+	if obj.empty(playlists) then
+		log.notify("No outstanding playlists.")
+		return
+	end
+	for _, v in ipairs(playlists) do
 
+	end
+	log.notify("TODO")
+end
 
 function ImportSubmenu:add_osd(osd)
     osd:submenu("Import Menu"):newline():newline()
@@ -83,13 +95,26 @@ end
 
 local has_chapters = function(info) return not obj.empty(info["chapters"]) end
 local run_if_has_chaps = function(state) return has_chapters(state["info"]) end
+local run_if_any_has_chaps = function(state) return tbl.any(has_chapters, state["info"]) end
 local confirmed = function(s) return s["confirm"] end
 
 -- TODO: customize title
 function ImportSubmenu:create_yt_playlist_import_pipeline()
+	local function download_chapter_info(input, state)
+		if input ~= "y" then
+			return
+		end
+
+		log.notify("Downloading full playlist info. This might be slow...", nil, 5)
+		local ydl_info = ydl.get_info(state["playlist_id"], true)
+		log.notify("Download complete.")
+		state["info"] = ydl_info["entries"]
+	end
+
 	local p = Pipeline.new(nil, query.priority_range())
-	p:then_(run_if_has_chaps, query.yn("split_chapters", "n", nil, "Split by chapter?: "))
-	p:then_(run_if_has_chaps, query.yn("pending_chapters", "n", nil, "Add chapter backlog to pending queue?: "))
+	p:then_(nil, query.yn(nil, "n", download_chapter_info, "Get chapter information? (slow): "))
+	p:then_(run_if_any_has_chaps, query.yn("split_chapters", "n", nil, "Split by chapter?: "))
+	p:then_(run_if_any_has_chaps, query.yn("pending_chapters", "n", nil, "Add chapter backlog to pending queue?: "))
 	p:then_(nil, query.yn("download", "n", nil, "Localize YouTube video?: "))
 	p:then_(nil, query.yn("pending_videos", "y", nil, "Add playlist backlog to pending queue?: "))
 	p:then_(nil, query.confirm())

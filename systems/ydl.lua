@@ -82,17 +82,20 @@ function ydl.download_video(youtube_id)
     end
 end
 
-function ydl.get_info(url)
+function ydl.get_info(url, full)
+
     -- LuaFormatter off
     local args = {
         "youtube-dl",
 	"--no-warnings",
 	"--no-check-certificate",
 	"-J",
-	"--flat-playlist",
-	url
     }
     -- LuaFormatter on
+    if not full then
+	    table.insert(args, "--flat-playlist")
+    end
+    table.insert(args, url)
 
     local ret = sys.subprocess(args)
     local t = {}

@@ -17,7 +17,6 @@ setmetatable(UnscheduledExtractRepTable, {
 
 function UnscheduledExtractRepTable:_init(subsetter)
     UnscheduledRepTable._init(self, fs.extracts_data, defaultHeader, subsetter)
-    self:read_reps()
 end
 
 function UnscheduledExtractRepTable:as_rep(row) return ExtractRep(row) end

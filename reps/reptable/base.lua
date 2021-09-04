@@ -1,9 +1,9 @@
 local CSVDB = require 'db.csv'
+local sounds = require 'systems.sounds'
 local MarkdownDB = require 'db.md'
 local log = require 'utils.log'
 local tbl = require 'utils.table'
 local obj = require 'utils.object'
-local sort = require 'reps.reptable.sort'
 local str = require 'utils.str'
 
 local RepTableBase = {}
@@ -19,11 +19,23 @@ setmetatable(RepTableBase, {
 
 function RepTableBase:_init(fp, header, subsetter)
     self.db = self:create_db(fp, header)
-    self.defaultHeader = header
+    self.default_header = header
     self.subsetter = subsetter
     self.fst = nil
     self.reps = {}
     self.subset = {}
+    self:read_reps()
+end
+
+function RepTableBase:learn()
+    self:update_subset()
+    if obj.empty(self.subset) then
+        log.debug("Subset is empty. No more repetitions!")
+        sounds.play("negative")
+        return false
+    end
+
+    return true
 end
 
 function RepTableBase:get_rep_by_id(id, reps)
@@ -34,9 +46,9 @@ function RepTableBase:update_dependencies()
     local updated = false
     if obj.empty(self.reps) then return false end
     for _, v in ipairs(self.reps) do
-        local depId = v.row["dependency"]
-        if depId then
-            local dep = self:get_rep_by_id(depId, self.reps)
+        local dep_id = v.row["dependency"]
+        if dep_id then
+            local dep = self:get_rep_by_id(dep_id, self.reps)
             if not dep or dep:is_deleted() or dep:is_done() then
                 v.row["dependency"] = ""
                 updated = true
@@ -56,12 +68,8 @@ function RepTableBase:exists(element)
 end
 
 function RepTableBase:update_subset()
-    local updated = self:update_dependencies()
+    self:update_dependencies()
     self.subset, self.fst = self.subsetter(self.reps)
-    if not updated then
-        self:update_dependencies()
-        self.subset, self.fst = self.subsetter(self.reps)
-    end
 end
 
 function RepTableBase:write() return self.db:write(self) end
@@ -81,21 +89,7 @@ function RepTableBase:create_db(fp, header)
     return db
 end
 
-function RepTableBase:get_next_rep()
-    self:sort()
-    return self.subset[2]
-end
-
-function RepTableBase:remove_current()
-    self:sort()
-    local removed = self.subset[1]
-    table.remove(self.subset, 1)
-    return removed
-end
-
 --- Add a Rep to the current subset.
---- @param rep Rep
----@return boolean
 function RepTableBase:add_to_subset(rep)
     self.subset[#self.subset + 1] = rep
     self:update_subset()
@@ -103,24 +97,15 @@ function RepTableBase:add_to_subset(rep)
 end
 
 --- Add rep to reps table.
----@param rep Rep
----@return boolean
 function RepTableBase:add_to_reps(rep)
     self.reps[#self.reps + 1] = rep
     self:update_subset()
     return true
 end
 
-function RepTableBase:current_scheduled()
-    self:sort()
-    return self.subset[1]
-end
-
-function RepTableBase:sort() sort.by_priority(self.subset) end
-
 function RepTableBase:read_reps()
-    local repFunc = function(row) return self:as_rep(row) end
-    local header, reps = self.db:read_reps(repFunc)
+    local as_rep = function(row) return self:as_rep(row) end
+    local header, reps = self.db:read_reps(as_rep)
     if reps then
         self.reps = reps
     else
@@ -129,7 +114,7 @@ function RepTableBase:read_reps()
     if header then
         self.header = header
     else
-        self.header = self.defaultHeader
+        self.header = self.default_header
     end
     self:update_subset()
 end

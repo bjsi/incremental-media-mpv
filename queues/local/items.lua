@@ -28,20 +28,11 @@ function LocalItems:activate()
     return false
 end
 
-function LocalItems:subsetter(oldRep, reps)
-    local subset = tbl.filter(reps, function(r)
-        return not r:is_deleted() and r:is_child_of(oldRep)
-    end)
-
-    -- Sorting subset
-    self:sort(subset)
-
+function LocalItems:subsetter(old_rep, reps)
+    local predicate = function(r) return not r:is_deleted() and r:is_child_of(old_rep) end
+    local subset = tbl.filter(reps, predicate)
+    sort.by_created(reps)
     return subset, subset[1]
-end
-
-function LocalItems:sort(reps)
-    if not self.sorted then sort.by_created(reps) end
-    self.sorted = true
 end
 
 return LocalItems

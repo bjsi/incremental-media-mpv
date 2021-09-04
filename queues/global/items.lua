@@ -31,15 +31,10 @@ function GlobalItems:activate()
 end
 
 function GlobalItems:subsetter(reps)
-    local subset = tbl.filter(reps,
-                              function(r) return r:is_outstanding(true) end)
-    self:sort(subset)
+    local predicate = function(r) return r:is_outstanding(true) end
+    local subset = tbl.filter(reps, predicate)
+    sort.by_priority(reps)
     return subset, subset[1]
-end
-
-function GlobalItems:sort(reps)
-    if not self.sorted then sort.by_priority(reps) end
-    self.sorted = true
 end
 
 return GlobalItems

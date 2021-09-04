@@ -25,14 +25,4 @@ function ScheduledRep:is_due()
 
 end
 
--- TODO:
-function ScheduledRep:set_interval(interval)
-    self.row["interval"] = interval
-    return true
-end
-
-function ScheduledRep:valid_interval()
-    return self.row["interval"] ~= nil and self.row["interval"] > 0
-end
-
 return ScheduledRep

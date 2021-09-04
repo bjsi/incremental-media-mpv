@@ -1,5 +1,5 @@
 local fs = require("systems.fs")
-local defaultHeader = require("reps.reptable.extract_header")
+local default_header = require("reps.reptable.extract_header")
 local ScheduledRepTable = require("reps.reptable.scheduled")
 local ExtractRep = require("reps.rep.extract")
 
@@ -16,7 +16,7 @@ setmetatable(ScheduledExtractRepTable, {
 })
 
 function ScheduledExtractRepTable:_init(subsetter)
-    ScheduledRepTable._init(self, fs.extracts_data, defaultHeader, subsetter)
+    ScheduledRepTable._init(self, fs.extracts_data, default_header, subsetter)
 end
 
 function ScheduledRepTable:as_rep(row) return ExtractRep(row) end

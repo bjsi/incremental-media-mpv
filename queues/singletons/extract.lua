@@ -23,8 +23,8 @@ function SingletonExtract:_init(id)
     ExtractQueueBase._init(self, "Singleton Extract Queue", nil, reptable)
 end
 
-function SingletonExtract:subsetter(reps, repId)
-    local predicate = function(r) return r.row.id == repId end
+function SingletonExtract:subsetter(reps, id)
+    local predicate = function(r) return r.row.id == id end
     local extract = tbl.first(predicate, reps)
     return {[1] = extract}, extract
 end

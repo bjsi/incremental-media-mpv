@@ -407,11 +407,11 @@ function QueueBase:subscribe_to_events() end
 
 function QueueBase:clean_up_events() end
 
-function QueueBase:load_rep(newRep, oldRep)
-    if player.play(newRep, oldRep, self.create_loop_boundaries,
+function QueueBase:load_rep(new_rep, old_rep)
+    if player.play(new_rep, old_rep, self.create_loop_boundaries,
                    self.use_start_stop) then
-        self.playing = newRep
-        self.reptable:update_dependencies()
+        self.playing = new_rep
+        self.reptable:update_dependencies() -- TODO: why
         return true
     end
 

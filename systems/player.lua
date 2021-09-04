@@ -70,10 +70,15 @@ function player.play(newRep, oldRep, createLoopBoundaries)
 
     player.setSpeed(speed)
 
+    --  ?
     if not createLoopBoundaries then
-        start = 0
-        stop = newRep:duration()
-        if newRep:type() == "topic" then stop = stop - 2 end
+	if newRep.row.start then
+		start = tonumber(newRep.row.start)
+	else
+		start = 0
+	end
+        stop = start + newRep:duration()
+        if newRep:type() == "topic" then stop = stop - 1.5 end
     end
 
     log.debug("Setting loop boundaries - start: " .. tostring(start) ..

@@ -33,9 +33,10 @@ function GlobalExtracts:activate()
 end
 
 function GlobalExtracts:subsetter(reps)
-    local subset = tbl.filter(reps,
-                              function(r) return r:is_outstanding(true) end)
+    local predicate = function(rep) return rep:is_outstanding(true) end
+    local subset = tbl.filter(reps, predicate)
     sort.by_priority(subset)
+    sort.by_due(subset)
     return subset, subset[1]
 end
 

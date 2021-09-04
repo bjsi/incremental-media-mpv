@@ -179,6 +179,7 @@ function importer.create_yt_chapter(info,
 					      playlist_id)
 	topic.row["start"] = chapter["start_time"]
 	topic.row["stop"] = chapter["end_time"]
+	topic.row["curtime"] = chapter["start_time"]
 	return topic
 end
 

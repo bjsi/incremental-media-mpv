@@ -1,7 +1,7 @@
-local fs = require("systems.fs")
-local defaultHeader = require("reps.reptable.topic_header")
-local ScheduledRepTable = require("reps.reptable.scheduled")
-local TopicRep = require("reps.rep.topic")
+local fs = require('systems.fs')
+local defaultHeader = require('reps.reptable.topic_header')
+local ScheduledRepTable = require('reps.reptable.scheduled')
+local TopicRep = require('reps.rep.topic')
 
 local TopicRepTable = {}
 TopicRepTable.__index = TopicRepTable
@@ -14,6 +14,10 @@ setmetatable(TopicRepTable, {
         return self
     end
 })
+
+function TopicRepTable:_init(subsetter)
+    ScheduledRepTable._init(self, fs.topics_data, defaultHeader, subsetter)
+end
 
 local function same_start(a, b)
 	return a.row.start == b.row.start
@@ -32,10 +36,6 @@ function TopicRepTable:chapter_exists(chapter)
         return same_start(rep, chapter) and same_stop(rep, chapter) and same_url(rep, chapter)
     end
     return false
-end
-
-function TopicRepTable:_init(subsetter)
-    ScheduledRepTable._init(self, fs.topics_data, defaultHeader, subsetter)
 end
 
 function TopicRepTable:as_rep(row) return TopicRep(row) end
