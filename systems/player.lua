@@ -72,11 +72,11 @@ function player.play(newRep, oldRep, createLoopBoundaries)
 
     --  ?
     if not createLoopBoundaries then
-	if newRep.row.start then
-		start = tonumber(newRep.row.start)
-	else
-		start = 0
-	end
+        if newRep.row.start then
+            start = tonumber(newRep.row.start)
+        else
+            start = 0
+        end
         stop = start + newRep:duration()
         if newRep:type() == "topic" then stop = stop - 1.5 end
     end

@@ -18,9 +18,9 @@ setmetatable(PlaylistTable, {
 })
 
 function PlaylistTable:_init()
-	self.default_header = default_header
-	self.db = self:create_db(fs.playlists_data, self.default_header)
-	self:read_reps()
+    self.default_header = default_header
+    self.db = self:create_db(fs.playlists_data, self.default_header)
+    self:read_reps()
 end
 
 function PlaylistTable:create_db(fp, header)

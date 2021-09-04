@@ -25,9 +25,7 @@ end
 
 function ScheduledRepTable:learn()
     -- updates subset, checks if it is empty
-    if not Base.learn(self) then
-	    return false
-    end
+    if not Base.learn(self) then return false end
 
     -- subset not empty, must at least be a current scheduled rep.
     -- current scheduled rep not necessarily playing eg.
@@ -85,7 +83,7 @@ function ScheduledRepTable:schedule(rep)
         day = tonumber(todayD) + interval
     }
 
-    rep.row["interval"] = afactor  * interval
+    rep.row["interval"] = afactor * interval
     rep.row["nextrep"] = os.date("%Y-%m-%d", os.time(next_rep_table))
 end
 

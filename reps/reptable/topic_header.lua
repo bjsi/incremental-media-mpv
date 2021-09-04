@@ -14,6 +14,6 @@ local topic_header = {
     [13] = "dependency",
     [14] = "nextrep",
     [15] = "speed",
-    [16] = "playlist",
+    [16] = "playlist"
 }
 return topic_header

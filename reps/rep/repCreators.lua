@@ -21,7 +21,8 @@ local file = require 'utils.file'
 
 local repCreators = {}
 
-function repCreators.createTopic(title, type, url, priority, stop, dependency_id, playlist_id)
+function repCreators.createTopic(title, type, url, priority, stop,
+                                 dependency_id, playlist_id)
     if not stop then stop = -1 end
     if not dependency_id then dependency_id = "" end
     if not playlist_id then playlist_id = "" end
@@ -41,7 +42,7 @@ function repCreators.createTopic(title, type, url, priority, stop, dependency_id
         ["dependency"] = dependency_id,
         ["nextrep"] = "1970-01-01",
         ["speed"] = 1,
-	["playlist"] = playlist_id,
+        ["playlist"] = playlist_id
     }
     return TopicRep(topicRow)
 end

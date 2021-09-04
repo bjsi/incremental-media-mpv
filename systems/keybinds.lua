@@ -35,23 +35,21 @@ local keys = {
 -- LuaFormatter on
 
 local function queue_guard(func)
-	return function(...)
-		local queue = active.queue
-		if not queue then
-			log.notify("No active queue.")
-			sounds.play("negative")
-		else
-			func(...)
-		end
-	end
+    return function(...)
+        local queue = active.queue
+        if not queue then
+            log.notify("No active queue.")
+            sounds.play("negative")
+        else
+            func(...)
+        end
+    end
 end
 
 (function()
-    for name, tbl in pairs(keys)do
-	    local cb = tbl.cb
-	    if tbl.queue then
-		    cb = queue_guard(tbl.cb)
-	    end
-	    mp.register_script_message(name, cb)
+    for name, tbl in pairs(keys) do
+        local cb = tbl.cb
+        if tbl.queue then cb = queue_guard(tbl.cb) end
+        mp.register_script_message(name, cb)
     end
 end)()

@@ -11,24 +11,24 @@ local ydl = {}
 ydl.url_prefix = "https://www.youtube.com/watch?v="
 
 function ydl.get_playlist_info(info, url)
-	local args = {
-		"youtube-dl",
-		"--no-check-certificate",
-		"--get-filename",
-		"--playlist-items", "1",
-		"-o", info,
-		url
-	}
-    	local ret = sys.subprocess(args)
-	if ret.status == 0 then return str.remove_newlines(ret.stdout) else return nil end
+    local args = {
+        "youtube-dl", "--no-check-certificate", "--get-filename",
+        "--playlist-items", "1", "-o", info, url
+    }
+    local ret = sys.subprocess(args)
+    if ret.status == 0 then
+        return str.remove_newlines(ret.stdout)
+    else
+        return nil
+    end
 end
 
 function ydl.get_playlist_title(url)
-	return ydl.get_playlist_info("%(playlist_title)s", url)
+    return ydl.get_playlist_info("%(playlist_title)s", url)
 end
 
 function ydl.get_playlist_id(url)
-	return ydl.get_playlist_info("%(playlist_id)s", url)
+    return ydl.get_playlist_info("%(playlist_id)s", url)
 end
 
 function ydl.download_audio(url, goodQuality)
@@ -72,13 +72,13 @@ function ydl.download_video(youtube_id)
 
     local ret = sys.subprocess(args)
     if ret.status == 0 then
-	    local downloads = mpu.readdir(fs.downloads)
-	    local file = tbl.first(function(f)
-		    return str.remove_ext(f) == youtube_id
-	    end, downloads)
-	    return mpu.join_path(fs.downloads, file)
+        local downloads = mpu.readdir(fs.downloads)
+        local file = tbl.first(function(f)
+            return str.remove_ext(f) == youtube_id
+        end, downloads)
+        return mpu.join_path(fs.downloads, file)
     else
-	    return nil
+        return nil
     end
 end
 
@@ -92,16 +92,12 @@ function ydl.get_info(url, full)
 	"-J",
     }
     -- LuaFormatter on
-    if not full then
-	    table.insert(args, "--flat-playlist")
-    end
+    if not full then table.insert(args, "--flat-playlist") end
     table.insert(args, url)
 
     local ret = sys.subprocess(args)
     local t = {}
-    if ret.status == 0 then
-	return mpu.parse_json(ret.stdout)
-    end
+    if ret.status == 0 then return mpu.parse_json(ret.stdout) end
     return t
 end
 

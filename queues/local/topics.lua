@@ -34,7 +34,9 @@ function LocalTopics:subsetter(reps, old_rep)
     -- removes chance of duplication between the first element
     -- and the same element in the subset
     local parent_of_old = function(topic) return old_rep:is_child_of(topic) end
-    local predicate = function(r) return r:is_outstanding(false) and not parent_of_old(r) end
+    local predicate = function(r)
+        return r:is_outstanding(false) and not parent_of_old(r)
+    end
     local subset = tbl.filter(reps, predicate)
     sort.by_priority(subset)
     local fst = tbl.first(parent_of_old, reps)

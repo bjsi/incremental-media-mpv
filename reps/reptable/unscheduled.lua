@@ -21,9 +21,7 @@ function UnscheduledRepTable:_init(dbPath, defaultHeader, subsetter)
 end
 
 function UnscheduledRepTable:learn()
-    if not Base.learn(self) then
-	    return false
-    end
+    if not Base.learn(self) then return false end
 
     sort.by_priority(self.subset)
 
