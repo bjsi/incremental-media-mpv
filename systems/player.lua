@@ -163,6 +163,10 @@ player.pause_timer = (function()
     return {set_stop_time = set_stop_time, check_stop = check_stop, stop = stop}
 end)()
 
+function player.pause()
+        mp.set_property("pause", "yes")
+end
+
 player.stutter_forward = function()
     if not player.vid_playing() then
         player.pause_timer.stop()

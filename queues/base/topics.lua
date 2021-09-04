@@ -107,7 +107,11 @@ end
 
 function TopicQueueBase:activate()
     if QueueBase.activate(self) then
-        player.on_overrun = function() self:learn() end
+        player.on_overrun = function()
+		local time = mp.get_property_number("time-pos")
+		self.playing.row["curtime"] = time
+		self:learn()
+	end
         return true
     end
     return false
