@@ -64,7 +64,7 @@ function QueueBase:learn()
     local old_rep = self.playing
     local new_rep = self.reptable:learn()
     if not new_rep then
-        log.debug("No new rep to load.")
+        log.notify("No new rep to load.")
         return
     end
 
@@ -72,8 +72,8 @@ function QueueBase:learn()
     if self:load_rep(new_rep, old_rep) and old_rep ~= nil then
         self.bwd_history:push(old_rep)
         log.notify("Next repetition")
-        menu.update()
     end
+    menu.update()
 end
 
 function QueueBase:validate_abloop(a, b)

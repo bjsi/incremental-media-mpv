@@ -110,7 +110,9 @@ function TopicQueueBase:activate()
         player.on_overrun = function()
 		local time = mp.get_property_number("time-pos")
 		self.playing.row["curtime"] = time
-		self:learn()
+		if not self:learn() then
+			mp.commandv("seek", self.playing.row.start, "absolute")
+		end
 	end
         return true
     end
