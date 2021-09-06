@@ -3,7 +3,6 @@ merge.py
 requirements.py
 fix_items.py
 *.wav
-*.edl
 env
 *.webm
 pid_file

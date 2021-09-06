@@ -1,0 +1,4 @@
+# mpv EDL v0
+../sounds/silence.mp3
+!new_stream
+../images/mining-gold.png
