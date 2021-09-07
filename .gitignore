@@ -2,7 +2,6 @@ data/
 merge.py
 requirements.py
 fix_items.py
-*.wav
 env
 *.webm
 pid_file
