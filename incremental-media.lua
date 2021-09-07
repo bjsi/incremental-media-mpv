@@ -145,6 +145,21 @@ local function create_essential_files() -- TODO
     if not file.exists(fs.silence) then
         file.copy(fs.silence_base, fs.silence)
     end
+
+    if not directory.exists(fs.edl) then
+      directory.create(fs.edl)
+    end
+
+    if not file.exists(fs.splashscreen) then
+      -- \n gets turned into \r\n on windows
+      -- when cloned from github
+      -- causing errors, so write the file
+      local edl = [[# mpv EDL v0
+../sounds/silence.mp3
+!new_stream
+../images/mining-gold.png]]
+      file.write_all_text(fs.splashscreen, edl)
+    end
 end
 
 local function install_scripts_and_modules()

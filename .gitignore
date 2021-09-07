@@ -6,7 +6,7 @@ fix_items.py
 env
 *.webm
 pid_file
-
+assets/edl/splashscreen.edl
 
 # Byte-compiled / optimized / =
 DLL files
