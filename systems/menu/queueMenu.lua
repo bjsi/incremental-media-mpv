@@ -14,7 +14,6 @@ local list = dofile(mp.command_native({
     "expand-path", "~~/script-modules/scroll-list.lua"
 }))
 
-local LocalTopics
 local LocalExtracts
 local LocalItems
 local menuBase
@@ -34,43 +33,38 @@ setmetatable(QueueMenu, {
 function QueueMenu:_init()
     Base._init(self)
     self.keybinds = {}
+    -- LuaFormatter off
     list.keybinds = {
-        {
-            'DOWN', 'scroll_down', function() list:scroll_down() end,
-            {repeatable = true}
-        },
-        {
-            'UP', 'scroll_up', function() list:scroll_up() end,
-            {repeatable = true}
-        },
-        {
-            'j', 'scroll_down_j', function() list:scroll_down() end,
-            {repeatable = true}
-        },
-        {
-            'k', 'scroll_up_k', function() list:scroll_up() end,
-            {repeatable = true}
-        }, {
-            'Shift+UP', 'priority_up',
-            function() self:adjust_priority(list.__current, 5) end, {}
-        }, {
-            'Shift+DOWN', 'priority_down',
-            function() self:adjust_priority(list.__current, -5) end, {}
-        }, {'ESC', 'close_browser', function() list:close() end, {}},
+        {'DOWN', 'scroll_down', function() list:scroll_down() end, {repeatable = true} },
+        {'UP', 'scroll_up', function() list:scroll_up() end, {repeatable = true} },
+        {'j', 'scroll_down_j', function() list:scroll_down() end, {repeatable = true} },
+        {'k', 'scroll_up_k', function() list:scroll_up() end, {repeatable = true} },
+	{'Shift+UP', 'priority_up', function() self:adjust_priority(list.__current, 5) end, {}},
+	{'Shift+DOWN', 'priority_down', function() self:adjust_priority(list.__current, -5) end, {} },
+	{'ESC', 'close_browser', function() list:close() end, {}},
         {'H', 'home_menu', function() self:home() end, {}},
         {'w', 'parent_queue', function() self:home() end, {}},
         {'s', 'child_queue', function() self:home() end, {}},
         {'ENTER', 'toggle_children', function() self:toggle_children() end, {}}
     }
+    -- LuaFormatter on
     self:add_osd()
 end
 
 function QueueMenu:add_osd()
     local queue = active.queue
-    if queue == nil then return end
-    local subset = queue.reptable.subset
+    local subset
+    local queue_name
+    if queue then
+	    subset = queue.reptable.subset
+	    queue_name = queue.name
+    else
+	    subset = {}
+	    queue_name = "No Loaded Queue"
+    end
+
     list.list = {}
-    list.header = queue.name
+    list.header = queue_name
 
     for i, v in ipairs(subset) do
         local item = {}
@@ -94,28 +88,15 @@ function QueueMenu:add_osd()
         list.list[i] = item
     end
 
-    self:add_header_osd(queue)
-    -- self:add_binds_osd()
-
+    self:add_header_osd(queue_name)
     list:update()
     list:open()
 end
 
-function QueueMenu:add_binds_osd()
-    local osd = OSD:new():size(cfg.menu_font_size):align(4)
-    -- for i=0, #list.list + 2, 1 do
-    --     osd:newline()
-    -- end
-    osd:item("Bindings"):newline()
-    osd:item("Hello World"):newline()
-    self.binds_overlay.data = osd:get_text()
-    self.binds_overlay:update()
-end
-
-function QueueMenu:add_header_osd(queue)
+function QueueMenu:add_header_osd(queue_name)
     list.header_style = ""
     local header = OSD:new():size(cfg.menu_font_size):align(4)
-    header:submenu(queue.name):newline():get_text()
+    header:submenu(queue_name):newline():get_text()
     list.header = header:get_text()
 end
 
@@ -193,22 +174,6 @@ function QueueMenu:toggle_children()
     end
 
     list:update()
-end
-
-function QueueMenu:local_queue(selected)
-    local queue = active.queue
-    if queue == nil then return end
-
-    local rep = selected.rep
-    if rep == nil then return end
-
-    if queue.name:find("Topic") then
-        LocalTopics = LocalTopics or require("queues.local.topics")
-        local topics = LocalTopics()
-
-    elseif queue.name:find("Extract") then
-
-    end
 end
 
 return QueueMenu
