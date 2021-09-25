@@ -1,4 +1,5 @@
 local active = require 'systems.active'
+local player = require 'systems.player'
 local log = require 'utils.log'
 local sounds = require 'systems.sounds'
 local mp = require 'mp'
@@ -11,11 +12,11 @@ local keys = {
     ["im-adjust-priority"] ={ cb= function(n) active.queue:adjust_priority(n) end, queue=true},
     ["im-adjust-interval"] ={ cb= function(n) active.queue:adjust_interval(n) end, queue=true},
     ["im-adjust-afactor"] ={ cb= function(n) active.queue:adjust_afactor(n) end, queue=true},
-    ["im-clear-extract-boundaries"] ={ cb= function() active.queue:clear_abloop() end, queue=true},
+    ["im-clear-extract-boundaries"] ={ cb= function() player.unset_abloop() end, queue=false},
     ["im-set-end-boundary-extract"] ={ cb= function() active.queue:set_end_boundary_extract() end, queue=true},
     ["im-copy-url"] ={ cb= function() active.queue:copy_url(false) end, queue=true},
     ["im-copy-url-with-timestamp"] ={ cb= function() active.queue:copy_url(true) end, queue=true},
-    ["im-localize-video"] ={ cb= function() active.queue:localize_video() end, queue=true},
+    --["im-localize-video"] ={ cb= function() active.queue:localize_video() end, queue=true},
     ["im-dismiss"] ={ cb= function() active.queue:dismiss() end, queue=true},
     ["im-global-extracts"] ={ cb= function() active.load_global_extracts() end, queue=false},
     ["im-global-items"] ={ cb= function() active.load_global_items() end, queue=false},

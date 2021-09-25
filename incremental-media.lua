@@ -154,6 +154,7 @@ local function create_essential_files() -- TODO
       -- \n gets turned into \r\n on windows
       -- when cloned from github
       -- causing errors, so write the file
+      -- manually instead
       local edl = [[# mpv EDL v0
 ../sounds/silence.mp3
 !new_stream

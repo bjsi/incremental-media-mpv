@@ -37,12 +37,7 @@ function QueueBase:_init(name, reptable, old_rep)
 end
 
 function QueueBase:activate()
-    -- LuaFormatter off
-    log.debug(table.concat({
-        "Activating:", self.name,
-	"with", tostring(#self.reptable.subset), "reps."
-    }, " "))
-    -- LuaFormatter on
+    log.notify("Loading: " .. self.name)
     player.on_overrun = nil
     player.on_underrun = nil
     return self:load_rep(self.reptable.fst, self.old_rep)
@@ -181,8 +176,6 @@ function QueueBase:copy_url(includeTimestamp)
     sys.clipboard_write(url)
 end
 
-function QueueBase:advance_start(n) self:adjust_abloop(false, true, n) end
-
 function QueueBase:adjust_interval(n)
     local cur = self.playing
     if cur == nil then return false end
@@ -195,7 +188,7 @@ function QueueBase:adjust_interval(n)
     if ivl.validate(newInt) then
         cur.row["interval"] = newInt
         self:save_data()
-        log.notify("interval: " .. tostring(newInt))
+        log.notify("Interval: " .. tostring(newInt))
         menu.update()
         return true
     end
@@ -211,7 +204,7 @@ function QueueBase:adjust_priority(n)
     if pri.validate(newPri) and cur ~= nil then
         cur.row["priority"] = newPri
         self:save_data()
-        log.notify("priority: " .. tostring(newPri))
+        log.notify("Priority: " .. tostring(newPri))
         menu.update()
         return true
     end
@@ -220,11 +213,25 @@ end
 
 function QueueBase:split_chapters() sounds.play("negative") end
 
-function QueueBase:postpone_start(n) self:adjust_abloop(true, true, n) end
+function QueueBase:advance_start(n)
+	self:adjust_abloop(false, true, n)
+	log.notify("<-start")
+end
 
-function QueueBase:advance_stop(n) self:adjust_abloop(false, false, n) end
+function QueueBase:postpone_start(n)
+	self:adjust_abloop(true, true, n)
+	log.notify("start->")
+end
 
-function QueueBase:postpone_stop(n) self:adjust_abloop(true, false, n) end
+function QueueBase:advance_stop(n)
+	self:adjust_abloop(false, false, n)
+	log.notify("<-stop")
+end
+
+function QueueBase:postpone_stop(n)
+	self:adjust_abloop(true, false, n)
+	log.notify("stop->")
+end
 
 function QueueBase:adjust_abloop(postpone, start, n)
     local adj = postpone and n or -n
@@ -234,7 +241,7 @@ function QueueBase:adjust_abloop(postpone, start, n)
     if not self:validate_abloop(a, b) then
         log.debug("AB loop boundaries are invalid!")
         sounds.play("negative")
-        return
+        return false
     end
 
     local oldStart = a > b and b or a
@@ -258,7 +265,7 @@ function QueueBase:adjust_abloop(postpone, start, n)
 
     if not self:validate_abloop(newStart, newStop) then
         log.debug("Invalid ab-loop values.")
-        return
+        return false
     end
 
     mp.set_property("ab-loop-a", tostring(newStart))
@@ -271,6 +278,8 @@ function QueueBase:adjust_abloop(postpone, start, n)
         log.debug("Updating ab-loop stop to: " .. tostring(newStop))
         mp.commandv("seek", tostring(newStop - 0.3), "absolute")
     end
+
+    return true
 end
 
 function QueueBase:adjust_afactor(n)
@@ -304,7 +313,11 @@ function QueueBase:toggle_export()
     self:save_data()
 end
 
-function QueueBase:clear_abloop() player.unset_abloop() end
+function QueueBase:clear_abloop()
+	log.notify("Cleared loop boundaries")
+	player.unset_abloop()
+	sounds.play("click1")
+end
 
 function QueueBase:set_speed(speed)
     if speed < 0 or speed > 5 then return end
@@ -316,6 +329,7 @@ function QueueBase:forward_history()
     if not self:navigate_history(true) then
         sounds.play("negative")
     else
+	log.notify("Forward")
         sounds.play("click1")
     end
 end
@@ -325,6 +339,7 @@ function QueueBase:backward_history()
     if not self:navigate_history(false) then
         sounds.play("negative")
     else
+	log.notify("Backward")
         sounds.play("click1")
     end
 end
