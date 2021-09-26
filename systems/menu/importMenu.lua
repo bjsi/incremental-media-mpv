@@ -72,7 +72,7 @@ function ImportSubmenu:import_yt_playlist(args)
 		args["playlist_id"],
 		args["playlist_title"]
 	) then
-    self:post_import()
+	  self:post_import()
 	else
 		sounds.play("negative")
 	end
@@ -80,7 +80,7 @@ function ImportSubmenu:import_yt_playlist(args)
 end
 
 function ImportSubmenu:post_import()
-		if active_queue.queue == nil and options.mode == mode.minion then
+		if active_queue.queue == nil and options.mode == mode.master then
 			active_queue.load_global_topics()
 		else
 			sounds.play("positive")
