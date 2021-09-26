@@ -1,4 +1,6 @@
 local log = require 'utils.log'
+local mode = require 'systems.mode'
+local options = require 'systems.options'
 local tbl = require 'utils.table'
 local PlaylistTable = require 'systems.playlists.playlist_table'
 local sounds = require 'systems.sounds'
@@ -9,6 +11,7 @@ local mpu = require 'mp.utils'
 local Base = require 'systems.menu.submenuBase'
 local ydl = require 'systems.ydl'
 local importer = require 'systems.importer'
+local active_queue = require 'systems.active'
 
 local ImportSubmenu = {}
 ImportSubmenu.__index = ImportSubmenu
@@ -69,11 +72,19 @@ function ImportSubmenu:import_yt_playlist(args)
 		args["playlist_id"],
 		args["playlist_title"]
 	) then
-		sounds.play("positive")
+    self:post_import()
 	else
 		sounds.play("negative")
 	end
 	-- LuaFormatter on
+end
+
+function ImportSubmenu:post_import()
+		if active_queue.queue == nil and options.mode == mode.minion then
+			active_queue.load_global_topics()
+		else
+			sounds.play("positive")
+		end
 end
 
 function ImportSubmenu:import_yt_video(args)
@@ -85,7 +96,7 @@ function ImportSubmenu:import_yt_video(args)
 		args["priority"],
 		args["pending_chapters"]
 	) then
-		sounds.play("positive")
+    self:post_import()
 	else
 		sounds.play("negative")
 	end
