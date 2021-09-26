@@ -53,8 +53,8 @@ function importer.import_yt_playlist(infos, split_chapters, download,
     -- import playlist
     local imported_playlist_id = importer.create_yt_playlist(playlist_yt_id,
                                                              playlist_title)
-    if not imported_playlist_id then
-        log.debug("Failed to import playlist row.")
+    if obj.empty(imported_playlist_id) then
+        log.debug("Failed to import playlist row. Aborting.")
         return false
     end
 
@@ -68,8 +68,8 @@ function importer.import_yt_playlist(infos, split_chapters, download,
                                                      download, cur_priority,
                                                      pending_chapters, prev_id,
                                                      imported_playlist_id)
-        if not imported_id then
-            log.notify("Failed to import YouTube video. Cancelling.", "info", 4)
+        if obj.empty(imported_id) then
+            log.notify("Failed to import YouTube video. Aborting.", "info", 4)
             return false
         end
         cur_priority = num.round(cur_priority + pri_step, 2);
@@ -106,10 +106,16 @@ function importer.import_yt_video(info, split_chapters, download, priority,
     end
 end
 
-function importer.import_yt_chapters(info, priority, pending_chapters,
-                                     vid_dependency_id, playlist)
+-- LuaFormatter off
+function importer.import_yt_chapters(info,
+				     priority,
+				     pending_chapters,
+                                     vid_dependency_id,
+				     playlist)
+-- LuaFormatter on
 
     local dependency_id = vid_dependency_id
+    local prev_id = ""
     local chapter_topics = {}
     for _, chapter in ipairs(info["chapters"]) do
         local chapter_topic = importer.create_yt_chapter(info, chapter,
@@ -121,10 +127,11 @@ function importer.import_yt_chapters(info, priority, pending_chapters,
         end
 
         table.insert(chapter_topics, chapter_topic)
-        if pending_chapters then dependency_id = chapter_topic.row.id end
+	prev_id = chapter_topic.row.id
+        if pending_chapters then dependency_id = prev_id end
     end
     importer.add_topics_to_queue(chapter_topics, true)
-    return dependency_id
+    return prev_id
 end
 
 function importer.create_yt_chapter(info, chapter, priority, dependency,
