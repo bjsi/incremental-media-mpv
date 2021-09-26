@@ -8,9 +8,13 @@ An mpv script that implements an incremental media player (video and audio).
 
 ### ffmpeg
 
+Ffmpeg is a powerful commandline program for manipulating audio. 
+
 Make sure to install the full version of ffmpeg which includes ffprobe. [Make sure to add the bin folder to your path](https://gist.github.com/nex3/c395b2f8fd4b02068be37c961301caa7).
 
 ### [youtube-dl](https://github.com/ytdl-org/youtube-dl#installation)
+
+Youtube-dl is used to get information about and download YouTube videos. It also supports many other video-sharing websites. 
 
 [Make sure to add the youtube-dl executable to your path](https://gist.github.com/nex3/c395b2f8fd4b02068be37c961301caa7).
 
