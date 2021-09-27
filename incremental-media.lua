@@ -62,24 +62,24 @@ local function run_minion_mode()
 end
 
 local function run_subset_mode()
-  log.debug("Running subset mode.")
-  setup_player()
-  local matches = string.gmatch(opts.id_list, "[^-]*")
-  local id_list = {}
-  for id in matches do
-    log.debug(id)
-    table.insert(id_list, id)
-  end
+    log.debug("Running subset mode.")
+    setup_player()
+    local matches = string.gmatch(opts.id_list, "[^-]*")
+    local id_list = {}
+    for id in matches do
+        log.debug(id)
+        table.insert(id_list, id)
+    end
 
-  if (obj.empty(id_list)) then
-    log.debug("Failed to run subset mode because the id list was empty.")
-    return
-  end
+    if (obj.empty(id_list)) then
+        log.debug("Failed to run subset mode because the id list was empty.")
+        return
+    end
 
-  if not active_queue.load_subset(id_list) then
-    log.debug("Failed to load topic subset. Quitting.")
-    mp.commandv("quit", 1)
-  end
+    if not active_queue.load_subset(id_list) then
+        log.debug("Failed to load topic subset. Quitting.")
+        mp.commandv("quit", 1)
+    end
 end
 
 local function run_master_mode()
@@ -167,20 +167,18 @@ local function create_essential_files() -- TODO
         file.copy(fs.silence_base, fs.silence)
     end
 
-    if not directory.exists(fs.edl) then
-      directory.create(fs.edl)
-    end
+    if not directory.exists(fs.edl) then directory.create(fs.edl) end
 
     if not file.exists(fs.splashscreen) then
-      -- \n gets turned into \r\n on windows
-      -- when cloned from github
-      -- causing errors, so write the file
-      -- manually instead
-      local edl = [[# mpv EDL v0
+        -- \n gets turned into \r\n on windows
+        -- when cloned from github
+        -- causing errors, so write the file
+        -- manually instead
+        local edl = [[# mpv EDL v0
 ../sounds/silence.mp3
 !new_stream
 ../images/mining-gold.png]]
-      file.write_all_text(fs.splashscreen, edl)
+        file.write_all_text(fs.splashscreen, edl)
     end
 end
 
@@ -241,7 +239,7 @@ local function run()
     if opts.mode == mode.master then
         run_master_mode()
     elseif opts.mode == mode.subset then
-      run_subset_mode()
+        run_subset_mode()
     elseif opts.mode == mode.minion then
         run_minion_mode()
     elseif opts.mode == mode.import_extract then

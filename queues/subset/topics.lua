@@ -21,9 +21,7 @@ function TopicSubset:_init(old_rep, id_list)
     TopicQueueBase._init(self, "Topic Subset Queue", old_rep, reptable)
 end
 
-function TopicSubset:activate()
-    return TopicQueueBase.activate(self)
-end
+function TopicSubset:activate() return TopicQueueBase.activate(self) end
 
 function TopicSubset:subsetter(reps, id_list)
     local predicate = function(r) return tbl.contains(id_list, r.row.id) end

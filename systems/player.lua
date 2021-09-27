@@ -69,14 +69,14 @@ function player.play(newRep, oldRep, createLoopBoundaries)
 
     -- TODO
     if not createLoopBoundaries then
-	start = 0
-	if newRep:type() == "item" then
-		stop = newRep:duration()
-	elseif newRep:type() == "topic" then
-		stop = newRep.row.stop - 1.5
-	else
-		stop = newRep.row.stop
-	end
+        start = 0
+        if newRep:type() == "item" then
+            stop = newRep:duration()
+        elseif newRep:type() == "topic" then
+            stop = newRep.row.stop - 1.5
+        else
+            stop = newRep.row.stop
+        end
     end
 
     log.debug("Setting loop boundaries - start: " .. tostring(start) ..
@@ -160,9 +160,7 @@ player.pause_timer = (function()
     return {set_stop_time = set_stop_time, check_stop = check_stop, stop = stop}
 end)()
 
-function player.pause()
-        mp.set_property("pause", "yes")
-end
+function player.pause() mp.set_property("pause", "yes") end
 
 player.stutter_forward = function()
     if not player.vid_playing() then

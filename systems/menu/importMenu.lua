@@ -80,11 +80,11 @@ function ImportSubmenu:import_yt_playlist(args)
 end
 
 function ImportSubmenu:post_import()
-		if active_queue.queue == nil and options.mode == mode.master then
-			active_queue.load_global_topics()
-		else
-			sounds.play("positive")
-		end
+    if active_queue.queue == nil and options.mode == mode.master then
+        active_queue.load_global_topics()
+    else
+        sounds.play("positive")
+    end
 end
 
 function ImportSubmenu:import_yt_video(args)

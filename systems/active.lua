@@ -14,13 +14,13 @@ active.locked = false -- TODO
 active.queue = nil -- TODO: get_queue()
 
 function active.load_subset(id_list)
-  SubsetTopics = SubsetTopics or require('queues.subset.topics')
-  if (obj.empty(id_list)) then
-    log.debug("Failed to run subset mode because the id list was empty.")
-    return
-  end
-  local topics = SubsetTopics(nil, id_list)
-  return active.change_queue(topics)
+    SubsetTopics = SubsetTopics or require('queues.subset.topics')
+    if (obj.empty(id_list)) then
+        log.debug("Failed to run subset mode because the id list was empty.")
+        return
+    end
+    local topics = SubsetTopics(nil, id_list)
+    return active.change_queue(topics)
 end
 
 function active.on_shutdown()

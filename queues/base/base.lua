@@ -214,23 +214,23 @@ end
 function QueueBase:split_chapters() sounds.play("negative") end
 
 function QueueBase:advance_start(n)
-	self:adjust_abloop(false, true, n)
-	log.notify("<-start")
+    self:adjust_abloop(false, true, n)
+    log.notify("<-start")
 end
 
 function QueueBase:postpone_start(n)
-	self:adjust_abloop(true, true, n)
-	log.notify("start->")
+    self:adjust_abloop(true, true, n)
+    log.notify("start->")
 end
 
 function QueueBase:advance_stop(n)
-	self:adjust_abloop(false, false, n)
-	log.notify("<-stop")
+    self:adjust_abloop(false, false, n)
+    log.notify("<-stop")
 end
 
 function QueueBase:postpone_stop(n)
-	self:adjust_abloop(true, false, n)
-	log.notify("stop->")
+    self:adjust_abloop(true, false, n)
+    log.notify("stop->")
 end
 
 function QueueBase:adjust_abloop(postpone, start, n)
@@ -314,9 +314,9 @@ function QueueBase:toggle_export()
 end
 
 function QueueBase:clear_abloop()
-	log.notify("Cleared loop boundaries")
-	player.unset_abloop()
-	sounds.play("click1")
+    log.notify("Cleared loop boundaries")
+    player.unset_abloop()
+    sounds.play("click1")
 end
 
 function QueueBase:set_speed(speed)
@@ -329,7 +329,7 @@ function QueueBase:forward_history()
     if not self:navigate_history(true) then
         sounds.play("negative")
     else
-	log.notify("Forward")
+        log.notify("Forward")
         sounds.play("click1")
     end
 end
@@ -339,7 +339,7 @@ function QueueBase:backward_history()
     if not self:navigate_history(false) then
         sounds.play("negative")
     else
-	log.notify("Backward")
+        log.notify("Backward")
         sounds.play("click1")
     end
 end

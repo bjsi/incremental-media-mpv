@@ -56,11 +56,11 @@ function QueueMenu:add_osd()
     local subset
     local queue_name
     if queue then
-	    subset = queue.reptable.subset
-	    queue_name = queue.name
+        subset = queue.reptable.subset
+        queue_name = queue.name
     else
-	    subset = {}
-	    queue_name = "No Loaded Queue"
+        subset = {}
+        queue_name = "No Loaded Queue"
     end
 
     list.list = {}

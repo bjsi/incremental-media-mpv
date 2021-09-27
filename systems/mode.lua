@@ -3,7 +3,7 @@ local mode = {
     import_extract = "import_extract",
     master = "master",
     minion = "minion",
-    subset = "subset",
+    subset = "subset"
 }
 
 return mode

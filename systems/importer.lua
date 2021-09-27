@@ -127,7 +127,7 @@ function importer.import_yt_chapters(info,
         end
 
         table.insert(chapter_topics, chapter_topic)
-	prev_id = chapter_topic.row.id
+        prev_id = chapter_topic.row.id
         if pending_chapters then dependency_id = prev_id end
     end
     importer.add_topics_to_queue(chapter_topics, true)
