@@ -9,6 +9,7 @@ options.path = ""
 options.queue = cfg.default_queue
 options.type = ""
 options.id = ""
+options.id_list = ""
 
 mpopt.read_options(options, "im")
 

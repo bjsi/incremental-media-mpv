@@ -3,7 +3,6 @@ local player = require 'systems.player'
 local log = require 'utils.log'
 local active = require 'systems.active'
 local QueueBase = require 'queues.base.base'
-local TopicRepTable = require 'reps.reptable.topics'
 local repCreators = require 'reps.rep.repCreators'
 local ydl = require 'systems.ydl'
 local subs = require 'systems.subs.subs'
@@ -28,11 +27,8 @@ setmetatable(TopicQueueBase, {
     end
 })
 
---- Create a new TopicQueueBase
---- @param oldRep Rep Last playing Rep object.
---- @param subsetter function Subset creator function.
-function TopicQueueBase:_init(name, oldRep, subsetter)
-    QueueBase._init(self, name, TopicRepTable(subsetter), oldRep)
+function TopicQueueBase:_init(name, oldRep, reptable)
+    QueueBase._init(self, name, reptable, oldRep)
     self.create_loop_boundaries = false -- allow seeking behind curtime
 end
 

@@ -61,6 +61,27 @@ local function run_minion_mode()
     if not active_queue.change_queue(queue) then mp.commandv("quit", 1) end
 end
 
+local function run_subset_mode()
+  log.debug("Running subset mode.")
+  setup_player()
+  local matches = string.gmatch(opts.id_list, "[^-]*")
+  local id_list = {}
+  for id in matches do
+    log.debug(id)
+    table.insert(id_list, id)
+  end
+
+  if (obj.empty(id_list)) then
+    log.debug("Failed to run subset mode because the id list was empty.")
+    return
+  end
+
+  if not active_queue.load_subset(id_list) then
+    log.debug("Failed to load topic subset. Quitting.")
+    mp.commandv("quit", 1)
+  end
+end
+
 local function run_master_mode()
     local GlobalTopics = require 'queues.global.topics'
     local GlobalExtracts = require 'queues.global.extracts'
@@ -219,6 +240,8 @@ local function run()
 
     if opts.mode == mode.master then
         run_master_mode()
+    elseif opts.mode == mode.subset then
+      run_subset_mode()
     elseif opts.mode == mode.minion then
         run_minion_mode()
     elseif opts.mode == mode.import_extract then

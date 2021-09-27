@@ -1,4 +1,5 @@
 local sounds = require 'systems.sounds'
+local ScheduledTopicReptable = require 'reps.reptable.scheduledTopics'
 local sort = require 'reps.reptable.sort'
 local TopicQueueBase = require 'queues.base.topics'
 local tbl = require 'utils.table'
@@ -18,8 +19,9 @@ setmetatable(GlobalTopics, {
 --- Create a new GlobalTopicQueue.
 --- @param oldRep Rep last playing Rep object.
 function GlobalTopics:_init(oldRep)
-    TopicQueueBase._init(self, "Global Topic Queue", oldRep,
-                         function(reps) return self:subsetter(reps) end)
+    local subsetter = function(reps) return self:subsetter(reps) end
+    local reptable = ScheduledTopicReptable(subsetter)
+    TopicQueueBase._init(self, "Global Topic Queue", oldRep, reptable)
 end
 
 function GlobalTopics:activate()

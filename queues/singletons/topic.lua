@@ -1,4 +1,5 @@
 local TopicQueueBase = require 'queues.base.topics'
+local ScheduledTopicReptable = require 'reps.reptable.scheduledTopics'
 local tbl = require 'utils.table'
 
 local SingletonTopic = {}
@@ -14,8 +15,9 @@ setmetatable(SingletonTopic, {
 })
 
 function SingletonTopic:_init(id)
-    TopicQueueBase._init(self, "Singleton Topic Queue", nil,
-                         function(reps) return self:subsetter(reps, id) end)
+    local subsetter = function(reps) return self:subsetter(reps, id) end
+    local reptable = ScheduledTopicReptable(subsetter)
+    TopicQueueBase._init(self, "Singleton Topic Queue", nil, reptable)
 end
 
 function SingletonTopic:subsetter(reps, id)
