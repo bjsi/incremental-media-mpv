@@ -1,4 +1,5 @@
 local cfg = require 'systems.config'
+local Playlists = require 'systems.playlists.playlist_table'
 local file = require 'utils.file'
 local json_rpc = require 'systems.json_rpc'
 local tbl = require 'utils.table'
@@ -36,15 +37,17 @@ local function read_as_b64(fp)
     return b64.encode(data)
 end
 
-function exporter.create_topic_export_data(v)
+function exporter.create_topic_export_data(topicRep, playlist_id, playlist_title)
     local topic = {
-        id = v.row["id"],
-        title = v.row.title,
-        url = player.get_full_url(v, v.row.start),
-        start = v.row.start,
-        qtext = "",
-        stop = v.row.stop,
-        priority = v.row.priority,
+        id = topicRep.row["id"],
+        type = topicRep.row["type"],
+        title = topicRep.row.title,
+        url = player.get_full_url(topicRep, topicRep.row.start),
+        start = topicRep.row.start,
+        stop = topicRep.row.stop,
+        priority = topicRep.row.priority,
+        playlist_id = playlist_id,
+        playlist_title = playlist_title,
         extracts = {
             ["NULL"] = {id = "NULL"} -- so mpu.format_json turns it into a dict
         }
@@ -58,6 +61,7 @@ function exporter.create_extract_export_data(v)
         id = v.row["id"],
         parent = v.row["parent"],
         url = player.get_full_url(v, v.row["start"]),
+        type = v.row["type"],
         start = v.row.start,
         stop = v.row.stop,
         subs = v.row.subs,
@@ -200,8 +204,7 @@ function exporter.create_item_export_data(itemRep)
     elseif itemRep.row.format == item_format.cloze_context then
         local edl = ClozeContextEDL.new(edlFullPathWithExt)
         sound, format, media = edl:read()
-        ret =
-            exporter.add_cloze_context_data(itemRep, exportItem, sound, format)
+        ret = exporter.add_cloze_context_data(itemRep, exportItem, sound, format)
     elseif itemRep.row.format == item_format.qa then
         local edl = QAEDL.new(edlFullPathWithExt)
         sound, format, media = edl:read()
@@ -275,6 +278,9 @@ function exporter.export_to_sm(predicate)
 
     log.debug("Successfully pinged SMA.")
 
+    Playlists = Playlists or require "systems.playlists.playlist"
+    local playlists = tbl.index_by_key(Playlists().reptable.reps, "id")
+
     GlobalTopics = GlobalTopics or require("queues.global.topics")
     local gtq = GlobalTopics(nil)
     local grandParents = tbl.index_by_key(gtq.reptable.reps, "id")
@@ -285,27 +291,34 @@ function exporter.export_to_sm(predicate)
 
     GlobalItems = GlobalItems or require("queues.globalItemQueue")
     local giq = GlobalItems(nil)
-    local toExport = tbl.filter(giq.reptable.reps, predicate)
+    local itemsToExport = tbl.filter(giq.reptable.reps, predicate)
 
-    local topics = {} -- id indexed
-    for _, v in ipairs(toExport) do
+    local topicsToExport = {} -- id indexed
+    for _, v in ipairs(itemsToExport) do
         local grandparent = getGrandparent(grandParents, parents, v)
-        if topics[grandparent.row.id] == nil then
-            local topic = exporter.create_topic_export_data(grandparent)
-            topics[topic.id] = topic
+        if topicsToExport[grandparent.row.id] == nil then
+            local playlist_id
+            local playlist_title
+            local playlist = playlists[grandparent.row.playlist]
+            if playlist then
+                playlist_id = playlist.row.id
+                playlist_title = playlist.row.title
+            end
+            local topic = exporter.create_topic_export_data(grandparent, playlist_id, playlist_title)
+            topicsToExport[topic.id] = topic
         end
 
         local parent = getParent(parents, v)
-        if topics[grandparent.row.id].extracts[parent.row.id] == nil then
+        if topicsToExport[grandparent.row.id].extracts[parent.row.id] == nil then
             local extract = exporter.create_extract_export_data(parent)
-            topics[grandparent.row.id].extracts[parent.row.id] = extract
+            topicsToExport[grandparent.row.id].extracts[parent.row.id] = extract
         end
 
         local item = exporter.create_item_export_data(v)
-        topics[grandparent.row.id].extracts[parent.row.id].items[item.id] = item
+        topicsToExport[grandparent.row.id].extracts[parent.row.id].items[item.id] = item
     end
 
-    json_rpc.send_sma_request("ImportTopics", {cfg.queue, topics})
+    json_rpc.send_sma_request("ImportTopics", {cfg.queue, topicsToExport})
 end
 
 -- TODO: Need to update to the latest version of EDL files and item creation
