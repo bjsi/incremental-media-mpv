@@ -37,7 +37,7 @@ local function read_as_b64(fp)
     return b64.encode(data)
 end
 
-function exporter.create_topic_export_data(topicRep, playlist_id, playlist_title)
+function exporter.create_topic_export_data(topicRep, playlist_id, playlist_title, playlist_url)
     local topic = {
         id = topicRep.row["id"],
         type = topicRep.row["type"],
@@ -48,6 +48,7 @@ function exporter.create_topic_export_data(topicRep, playlist_id, playlist_title
         priority = topicRep.row.priority,
         playlist_id = playlist_id,
         playlist_title = playlist_title,
+        playlist_url = playlist_url,
         extracts = {
             ["NULL"] = {id = "NULL"} -- so mpu.format_json turns it into a dict
         }
@@ -303,8 +304,9 @@ function exporter.export_to_sm(predicate)
             if playlist then
                 playlist_id = playlist.row.id
                 playlist_title = playlist.row.title
+                playlist_url = playlist.row.url
             end
-            local topic = exporter.create_topic_export_data(grandparent, playlist_id, playlist_title)
+            local topic = exporter.create_topic_export_data(grandparent, playlist_id, playlist_title, playlist_url)
             topicsToExport[topic.id] = topic
         end
 
