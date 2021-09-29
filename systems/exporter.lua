@@ -37,7 +37,11 @@ local function read_as_b64(fp)
     return b64.encode(data)
 end
 
-function exporter.create_topic_export_data(topicRep, playlist_id, playlist_title, playlist_url)
+function exporter.create_playlist_export_data(rep)
+    return {id=rep.row.id, title=rep.row.title, url=rep.row.url}
+end
+
+function exporter.create_topic_export_data(topicRep, playlist)
     local topic = {
         id = topicRep.row["id"],
         type = topicRep.row["type"],
@@ -46,9 +50,7 @@ function exporter.create_topic_export_data(topicRep, playlist_id, playlist_title
         start = topicRep.row.start,
         stop = topicRep.row.stop,
         priority = topicRep.row.priority,
-        playlist_id = playlist_id,
-        playlist_title = playlist_title,
-        playlist_url = playlist_url,
+        playlist = playlist,
         extracts = {
             ["NULL"] = {id = "NULL"} -- so mpu.format_json turns it into a dict
         }
@@ -298,15 +300,12 @@ function exporter.export_to_sm(predicate)
     for _, v in ipairs(itemsToExport) do
         local grandparent = getGrandparent(grandParents, parents, v)
         if topicsToExport[grandparent.row.id] == nil then
-            local playlist_id
-            local playlist_title
-            local playlist = playlists[grandparent.row.playlist]
-            if playlist then
-                playlist_id = playlist.row.id
-                playlist_title = playlist.row.title
-                playlist_url = playlist.row.url
+            local playlistRep = playlists[grandparent.row.playlist]
+            local playlist
+            if playlistRep then
+                playlist = exporter.create_playlist_export_data(playlistRep)
             end
-            local topic = exporter.create_topic_export_data(grandparent, playlist_id, playlist_title, playlist_url)
+            local topic = exporter.create_topic_export_data(grandparent, playlist)
             topicsToExport[topic.id] = topic
         end
 
